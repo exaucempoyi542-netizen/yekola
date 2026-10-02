@@ -27,9 +27,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-02t+2ixab48xp1xc485psjhie+83j0*$)e-1=0ho5v&0et-gn*')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.188.20.244', '10.196.177.244', '10.213.60.244', '*']
+_raw_hosts = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,*')
+ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.split(',') if h.strip()]
 
 
 # Application definition 
@@ -51,6 +52,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -87,11 +89,12 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'custom_db_backend',  # Backend custom pour bypasser le check MariaDB 10.4
-        'NAME': os.getenv('DB_NAME', 'edurdc_db'),
-        'USER': os.getenv('DB_USER', 'root'),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
-        'PORT': os.getenv('DB_PORT', '3306'),
+        # Railway MySQL plugin expose MYSQL* ; fallback sur DB_* / local
+        'NAME': os.getenv('MYSQLDATABASE') or os.getenv('DB_NAME', 'edurdc_db'),
+        'USER': os.getenv('MYSQLUSER') or os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('MYSQLPASSWORD') or os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('MYSQLHOST') or os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('MYSQLPORT') or os.getenv('DB_PORT', '3306'),
         'CONN_MAX_AGE': 60,
         'OPTIONS': {
             'charset': 'utf8mb4',
@@ -146,6 +149,14 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
 
 # Media files (Uploaded by teachers)
 MEDIA_URL = '/media/'
@@ -212,11 +223,19 @@ STUDENT_PASSWORD_MIN_LENGTH = 6
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # Paramètres Jazzmin supprimés
-CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000', 'http://localhost:8000']
+_csrf_origins = os.getenv(
+    'CSRF_TRUSTED_ORIGINS',
+    'http://127.0.0.1:8000,http://localhost:8000',
+)
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(',') if o.strip()]
 CSRF_FAILURE_VIEW = 'core.csrf.csrf_failure'
 # Évite les conflits de cookies si on alterne localhost / 127.0.0.1
 CSRF_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SAMESITE = 'Lax'
+if not DEBUG:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # File Upload Configuration
 MAX_UPLOAD_SIZE = 1024 * 1024 * 1024  # 1 GB
