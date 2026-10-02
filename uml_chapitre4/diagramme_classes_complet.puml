@@ -1,0 +1,551 @@
+@startuml Diagramme_Classes_EduRDC_Complet
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam classFontSize 11
+skinparam groupInheritance 2
+hide circle
+title Diagramme de classes — Plateforme MayeleNet (Complet)
+
+' ============================================================
+' ENUMERATIONS
+' ============================================================
+
+enum Role {
+  SUPER_ADMIN
+  PROVINCIAL_ADMIN
+  MANAGER
+  DEAN
+  TEACHER
+  STUDENT
+}
+
+enum StatutCote {
+  DRAFT
+  SUBMITTED_TO_DEAN
+  VALIDATED_BY_DEAN
+}
+
+enum StatutNoteCours {
+  DRAFT
+  SUBMITTED_TO_DEAN
+  SUBMITTED_TO_MANAGER
+  VALIDATED_BY_DEAN
+  APPROVED
+  SUBMITTED_TO_MINISTRY
+}
+
+enum TypeContenu {
+  VIDEO
+  PDF
+  PPT
+  TEXT
+}
+
+enum TypeQuiz {
+  SIMPLE
+  EVALUATION
+}
+
+enum NiveauLMD {
+  L1
+  L2
+  L3
+  M1
+  M2
+}
+
+' ============================================================
+' REFERENTIELS NATIONAUX
+' ============================================================
+
+class FaculteNationale {
+  +id : entier
+  +code : texte (unique)
+  +nom : texte
+  +est_active : booleen
+  +cree_le : dateheure
+}
+
+class CoursNational {
+  +id : entier
+  +code : texte
+  +titre : texte
+  +description : texte
+  +credits : entier
+  +semestre : entier {1 ou 2}
+  +est_actif : booleen
+  +cree_le : dateheure
+}
+
+' ============================================================
+' STRUCTURE TERRITORIALE & INSTITUTIONNELLE
+' ============================================================
+
+class Province {
+  +id : entier
+  +code : texte (unique)
+  +nom : texte {propriete}
+  +cree_le : dateheure
+}
+
+class Universite {
+  +id : entier
+  +nom : texte
+  +type : texte {PUBLIC | PRIVE}
+  +adresse : texte
+  +telephone : texte
+  +email : texte
+  +capacite : entier
+  +notes_verouillees : booleen
+  +s1_cloture : booleen
+  +s2_cloture : booleen
+  +cree_le : dateheure
+  +manager() : Utilisateur {propriete}
+}
+
+class Faculte {
+  +id : entier
+  +nom : texte
+}
+
+class Promotion {
+  +id : entier
+  +niveau : NiveauLMD
+  +libelle_affichage() : texte {propriete}
+  +{static} assurer_lmd_pour_faculte(faculte) : liste
+  +{static} a_lmd_complet(faculte) : booleen
+}
+
+class GroupeClasse {
+  +id : entier
+  +nom : texte
+}
+
+' ============================================================
+' UTILISATEURS (RBAC)
+' ============================================================
+
+class Utilisateur {
+  +id : entier
+  +identifiant : texte (unique)
+  +email : texte
+  +role : Role
+  +telephone : texte
+  +matricule : texte (unique)
+  +semestre_affecte : entier
+  +firebase_uid : texte
+  +profil_complete : booleen
+  +genre : texte {M | F}
+  +credits_s1() : entier {propriete}
+  +credits_s2() : entier {propriete}
+  +total_credits() : entier {propriete}
+  +statut_admission() : texte {propriete}
+}
+
+' ============================================================
+' CONTENU PEDAGOGIQUE
+' ============================================================
+
+class Cours {
+  +id : entier
+  +titre : texte
+  +description : texte
+  +credits : entier
+  +semestre : entier {1 ou 2}
+  +est_publie : booleen
+  +prix : decimal
+  +est_gratuit : booleen
+  +cree_le : dateheure
+  +credits_effectifs() : entier {propriete}
+  +statut_affectation() : texte {propriete}
+}
+
+class Lecon {
+  +id : entier
+  +titre : texte
+  +type_contenu : TypeContenu
+  +fichier_contenu : fichier
+  +contenu_texte : texte
+  +ordre : entier
+  +nb_likes() : entier {propriete}
+  +nb_commentaires() : entier {propriete}
+}
+
+class Inscription {
+  +id : entier
+  +inscrit_le : dateheure
+  +progression : decimal {0..100}
+}
+
+' ============================================================
+' QUIZ ET EVALUATIONS
+' ============================================================
+
+class Quiz {
+  +id : entier
+  +id_code : UUID (unique)
+  +titre : texte
+  +description : texte
+  +duree_min : entier
+  +est_publie : booleen
+  +type_quiz : TypeQuiz
+  +ordre : entier
+  +cree_le : dateheure
+}
+
+class QuestionQuiz {
+  +id : entier
+  +texte : texte
+  +points : entier
+}
+
+class ChoixQuiz {
+  +id : entier
+  +texte : texte
+  +est_correct : booleen
+}
+
+class TentativeQuiz {
+  +id : entier
+  +score : decimal
+  +session : texte {1ere | 2eme}
+  +commence_le : dateheure
+  +termine_le : dateheure
+  +score_pourcentage() : decimal {propriete}
+  +est_reussi() : booleen {propriete}
+}
+
+class Evaluation {
+  +id : entier
+  +question : texte
+  +option_a : texte
+  +option_b : texte
+  +option_c : texte
+  +option_d : texte
+  +bonne_reponse : texte {A|B|C|D}
+}
+
+' ============================================================
+' NOTATION ET COTATION
+' ============================================================
+
+class CoteEtudiant {
+  +id : entier
+  +nom_complet : texte
+  +tp : decimal
+  +interro : decimal
+  +examen : decimal
+  +total() : decimal {propriete}
+  +credits_cours() : entier {propriete}
+  +est_reussi() : booleen {propriete}
+  +credits_obtenus() : entier {propriete}
+  +statut : StatutCote
+  +mis_a_jour_le : dateheure
+}
+
+class NoteCours {
+  +id : entier
+  +moyenne_quiz : decimal
+  +note_interro : decimal
+  +note_examen : decimal
+  +note_finale : decimal
+  +statut : StatutNoteCours
+  +cree_le : dateheure
+  +mis_a_jour_le : dateheure
+}
+
+class Note {
+  +id : entier
+  +score : decimal
+  +complete_le : dateheure
+}
+
+' ============================================================
+' TRAVAUX PRATIQUES (TP)
+' ============================================================
+
+class Devoir {
+  +id : entier
+  +titre : texte
+  +description : texte
+  +date_limite : dateheure
+  +cree_le : dateheure
+}
+
+class SoumissionDevoir {
+  +id : entier
+  +fichier : fichier
+  +soumis_le : dateheure
+  +note : decimal {/20}
+  +commentaire_note : texte
+  +note_le : dateheure
+  +est_note : booleen
+}
+
+' ============================================================
+' SESSIONS LIVE ET CHAT
+' ============================================================
+
+class SessionLive {
+  +id : entier
+  +nom_salle : texte (unique)
+  +est_active : booleen
+  +commence_le : dateheure
+  +termine_le : dateheure
+}
+
+class SallonChat {
+  +id : entier
+  +nom : texte
+  +est_groupe : booleen
+  +cree_le : dateheure
+}
+
+class MessageChat {
+  +id : entier
+  +contenu : texte
+  +cree_le : dateheure
+  +est_lu : booleen
+}
+
+' ============================================================
+' INTERACTIONS SOCIALES
+' ============================================================
+
+class J_aime_Cours {
+  +cree_le : dateheure
+}
+
+class Commentaire_Cours {
+  +id : entier
+  +contenu : texte
+  +cree_le : dateheure
+}
+
+class Favori_Cours {
+  +cree_le : dateheure
+}
+
+class J_aime_Lecon {
+  +cree_le : dateheure
+}
+
+class Commentaire_Lecon {
+  +id : entier
+  +contenu : texte
+  +cree_le : dateheure
+}
+
+class Favori_Lecon {
+  +cree_le : dateheure
+}
+
+class Abonnement_Enseignant {
+  +cree_le : dateheure
+}
+
+' ============================================================
+' RESSOURCES EXTERNES
+' ============================================================
+
+class RessourceExterne {
+  +id : entier
+  +titre : texte
+  +description : texte
+  +url : texte
+  +categorie : texte
+  +cree_le : dateheure
+}
+
+' ============================================================
+' SYSTEME / AUDIT / NOTIFICATIONS
+' ============================================================
+
+class Notification {
+  +id : entier
+  +titre : texte
+  +message : texte
+  +type : texte {course|grade|reply|reminder|system}
+  +cree_le : dateheure
+}
+
+class JournalAudit {
+  +id : entier
+  +action : texte
+  +details : texte
+  +adresse_ip : texte
+  +horodatage : dateheure
+}
+
+' ============================================================
+' HERITAGE
+' ============================================================
+
+AbstractUser <|-- Utilisateur
+
+' ============================================================
+' ASSOCIATIONS — REFERENTIELS NATIONAUX
+' ============================================================
+
+FaculteNationale "1" -- "0..*" CoursNational : contient >
+FaculteNationale "1" -- "0..*" Faculte : correspond_a >
+
+CoursNational "0..1" -- "0..*" Cours : instancie >
+
+' ============================================================
+' ASSOCIATIONS — STRUCTURE INSTITUTIONNELLE
+' ============================================================
+
+Province "1" -- "0..*" Universite : tutelle >
+Universite "1" -- "0..*" Faculte : contient >
+Faculte "1" -- "0..*" Promotion : organise >
+Promotion "1" -- "0..*" GroupeClasse : regroupe >
+
+' ============================================================
+' ASSOCIATIONS — AFFECTATIONS UTILISATEURS
+' ============================================================
+
+Utilisateur --> Role
+Utilisateur "0..1" --o "0..*" Universite : assigned_university >
+Utilisateur "0..1" --o "0..*" Faculte : assigned_faculty >
+Utilisateur "0..1" --o "0..*" Promotion : assigned_promotion >
+Utilisateur "0..*" --o "0..*" Promotion : assigned_promotions (M:N) >
+Utilisateur "0..1" --o "0..1" GroupeClasse : class_group >
+Utilisateur "0..1" --o "0..*" Province : assigned_province >
+
+' ============================================================
+' ASSOCIATIONS — COURS ET CONTENU
+' ============================================================
+
+Universite "1" -- "0..*" Cours : offre >
+Faculte "1" -- "0..*" Cours : rattache >
+Promotion "1" -- "0..*" Cours : niveau >
+Cours "0..1" -- "0..*" Lecon : contient >
+Cours "0..1" -- "0..*" Quiz : evalue >
+Cours "0..1" -- "0..*" Devoir : travaux_pratiques >
+
+Utilisateur "0..1" --o "0..*" Cours : enseignant >
+Utilisateur "0..1" --o "0..*" Cours : assigned_to_dean >
+Utilisateur "0..1" --o "0..*" Cours : created_by >
+
+Quiz "0..1" -- "0..1" Lecon : verrouille >
+Cours "0..1" -- "0..1" Quiz : prerequis >
+
+' ============================================================
+' ASSOCIATIONS — QUIZ
+' ============================================================
+
+Quiz "1" -- "1..*" QuestionQuiz : contient >
+QuestionQuiz "1" -- "2..*" ChoixQuiz : propose >
+TentativeQuiz "0..*" -- "1" Quiz : passage >
+TentativeQuiz "0..*" -- "1" Utilisateur : etudiant >
+
+Lecon "1" -- "0..*" Evaluation : teste >
+
+' ============================================================
+' ASSOCIATIONS — INSCRIPTION & PROGRESSION
+' ============================================================
+
+Inscription "0..*" -- "1" Utilisateur : etudiant >
+Inscription "0..*" -- "1" Cours : cours >
+
+' ============================================================
+' ASSOCIATIONS — NOTATION
+' ============================================================
+
+CoteEtudiant "0..*" -- "1" Utilisateur : etudiant >
+CoteEtudiant "0..*" -- "1" Utilisateur : enseignant >
+CoteEtudiant "0..*" -- "1" Cours : cours >
+CoteEtudiant --> StatutCote
+
+NoteCours "0..*" -- "1" Utilisateur : etudiant >
+NoteCours "0..*" -- "1" Cours : cours >
+NoteCours --> StatutNoteCours
+
+Note "0..*" -- "1" Utilisateur : etudiant >
+Note "0..*" -- "1" Lecon : lecon >
+
+' ============================================================
+' ASSOCIATIONS — DEVOIRS
+' ============================================================
+
+Devoir "0..*" -- "1" Cours : cours >
+Devoir "0..*" -- "1" Utilisateur : enseignant >
+SoumissionDevoir "0..*" -- "1" Devoir : devoir >
+SoumissionDevoir "0..*" -- "1" Utilisateur : etudiant >
+
+' ============================================================
+' ASSOCIATIONS — LIVE & CHAT
+' ============================================================
+
+SessionLive "0..*" -- "1" Cours : cours >
+SessionLive "0..*" -- "1" Utilisateur : enseignant >
+
+SallonChat "0..*" -- "0..1" Cours : cours >
+SallonChat "0..*" -- "0..*" Utilisateur : participants >
+MessageChat "0..*" -- "1" SallonChat : salon >
+MessageChat "0..*" -- "1" Utilisateur : expediteur >
+
+' ============================================================
+' ASSOCIATIONS — INTERACTIONS SOCIALES
+' ============================================================
+
+J_aime_Cours "0..*" -- "1" Utilisateur
+J_aime_Cours "0..*" -- "1" Cours
+
+Commentaire_Cours "0..*" -- "1" Utilisateur
+Commentaire_Cours "0..*" -- "1" Cours
+Commentaire_Cours "0..*" -- "0..1" Commentaire_Cours : reponse_a (self) >
+
+Favori_Cours "0..*" -- "1" Utilisateur
+Favori_Cours "0..*" -- "1" Cours
+
+J_aime_Lecon "0..*" -- "1" Utilisateur
+J_aime_Lecon "0..*" -- "1" Lecon
+
+Commentaire_Lecon "0..*" -- "1" Utilisateur
+Commentaire_Lecon "0..*" -- "1" Lecon
+Commentaire_Lecon "0..*" -- "0..1" Commentaire_Lecon : reponse_a (self) >
+
+Favori_Lecon "0..*" -- "1" Utilisateur
+Favori_Lecon "0..*" -- "1" Lecon
+
+Abonnement_Enseignant "0..*" -- "1" Utilisateur : etudiant >
+Abonnement_Enseignant "0..*" -- "1" Utilisateur : enseignant >
+
+' ============================================================
+' ASSOCIATIONS — SYSTEME
+' ============================================================
+
+Notification "0..*" -- "0..1" Utilisateur : destinataire >
+JournalAudit "0..*" -- "0..1" Utilisateur : auteur >
+
+' ============================================================
+' NOTES METIER
+' ============================================================
+
+note bottom of CoteEtudiant
+  Regle LMD :
+  total = TP + Interro + Examen (sur 20)
+  si total >= 10  credits du cours
+  sinon           0 credit
+end note
+
+note bottom of NoteCours
+  Cycle de vie :
+  DRAFT -> SUBMITTED_TO_DEAN
+  -> VALIDATED_BY_DEAN -> APPROVED
+  -> SUBMITTED_TO_MINISTRY (verrou)
+end note
+
+note bottom of Utilisateur
+  Roles et perimetres :
+  SUPER_ADMIN    -> Ministere (national)
+  PROVINCIAL_ADMIN -> Province
+  MANAGER        -> Universite
+  DEAN           -> Faculte
+  TEACHER        -> Promotion(s)
+  STUDENT        -> GroupeClasse
+end note
+
+@enduml

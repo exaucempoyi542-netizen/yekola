@@ -1,0 +1,119 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block page_title %}Formulation des Évaluations{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in mb-5">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-5 gap-4">
+        <div class="d-flex align-items-center">
+            <a href="{% url 'teacher_lesson_management' quiz.course.id %}"
+                class="icon-square bg-white border text-navy me-4"
+                style="width: 52px; height: 52px; border-radius: 14px; text-decoration: none;">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="overflow-hidden">
+                <h3 class="fw-900 mb-1 text-navy text-truncate">{{ quiz.title }}</h3>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge-premium badge-navy" style="font-size: 0.65rem;">
+                        <i class="fas fa-hourglass-start me-1"></i> {{ quiz.time_limit }} MIN
+                    </span>
+                    {% if quiz.quiz_type == 'EVALUATION' %}
+                    <span class="badge-premium bg-danger text-white" style="font-size: 0.65rem;">
+                        <i class="fas fa-shield-halved me-1"></i> BLOQUANT
+                    </span>
+                    {% else %}
+                    <span class="badge-premium bg-info text-white" style="font-size: 0.65rem;">
+                        <i class="fas fa-dumbbell me-1"></i> EXERCICE
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-xl-7 order-2 order-xl-1">
+            <div class="premium-card p-4 p-md-5">
+                <div class="mb-5 pb-3 border-bottom">
+                    <h4 class="fw-900 text-navy">Registre des Items</h4>
+                </div>
+                {% if questions %}
+                <div class="question-stream overflow-auto pe-2" style="max-height: 800px;">
+                    {% for question in questions %}
+                    <div class="ministerial-list-item flex-column align-items-stretch p-4 mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <span class="badge-premium badge-gold" style="font-size: 0.65rem;">
+                                ITEM N. {{ forloop.counter }}
+                            </span>
+                            <span class="extra-small fw-900 text-navy text-uppercase">
+                                {{ question.points }} Points
+                            </span>
+                        </div>
+                        <h5 class="fw-900 text-navy mb-4">{{ question.text }}</h5>
+                        <div class="row g-2">
+                            {% for choice in question.choices.all %}
+                            <div class="col-12">
+                                <div class="p-3 rounded-3 border d-flex align-items-center">
+                                    <span class="extra-small fw-800 text-uppercase letter-spacing-1">
+                                        {{ choice.text }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5 opacity-50">
+                    <h5 class="fw-900 text-navy">Questionnaire vide</h5>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-5 order-1 order-xl-2">
+            <div class="premium-card p-4 p-md-5 sticky-xl-top shadow-lg"
+                style="top: 100px; z-index: 10; border-top: 5px solid var(--gold);">
+                <h4 class="fw-900 text-navy mb-5">Atelier de Formulation</h4>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_question">
+                    <div class="mb-4">
+                        <label class="form-label">Enonce</label>
+                        <textarea name="text" class="ministerial-input w-100" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-5">
+                        <label class="form-label">Points</label>
+                        <input type="number" name="points" class="ministerial-input" value="1" min="1" required>
+                    </div>
+                    <div class="pt-4 border-top">
+                        <label class="form-label text-gold mb-4">Alternatives</label>
+                        {% for i in "0123"|make_list %}
+                        <div class="d-flex align-items-center gap-3 mb-3 p-2 bg-ivory rounded-4 border">
+                            <div class="form-check m-0 ms-2">
+                                <input class="form-check-input" type="radio" name="correct_choice"
+                                    value="{{ forloop.counter0 }}" {% if forloop.first %}checked{% endif %}
+                                    style="width:22px; height:22px; cursor:pointer;">
+                            </div>
+                            {% if forloop.counter < 3 %} <input type="text" name="choices[]"
+                                class="ministerial-input border-0 bg-transparent flex-grow-1"
+                                placeholder="Option {{ forloop.counter }}" required>
+                                {% else %}
+                                <input type="text" name="choices[]"
+                                    class="ministerial-input border-0 bg-transparent flex-grow-1"
+                                    placeholder="Option {{ forloop.counter }}">
+                                {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn-ministerial-gold w-100 py-3 shadow-md mt-2">
+                        Archiver <i class="fas fa-plus-circle ms-2"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

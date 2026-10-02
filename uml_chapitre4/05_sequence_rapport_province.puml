@@ -1,0 +1,64 @@
+@startuml Figure_4_5_Sequence_Rapport_Universitaire_Province
+!theme plain
+skinparam sequenceMessageAlign center
+title Figure 4.5 — Diagramme de séquence : Envoi du rapport universitaire à la province
+
+actor "Gestionnaire" as M
+participant "Portail rectorat\n(Django)" as UI
+participant "Service de\nconsolidation" as SVC
+database "Base de données\nMySQL" as DB
+actor "Administrateur\nprovincial" as P
+actor "Super-Administrateur\n(Ministère)" as S
+
+M -> UI : S'authentifier (rôle Gestionnaire)
+UI --> M : Session ouverte
+
+M -> UI : Consolider les rapports facultaires
+UI -> SVC : Créer le rapport universitaire
+
+SVC -> DB : Lire les rapports facultaires non validés
+alt Rapports facultaires disponibles
+  DB --> SVC : Rapports facultaires
+else Solution de repli
+  SVC -> DB : Lire les rapports annuels des Décanats
+  DB --> SVC : Rapports annuels
+end
+
+SVC -> SVC : Agréger les indicateurs\n(étudiants, réussites, échecs)
+SVC -> DB : Créer le rapport universitaire
+SVC -> DB : Marquer les rapports facultaires comme validés
+DB --> SVC : Confirmation
+SVC --> UI : Rapport universitaire créé
+UI --> M : Confirmation et aperçu
+
+M -> UI : Transmettre à l'Administrateur provincial (UC15)
+UI -> DB : Rendre le rapport visible pour la province
+DB --> UI : Confirmation
+UI --> M : Transmission effectuée
+
+... Tutelle territoriale ...
+
+P -> UI : Consulter les rapports universitaires
+UI -> DB : Lire les rapports de la province
+DB --> UI : Liste des rapports
+UI --> P : Espace de tutelle
+
+P -> UI : Consolider le rapport provincial (UC16)
+UI -> SVC : Créer le rapport provincial
+SVC -> DB : Créer le rapport provincial\n(agrégation des rapports universitaires)
+DB --> SVC : Confirmation
+SVC --> UI : Rapport provincial prêt
+UI --> P : Transmettre au Ministère
+
+S -> UI : Valider le rapport provincial (UC17)
+UI -> DB : Marquer le rapport provincial comme validé
+DB --> UI : Confirmation
+UI --> S : Indicateurs nationaux mis à jour
+
+note over M, S
+  Interdiction métier :
+  pas d'envoi direct Gestionnaire → Ministère.
+  Chaîne obligatoire : Université → Province → National.
+end note
+
+@enduml

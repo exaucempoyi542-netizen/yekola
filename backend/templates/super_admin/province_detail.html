@@ -1,0 +1,389 @@
+{% extends "super_admin/base.html" %}
+{% load static %}
+
+{% block title %}Détail Province | {{ province.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .province-hero {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--slate-light);
+    }
+
+    .province-hero h1 {
+        font-size: 1.65rem;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.35rem;
+    }
+
+    .province-hero p {
+        margin: 0;
+        color: var(--slate);
+        font-size: 0.95rem;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--navy);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .back-link:hover {
+        color: var(--gold);
+    }
+
+    .inst-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .inst-table thead th {
+        font-size: 0.7rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--slate);
+        font-weight: 700;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--slate-light);
+        white-space: nowrap;
+    }
+
+    .inst-table tbody td {
+        padding: 1.1rem 1rem;
+        border-bottom: 1px solid var(--slate-light);
+        vertical-align: middle;
+    }
+
+    .inst-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .inst-table tbody tr:hover td {
+        background: rgba(15, 23, 42, 0.02);
+    }
+
+    .inst-name {
+        font-weight: 800;
+        color: var(--navy);
+        margin: 0 0 0.2rem;
+        font-size: 1rem;
+    }
+
+    .inst-type {
+        font-size: 0.78rem;
+        color: var(--slate);
+        margin: 0;
+    }
+
+    .metric {
+        font-weight: 800;
+        color: var(--navy);
+        font-size: 1.05rem;
+        line-height: 1.1;
+    }
+
+    .metric-label {
+        font-size: 0.7rem;
+        color: var(--slate);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+    }
+
+    .rate-good { color: var(--emerald); }
+    .rate-mid { color: #B45309; }
+    .rate-bad { color: #DC2626; }
+
+    .status-text {
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .status-good { color: var(--emerald); }
+    .status-mid { color: #B45309; }
+    .status-bad { color: #DC2626; }
+    .status-none { color: var(--slate); }
+
+    .empty-province {
+        padding: 3rem 0;
+        text-align: left;
+        border-top: 1px solid var(--slate-light);
+    }
+
+    .empty-province h4 {
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+
+    @media (max-width: 991.98px) {
+        .inst-table thead { display: none; }
+        .inst-table, .inst-table tbody, .inst-table tr, .inst-table td {
+            display: block;
+            width: 100%;
+        }
+        .inst-table tbody tr {
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--slate-light);
+        }
+        .inst-table tbody td {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 1rem;
+            padding: 0.35rem 0;
+            border: none;
+        }
+        .inst-table tbody td::before {
+            content: attr(data-label);
+            font-size: 0.7rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--slate);
+            font-weight: 700;
+        }
+        .inst-table tbody td:first-child {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .inst-table tbody td:first-child::before { display: none; }
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}{{ province.name }}{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <div class="text-muted small mb-1">Pilotage national</div>
+            <h1 class="h4 mb-0" style="font-weight:800;">{{ province.name }}</h1>
+        </div>
+        <a href="{% url 'super_admin:provincial_stats' %}" class="back-link mb-0">
+            <i class="fa-solid fa-arrow-left"></i> Retour
+        </a>
+    </div>
+
+    {# Cartes statistiques #}
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="able-kpi soft">
+                <div class="kpi-top">
+                    <div>
+                        <div class="kpi-label">Étudiants</div>
+                        <div class="kpi-value">{{ kpi_students|default:0 }}</div>
+                    </div>
+                    <div class="kpi-icon"><i class="fa-solid fa-user-graduate"></i></div>
+                </div>
+                <div class="kpi-foot">Effectif consolidé</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="able-kpi soft">
+                <div class="kpi-top">
+                    <div>
+                        <div class="kpi-label">Réussite</div>
+                        <div class="kpi-value">{% if kpi_success_rate != None %}{{ kpi_success_rate }}%{% else %}—{% endif %}</div>
+                    </div>
+                    <div class="kpi-icon"><i class="fa-solid fa-chart-line"></i></div>
+                </div>
+                <div class="kpi-foot">Taux de réussite</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="able-kpi soft">
+                <div class="kpi-top">
+                    <div>
+                        <div class="kpi-label">Échec</div>
+                        <div class="kpi-value">{% if kpi_failure_rate != None %}{{ kpi_failure_rate }}%{% else %}—{% endif %}</div>
+                    </div>
+                    <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                </div>
+                <div class="kpi-foot">Taux d'échec</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="able-kpi soft">
+                <div class="kpi-top">
+                    <div>
+                        <div class="kpi-label">Admis</div>
+                        <div class="kpi-value">{{ kpi_passed|default:0 }}</div>
+                    </div>
+                    <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+                </div>
+                <div class="kpi-foot">Réussites</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="able-kpi soft">
+                <div class="kpi-top">
+                    <div>
+                        <div class="kpi-label">Échoués</div>
+                        <div class="kpi-value">{{ kpi_failed|default:0 }}</div>
+                    </div>
+                    <div class="kpi-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+                </div>
+                <div class="kpi-foot">Échecs</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="able-kpi soft">
+                <div class="kpi-top">
+                    <div>
+                        <div class="kpi-label">Établissements</div>
+                        <div class="kpi-value">{{ kpi_universities|default:0 }}</div>
+                    </div>
+                    <div class="kpi-icon"><i class="fa-solid fa-building-columns"></i></div>
+                </div>
+                <div class="kpi-foot">{{ kpi_reports|default:0 }} avec rapport</div>
+            </div>
+        </div>
+    </div>
+
+    {# Courbe #}
+    <div class="able-card mb-4">
+        <div class="able-card-head">
+            <h2><i class="fa-solid fa-chart-area me-2"></i>Évolution du taux de réussite</h2>
+            <span class="able-badge muted">Par année académique</span>
+        </div>
+        <div class="able-card-body">
+            {% if has_chart_data %}
+            <div style="position:relative;height:280px;">
+                <canvas id="provinceSuccessChart"></canvas>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0 text-center py-4">Aucune série temporelle disponible pour cette province.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if universities_detail %}
+    <div class="table-responsive">
+        <table class="inst-table">
+            <thead>
+                <tr>
+                    <th>Établissement</th>
+                    <th class="text-end">Étudiants</th>
+                    <th class="text-end">Évalués</th>
+                    <th class="text-end">Cours publiés</th>
+                    <th class="text-end">Réussite</th>
+                    <th class="text-end">Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in universities_detail %}
+                {% with rate=item.success_rate %}
+                <tr>
+                    <td data-label="Établissement">
+                        <p class="inst-name">{{ item.university.name }}</p>
+                        <p class="inst-type">Enseignement supérieur</p>
+                    </td>
+                    <td class="text-end" data-label="Étudiants">
+                        <div class="metric">{{ item.student_count }}</div>
+                    </td>
+                    <td class="text-end" data-label="Évalués">
+                        <div class="metric">{{ item.total_evaluated }}</div>
+                    </td>
+                    <td class="text-end" data-label="Cours publiés">
+                        <div class="metric">{{ item.active_courses }}</div>
+                        {% if item.total_courses > item.active_courses %}
+                        <div class="metric-label">{{ item.total_courses }} au total</div>
+                        {% endif %}
+                    </td>
+                    <td class="text-end" data-label="Réussite">
+                        {% if rate is not None %}
+                        <div class="metric {% if rate >= 70 %}rate-good{% elif rate >= 50 %}rate-mid{% else %}rate-bad{% endif %}">
+                            {{ rate }}%
+                        </div>
+                        {% else %}
+                        <div class="metric-label">Non disponible</div>
+                        {% endif %}
+                    </td>
+                    <td class="text-end" data-label="Statut">
+                        {% if rate is not None %}
+                            {% if rate >= 70 %}
+                            <span class="status-text status-good">Performante</span>
+                            {% elif rate >= 50 %}
+                            <span class="status-text status-mid">Sous vigilance</span>
+                            {% else %}
+                            <span class="status-text status-bad">En alerte</span>
+                            {% endif %}
+                        {% else %}
+                        <span class="status-text status-none">Sans rapport</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-province">
+        <h4>Aucun établissement</h4>
+        <p class="text-muted mb-4">
+            Aucune institution n’est encore rattachée à la province de
+            <strong>{{ province.name }}</strong> dans le référentiel national.
+        </p>
+        <a href="{% url 'super_admin:provincial_stats' %}" class="btn btn-navy">
+            Retour au pilotage national
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if has_chart_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const ctx = document.getElementById('provinceSuccessChart');
+    if (!ctx) return;
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels_json|safe }},
+            datasets: [
+                {
+                    label: 'Taux de réussite (%)',
+                    data: {{ chart_success_json|safe }},
+                    borderColor: '#0F172A',
+                    backgroundColor: 'rgba(15,23,42,.1)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4
+                },
+                {
+                    label: "Taux d'échec (%)",
+                    data: {{ chart_failure_json|safe }},
+                    borderColor: '#DC2626',
+                    borderDash: [5, 4],
+                    fill: false,
+                    tension: 0.35,
+                    pointRadius: 3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

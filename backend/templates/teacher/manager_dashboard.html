@@ -1,0 +1,167 @@
+{% extends "teacher/base.html" %}
+{% load static %}
+
+{% block title %}Décanat · Yekola{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft blue">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Enseignants</div>
+                    <div class="kpi-value">{{ teachers.count }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+            </div>
+            <div class="kpi-foot">Registre facultaire</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft green">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Actifs</div>
+                    <div class="kpi-value">{{ active_teachers_count }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-user-check"></i></div>
+            </div>
+            <div class="kpi-foot">Comptes ouverts</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft yellow">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Cours faculté</div>
+                    <div class="kpi-value">{{ faculty_courses|length }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-book"></i></div>
+            </div>
+            <div class="kpi-foot">Offre LMD</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft red">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">À affecter</div>
+                    <div class="kpi-value">{{ pending_courses|length }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+            </div>
+            <div class="kpi-foot">Sans enseignant</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-12">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2 class="mb-0"><i class="fa-solid fa-chart-bar me-2"></i>Barres horizontales · étudiants par promotion</h2>
+            </div>
+            <div class="able-card-body">
+                <p class="small text-muted mb-3">Effectifs étudiants dans chaque promotion LMD de votre faculté.</p>
+                <div class="able-chart-box" id="deanPromoHBarBox" style="height:320px;">
+                    <canvas id="deanPromoHBarChart" aria-label="Barres horizontales nombre d'étudiants par promotion"></canvas>
+                </div>
+                {% if not promotion_student_rows %}
+                <p class="text-muted small mb-0 mt-2 text-center">Aucune promotion enregistrée.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{{ promotion_student_rows|json_script:"promotion-student-rows" }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const rows = JSON.parse(document.getElementById('promotion-student-rows').textContent || '[]');
+    const ranked = [...rows].sort((a, b) => b.students - a.students);
+
+    Chart.defaults.font.family = "'Public Sans', 'DM Sans', sans-serif";
+    Chart.defaults.color = '#5B6B7F';
+
+    const maxStudents = ranked.reduce((m, r) => Math.max(m, r.students || 0), 0);
+    const barColor = (n) => {
+        if (maxStudents <= 0) return '#94a3b8';
+        const ratio = n / maxStudents;
+        if (ratio >= 0.66) return '#0A1628';
+        if (ratio >= 0.33) return '#1E3A5F';
+        return '#5B6B7F';
+    };
+
+    const hBox = document.getElementById('deanPromoHBarBox');
+    if (hBox && ranked.length) {
+        hBox.style.height = Math.max(260, ranked.length * 48 + 80) + 'px';
+    }
+
+    const ctx = document.getElementById('deanPromoHBarChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+
+    const labels = ranked.length ? ranked.map(r => r.name) : ['Aucune donnée'];
+    const data = ranked.length ? ranked.map(r => r.students) : [0];
+    const colors = ranked.length ? ranked.map(r => barColor(r.students)) : ['#94a3b8'];
+    const xMax = Math.max(5, Math.ceil((maxStudents || 1) * 1.15));
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: "Nombre d'étudiants",
+                data,
+                backgroundColor: colors,
+                borderRadius: 8,
+                maxBarThickness: 28,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        title(items) {
+                            const i = items[0]?.dataIndex;
+                            return (ranked[i] && ranked[i].full_name) || items[0]?.label || '';
+                        },
+                        label(ctx) {
+                            const n = ctx.parsed.x;
+                            return ` ${n} étudiant${n > 1 ? 's' : ''}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: xMax,
+                    ticks: { precision: 0 },
+                    grid: { color: '#e3eaf2' },
+                    title: {
+                        display: true,
+                        text: "Nombre d'étudiants",
+                        font: { weight: '600', size: 11 }
+                    }
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: { font: { size: 12, weight: '600' } }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

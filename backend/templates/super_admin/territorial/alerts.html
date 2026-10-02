@@ -1,0 +1,121 @@
+{% extends "super_admin/territorial_base.html" %}
+{% block title %}Alertes territoriales · Yekola{% endblock %}
+{% block page_title %}Alertes{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-4">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Alertes actives</div>
+                    <div class="kpi-value">{{ open_alerts|length }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-bell"></i></div>
+            </div>
+            <div class="kpi-foot"><i class="fa-solid fa-bolt"></i> À traiter</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Résolues (récentes)</div>
+                    <div class="kpi-value">{{ resolved|length }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="kpi-foot">Historique local</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Province</div>
+                    <div class="kpi-value" style="font-size:1.15rem;padding-top:.35rem;">{{ province.name }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-location-dot"></i></div>
+            </div>
+            <div class="kpi-foot">Périmètre de tutelle</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-7">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2>Alertes actives</h2>
+                <span class="able-badge low">{{ open_alerts|length }} ouvertes</span>
+            </div>
+            <div class="able-card-body">
+                {% for alert in open_alerts %}
+                <div class="able-fac-row" style="align-items:flex-start;">
+                    <div class="d-flex gap-3 flex-grow-1">
+                        <div class="av" style="width:40px;height:40px;border-radius:50%;background:rgba(255,83,112,.15);color:#e63956;display:grid;place-items:center;flex-shrink:0;">
+                            <i class="fa-solid fa-bell"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:800;color:#1d2630;">{{ alert.title }}</div>
+                            <div class="mt-1 d-flex flex-wrap gap-2 align-items-center">
+                                <span class="able-badge warn">{{ alert.get_alert_type_display }}</span>
+                                {% if alert.university %}
+                                <span class="able-badge muted">{{ alert.university.name }}</span>
+                                {% endif %}
+                                <small style="color:var(--able-muted);">{{ alert.created_at|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            {% if alert.message %}
+                            <p class="mb-0 mt-2 small" style="color:var(--able-text);">{{ alert.message }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <form method="POST" action="{% url 'super_admin:territorial_resolve_alert' alert.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="able-btn able-btn-primary able-btn-sm">
+                            <i class="fa-solid fa-check"></i> Résoudre
+                        </button>
+                    </form>
+                </div>
+                {% empty %}
+                <div class="text-center py-4">
+                    <div class="able-avatar mx-auto mb-3" style="background:rgba(29,233,182,.18);color:#0d9f7e;">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <p class="mb-0" style="font-weight:700;color:#1d2630;">Aucune alerte ouverte</p>
+                    <p class="small mb-0 mt-1" style="color:var(--able-muted);">Tout est sous contrôle pour le moment.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-5">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2>Récemment résolues</h2>
+            </div>
+            <div class="able-card-body">
+                {% if resolved %}
+                <ul class="able-timeline">
+                    {% for alert in resolved %}
+                    <li>
+                        <div class="when">{{ alert.resolved_at|date:"d/m/Y"|default:"—" }}</div>
+                        <div class="dot green"><i class="fa-solid fa-check"></i></div>
+                        <div class="txt">
+                            <strong>{{ alert.title }}</strong>
+                            {% if alert.university %}
+                            <br><span style="color:var(--able-muted);">{{ alert.university.name }}</span>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="mb-0 text-center py-3" style="color:var(--able-muted);">Aucune alerte résolue récemment.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

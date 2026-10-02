@@ -1,0 +1,532 @@
+classDiagram
+    direction TB
+
+    namespace "Referentiel national et territorial" {
+        class Province {
+            <<table lms_province>>
+            +id : Entier
+            +code : Texte
+            +cree_le : DateHeure
+        }
+        class FaculteNationale {
+            <<table lms_nationalfaculty>>
+            +id : Entier
+            +code : Texte
+            +nom : Texte
+            +est_actif : Booleen
+            +cree_le : DateHeure
+        }
+        class CoursNational {
+            <<table lms_nationalcourse>>
+            +id : Entier
+            +faculte_nationale : FK<FaculteNationale>
+            +code : Texte
+            +titre : Texte
+            +description : TexteLong
+            +credits : Entier+
+            +semestre : Entier
+            +est_actif : Booleen
+            +cree_le : DateHeure
+        }
+        class Universite {
+            <<table lms_university>>
+            +id : Entier
+            +nom : Texte
+            +province : FK<Province>
+            +enseignant : FK<Utilisateur>
+            +type_etablissement : Texte
+            +adresse : Texte
+            +telephone : Texte
+            +email : Texte
+            +capacite : Entier+
+            +saisie_notes_verrouillee : Booleen
+            +semestre1_cloture : Booleen
+            +semestre2_cloture : Booleen
+            +cree_le : DateHeure
+        }
+        class Faculte {
+            <<table lms_faculty>>
+            +id : Entier
+            +universite : FK<Universite>
+            +faculte_nationale : FK<FaculteNationale>
+            +nom : Texte
+        }
+        class Promotion {
+            <<table lms_promotion>>
+            +id : Entier
+            +faculte : FK<Faculte>
+            +nom : Texte
+        }
+        class GroupeClasse {
+            <<table lms_classgroup>>
+            +id : Entier
+            +promotion : FK<Promotion>
+            +nom : Texte
+        }
+    }
+
+    namespace "Acteurs et journalisation" {
+        class Utilisateur {
+            <<table lms_user>>
+            +id : Entier
+            +identifiant : Texte
+            +prenom : Texte
+            +nom : Texte
+            +email : Texte
+            +est_actif : Booleen
+            +role : Texte
+            +telephone : Texte
+            +matricule : Texte
+            +groupe_classe : FK<GroupeClasse>
+            +province_assignee : FK<Province>
+            +universite_assignee : FK<Universite>
+            +faculte_assignee : FK<Faculte>
+            +promotion_assignee : FK<Promotion>
+            +semestre_assigne : Entier
+            +firebase_uid : Texte
+            +profil_complete : Booleen
+            +sexe : Texte
+        }
+        class JournalAudit {
+            <<table lms_auditlog>>
+            +id : Entier
+            +utilisateur : FK<Utilisateur>
+            +action : Texte
+            +details : TexteLong
+            +adresse_ip : GenericIPAddressField
+            +horodatage : DateHeure
+        }
+        class Notification {
+            <<table lms_notification>>
+            +id : Entier
+            +titre : Texte
+            +message : TexteLong
+            +type : Texte
+            +utilisateur : FK<Utilisateur>
+            +cree_le : DateHeure
+        }
+    }
+
+    namespace "Pedagogie et enseignement" {
+        class Cours {
+            <<table lms_course>>
+            +id : Entier
+            +titre : Texte
+            +cours_national : FK<CoursNational>
+            +prerequisite_quiz : FK<Quiz>
+            +universite : FK<Universite>
+            +faculte : FK<Faculte>
+            +promotion : FK<Promotion>
+            +description : TexteLong
+            +credits : Entier+
+            +enseignant : FK<Utilisateur>
+            +assigned_to_dean : FK<Utilisateur>
+            +created_by : FK<Utilisateur>
+            +semestre : Entier
+            +cree_le : DateHeure
+            +is_published : Booleen
+            +price : Decimal
+            +is_free : Booleen
+            +thumbnail : Fichier
+        }
+        class Lecon {
+            <<table lms_lesson>>
+            +id : Entier
+            +cours : FK<Cours>
+            +titre : Texte
+            +content_type : Texte
+            +content_file : Fichier
+            +content_text : TexteLong
+            +ordre : Entier+
+        }
+        class Inscription {
+            <<table lms_enrollment>>
+            +id : Entier
+            +etudiant : FK<Utilisateur>
+            +cours : FK<Cours>
+            +enrolled_at : DateHeure
+            +progress : Decimal
+        }
+        class Evaluation {
+            <<table lms_evaluation>>
+            +id : Entier
+            +lecon : FK<Lecon>
+            +question : TexteLong
+            +option_a : Texte
+            +option_b : Texte
+            +option_c : Texte
+            +option_d : Texte
+            +correct_option : Texte
+        }
+        class NoteEvaluation {
+            <<table lms_grade>>
+            +id : Entier
+            +etudiant : FK<Utilisateur>
+            +lecon : FK<Lecon>
+            +score : Decimal
+            +termine_le : DateHeure
+        }
+        class TravailPratique {
+            <<table lms_assignment>>
+            +id : Entier
+            +cours : FK<Cours>
+            +enseignant : FK<Utilisateur>
+            +titre : Texte
+            +description : TexteLong
+            +date_limite : DateHeure
+            +cree_le : DateHeure
+        }
+        class SoumissionTP {
+            <<table lms_assignmentsubmission>>
+            +id : Entier
+            +travail : FK<TravailPratique>
+            +etudiant : FK<Utilisateur>
+            +fichier : Fichier
+            +soumis_le : DateHeure
+            +grade : Decimal
+            +grade_comment : TexteLong
+            +graded_at : DateHeure
+            +is_graded : Booleen
+        }
+        class RessourceExterne {
+            <<table lms_externalresource>>
+            +id : Entier
+            +titre : Texte
+            +description : TexteLong
+            +url : Texte
+            +thumbnail_url : Texte
+            +thumbnail : Fichier
+            +categorie : Texte
+            +cree_le : DateHeure
+        }
+        class SessionLive {
+            <<table lms_livesession>>
+            +id : Entier
+            +cours : FK<Cours>
+            +enseignant : FK<Utilisateur>
+            +room_name : Texte
+            +est_actif : Booleen
+            +commence_le : DateHeure
+            +ended_at : DateHeure
+        }
+    }
+
+    namespace "Cotation LMD" {
+        class CotationEtudiant {
+            <<table lms_studentaudit>>
+            +id : Entier
+            +etudiant : FK<Utilisateur>
+            +enseignant : FK<Utilisateur>
+            +cours : FK<Cours>
+            +nom_complet : Texte
+            +note_tp : Decimal
+            +note_interro : Decimal
+            +note_examen : Decimal
+            +statut : Texte
+            +modifie_le : DateHeure
+        }
+        class NoteCours {
+            <<table lms_coursegrade>>
+            +id : Entier
+            +etudiant : FK<Utilisateur>
+            +cours : FK<Cours>
+            +moyenne_quiz : Decimal
+            +note_interrogation : Decimal
+            +note_examen : Decimal
+            +note_finale : Decimal
+            +statut : Texte
+            +cree_le : DateHeure
+            +modifie_le : DateHeure
+        }
+    }
+
+    namespace "Evaluations quiz" {
+        class Quiz {
+            <<table lms_quiz>>
+            +id : Entier
+            +id_code : UUIDField
+            +cours : FK<Cours>
+            +lecon : FK<Lecon>
+            +titre : Texte
+            +description : TexteLong
+            +time_limit : Entier+
+            +cree_le : DateHeure
+            +is_published : Booleen
+            +quiz_type : Texte
+            +ordre : Entier+
+        }
+        class QuestionQuiz {
+            <<table lms_quizquestion>>
+            +id : Entier
+            +quiz : FK<Quiz>
+            +texte : TexteLong
+            +points : Entier+
+        }
+        class ChoixQuiz {
+            <<table lms_quizchoice>>
+            +id : Entier
+            +question : FK<QuestionQuiz>
+            +texte : Texte
+            +est_correct : Booleen
+        }
+        class TentativeQuiz {
+            <<table lms_quizattempt>>
+            +id : Entier
+            +quiz : FK<Quiz>
+            +etudiant : FK<Utilisateur>
+            +score : Decimal
+            +session : Texte
+            +commence_le : DateHeure
+            +termine_le : DateHeure
+        }
+    }
+
+    namespace "Interactions sociales et chat" {
+        class LikeCours {
+            <<table lms_courselike>>
+            +id : Entier
+            +utilisateur : FK<Utilisateur>
+            +cours : FK<Cours>
+            +cree_le : DateHeure
+        }
+        class CommentaireCours {
+            <<table lms_coursecomment>>
+            +id : Entier
+            +utilisateur : FK<Utilisateur>
+            +cours : FK<Cours>
+            +parent : FK<CommentaireCours>
+            +contenu : TexteLong
+            +cree_le : DateHeure
+        }
+        class FavoriCours {
+            <<table lms_coursefavorite>>
+            +id : Entier
+            +utilisateur : FK<Utilisateur>
+            +cours : FK<Cours>
+            +cree_le : DateHeure
+        }
+        class SuiviEnseignant {
+            <<table lms_teacherfollow>>
+            +id : Entier
+            +etudiant : FK<Utilisateur>
+            +enseignant : FK<Utilisateur>
+            +cree_le : DateHeure
+        }
+        class LikeLecon {
+            <<table lms_lessonlike>>
+            +id : Entier
+            +utilisateur : FK<Utilisateur>
+            +lecon : FK<Lecon>
+            +cree_le : DateHeure
+        }
+        class CommentaireLecon {
+            <<table lms_lessoncomment>>
+            +id : Entier
+            +utilisateur : FK<Utilisateur>
+            +lecon : FK<Lecon>
+            +parent : FK<CommentaireLecon>
+            +contenu : TexteLong
+            +cree_le : DateHeure
+        }
+        class FavoriLecon {
+            <<table lms_lessonfavorite>>
+            +id : Entier
+            +utilisateur : FK<Utilisateur>
+            +lecon : FK<Lecon>
+            +cree_le : DateHeure
+        }
+        class SalonDiscussion {
+            <<table lms_chatroom>>
+            +id : Entier
+            +nom : Texte
+            +cours : FK<Cours>
+            +is_group : Booleen
+            +cree_le : DateHeure
+        }
+        class MessageChat {
+            <<table lms_chatmessage>>
+            +id : Entier
+            +salon : FK<SalonDiscussion>
+            +expediteur : FK<Utilisateur>
+            +contenu : TexteLong
+            +cree_le : DateHeure
+            +est_lu : Booleen
+        }
+    }
+
+    namespace "Remontee provinciale et nationale" {
+        class RapportFaculte {
+            <<table super_admin_facultyreport>>
+            +id : Entier
+            +titre : Texte
+            +universite : FK<Universite>
+            +faculte : FK<Faculte>
+            +annee_academique : Texte
+            +total_etudiants : Entier
+            +etudiants_reussis : Entier
+            +etudiants_echecs : Entier
+            +soumis_par : FK<Utilisateur>
+            +soumis_le : DateHeure
+            +est_valide : Booleen
+            +valide_le : DateHeure
+        }
+        class RapportResultatsSemestre {
+            <<table super_admin_semesterresultreport>>
+            +id : Entier
+            +universite : FK<Universite>
+            +faculte : FK<Faculte>
+            +promotion : FK<Promotion>
+            +semestre : Entier+
+            +annee_academique : Texte
+            +titre : Texte
+            +credits_reference : Entier+
+            +credits_semestre_reference : Entier+
+            +total_etudiants : Entier
+            +etudiants_reussis : Entier
+            +etudiants_echecs : Entier
+            +soumis_par : FK<Utilisateur>
+            +soumis_le : DateHeure
+        }
+        class LigneResultatSemestre {
+            <<table super_admin_semesterresultline>>
+            +id : Entier
+            +rapport : FK<RapportResultatsSemestre>
+            +etudiant : FK<Utilisateur>
+            +nom_complet : Texte
+            +libelle_promotion : Texte
+            +libelle_faculte : Texte
+            +credits_s1_obtenus : Entier+
+            +credits_s1_total : Entier+
+            +credits_s2_obtenus : Entier+
+            +credits_s2_total : Entier+
+            +credits_obtenus : Entier+
+            +credits_total : Entier+
+            +resultat : Texte
+        }
+        class RapportUniversite {
+            <<table super_admin_universityreport>>
+            +id : Entier
+            +titre : Texte
+            +universite : FK<Universite>
+            +annee_academique : Texte
+            +total_etudiants : Entier
+            +etudiants_reussis : Entier
+            +etudiants_echecs : Entier
+            +soumis_par : FK<Utilisateur>
+            +soumis_le : DateHeure
+            +est_valide : Booleen
+            +valide_le : DateHeure
+        }
+        class RapportProvincial {
+            <<table super_admin_provincialreport>>
+            +id : Entier
+            +titre : Texte
+            +province : FK<Province>
+            +annee_academique : Texte
+            +total_universites : Entier
+            +total_etudiants : Entier
+            +etudiants_reussis : Entier
+            +etudiants_echecs : Entier
+            +universites_ayant_rapporte : Entier
+            +universites_en_attente : Entier
+            +soumis_par : FK<Utilisateur>
+            +soumis_le : DateHeure
+            +est_valide : Booleen
+            +valide_le : DateHeure
+        }
+        class AlerteTerritoriale {
+            <<table super_admin_territorialalert>>
+            +id : Entier
+            +province : FK<Province>
+            +universite : FK<Universite>
+            +type_alerte : Texte
+            +titre : Texte
+            +message : TexteLong
+            +est_resolue : Booleen
+            +cree_le : DateHeure
+            +resolue_le : DateHeure
+        }
+    }
+
+    %% Associations
+    CoursNational "*" --> "1" FaculteNationale : faculte_nationale
+    Universite "*" --> "1" Province : province
+    Universite "*" --> "1" Utilisateur : enseignant
+    Faculte "*" --> "1" Universite : universite
+    Faculte "*" --> "1" FaculteNationale : faculte_nationale
+    Promotion "*" --> "1" Faculte : faculte
+    GroupeClasse "*" --> "1" Promotion : promotion
+    Utilisateur "*" --> "1" GroupeClasse : groupe_classe
+    Utilisateur "*" --> "1" Province : province_assignee
+    Utilisateur "*" --> "1" Universite : universite_assignee
+    Utilisateur "*" --> "1" Faculte : faculte_assignee
+    Utilisateur "*" --> "1" Promotion : promotion_assignee
+    Utilisateur "*" --> "*" Promotion : promotions_assignees
+    JournalAudit "*" --> "1" Utilisateur : utilisateur
+    Notification "*" --> "1" Utilisateur : utilisateur
+    Cours "*" --> "1" CoursNational : cours_national
+    Cours "*" --> "1" Quiz : prerequisite_quiz
+    Cours "*" --> "1" Universite : universite
+    Cours "*" --> "1" Faculte : faculte
+    Cours "*" --> "1" Promotion : promotion
+    Cours "*" --> "1" Utilisateur : enseignant
+    Cours "*" --> "1" Utilisateur : assigned_to_dean
+    Cours "*" --> "1" Utilisateur : created_by
+    Lecon "*" --> "1" Cours : cours
+    Inscription "*" --> "1" Utilisateur : etudiant
+    Inscription "*" --> "1" Cours : cours
+    Evaluation "*" --> "1" Lecon : lecon
+    NoteEvaluation "*" --> "1" Utilisateur : etudiant
+    NoteEvaluation "*" --> "1" Lecon : lecon
+    TravailPratique "*" --> "1" Cours : cours
+    TravailPratique "*" --> "1" Utilisateur : enseignant
+    SoumissionTP "*" --> "1" TravailPratique : travail
+    SoumissionTP "*" --> "1" Utilisateur : etudiant
+    SessionLive "*" --> "1" Cours : cours
+    SessionLive "*" --> "1" Utilisateur : enseignant
+    CotationEtudiant "*" --> "1" Utilisateur : etudiant
+    CotationEtudiant "*" --> "1" Utilisateur : enseignant
+    CotationEtudiant "*" --> "1" Cours : cours
+    NoteCours "*" --> "1" Utilisateur : etudiant
+    NoteCours "*" --> "1" Cours : cours
+    Quiz "*" --> "1" Cours : cours
+    Quiz "1" --> "1" Lecon : lecon
+    QuestionQuiz "*" --> "1" Quiz : quiz
+    ChoixQuiz "*" --> "1" QuestionQuiz : question
+    TentativeQuiz "*" --> "1" Quiz : quiz
+    TentativeQuiz "*" --> "1" Utilisateur : etudiant
+    LikeCours "*" --> "1" Utilisateur : utilisateur
+    LikeCours "*" --> "1" Cours : cours
+    CommentaireCours "*" --> "1" Utilisateur : utilisateur
+    CommentaireCours "*" --> "1" Cours : cours
+    CommentaireCours "*" --> "1" CommentaireCours : parent
+    FavoriCours "*" --> "1" Utilisateur : utilisateur
+    FavoriCours "*" --> "1" Cours : cours
+    SuiviEnseignant "*" --> "1" Utilisateur : etudiant
+    SuiviEnseignant "*" --> "1" Utilisateur : enseignant
+    LikeLecon "*" --> "1" Utilisateur : utilisateur
+    LikeLecon "*" --> "1" Lecon : lecon
+    CommentaireLecon "*" --> "1" Utilisateur : utilisateur
+    CommentaireLecon "*" --> "1" Lecon : lecon
+    CommentaireLecon "*" --> "1" CommentaireLecon : parent
+    FavoriLecon "*" --> "1" Utilisateur : utilisateur
+    FavoriLecon "*" --> "1" Lecon : lecon
+    SalonDiscussion "*" --> "1" Cours : cours
+    SalonDiscussion "*" --> "*" Utilisateur : participants
+    MessageChat "*" --> "1" SalonDiscussion : salon
+    MessageChat "*" --> "1" Utilisateur : expediteur
+    RapportFaculte "*" --> "1" Universite : universite
+    RapportFaculte "*" --> "1" Faculte : faculte
+    RapportFaculte "*" --> "1" Utilisateur : soumis_par
+    RapportResultatsSemestre "*" --> "1" Universite : universite
+    RapportResultatsSemestre "*" --> "1" Faculte : faculte
+    RapportResultatsSemestre "*" --> "1" Promotion : promotion
+    RapportResultatsSemestre "*" --> "1" Utilisateur : soumis_par
+    LigneResultatSemestre "*" --> "1" RapportResultatsSemestre : rapport
+    LigneResultatSemestre "*" --> "1" Utilisateur : etudiant
+    RapportUniversite "*" --> "1" Universite : universite
+    RapportUniversite "*" --> "1" Utilisateur : soumis_par
+    RapportProvincial "*" --> "1" Province : province
+    RapportProvincial "*" --> "1" Utilisateur : soumis_par
+    AlerteTerritoriale "*" --> "1" Province : province
+    AlerteTerritoriale "*" --> "1" Universite : universite

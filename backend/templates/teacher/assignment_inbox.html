@@ -1,0 +1,57 @@
+{% extends 'teacher/base.html' %}
+{% block title %}TPs · Portail Enseignant{% endblock %}
+{% block page_title %}Travaux pratiques{% endblock %}
+
+{% block content %}
+
+<div class="campus-page-intro d-flex flex-wrap justify-content-between align-items-end gap-3">
+  <div>
+    <div class="eyebrow">Espace enseignant</div>
+    <h1>Travaux pratiques</h1>
+    <p>Sujets publiés, remises étudiants et correction des notes.</p>
+  </div>
+  <button class="able-btn able-btn-primary" data-bs-toggle="modal" data-bs-target="#createTPModal">
+    <i class="fa-solid fa-plus"></i> Créer un TP
+  </button>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="able-kpi soft"><div class="kpi-top"><div><div class="kpi-label">Cours</div><div class="kpi-value">{{ courses|length }}</div></div><div class="kpi-icon"><i class="fa-solid fa-book"></i></div></div><div class="kpi-foot">Avec publication active</div></div></div>
+  <div class="col-md-4"><div class="able-kpi soft"><div class="kpi-top"><div><div class="kpi-label">TPs</div><div class="kpi-value">{{ assignments_data|length }}</div></div><div class="kpi-icon"><i class="fa-solid fa-file-signature"></i></div></div><div class="kpi-foot">Sujets créés</div></div></div>
+  <div class="col-md-4"><div class="able-kpi soft"><div class="kpi-top"><div><div class="kpi-label">À corriger</div><div class="kpi-value" id="pendingCount">—</div></div><div class="kpi-icon"><i class="fa-solid fa-marker"></i></div></div><div class="kpi-foot">Soumissions non notées</div></div></div>
+</div>
+
+<div class="modal fade" id="createTPModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header border-0"><h5 class="modal-title fw-bold">Créer un travail pratique</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><form method="POST" action="{% url 'teacher_create_assignment' %}">{% csrf_token %}<div class="modal-body"><div class="row g-3"><div class="col-md-6"><label class="able-label">Cours associé</label><select name="course_id" class="able-input" required><option value="">Sélectionnez…</option>{% for c in courses %}<option value="{{ c.id }}">{{ c.title }}{% if c.promotion %} · {{ c.promotion.display_label }}{% endif %}</option>{% endfor %}</select></div><div class="col-md-6"><label class="able-label">Date limite</label><input type="datetime-local" name="due_date" class="able-input" required></div><div class="col-12"><label class="able-label">Titre du TP</label><input type="text" name="title" class="able-input" required></div><div class="col-12"><label class="able-label">Consignes</label><textarea name="description" class="able-input" rows="3"></textarea></div></div></div><div class="modal-footer border-0"><button type="button" class="able-btn able-btn-outline" data-bs-dismiss="modal">Annuler</button><button type="submit" class="able-btn able-btn-primary">Créer le sujet</button></div></form></div></div>
+</div>
+
+{% if not assignments_data %}
+<div class="able-card"><div class="able-card-body text-center py-5"><div class="able-avatar mx-auto mb-3" style="background:var(--able-blue-soft);color:var(--able-blue);"><i class="fa-solid fa-folder-open"></i></div><div style="font-weight:700;color:#1d2630;">Aucun TP créé</div><div class="small mt-1" style="color:var(--able-muted);">Lancez votre premier sujet pour évaluer vos étudiants.</div></div></div>
+{% else %}
+{% for data in assignments_data %}
+<div class="able-card mb-3">
+  <div class="able-card-head"><h2>{{ data.assignment.title }}</h2><div class="d-flex gap-2 align-items-center"><span class="able-badge high">{{ data.course.title }}</span>{% if data.course.promotion %}<span class="able-badge muted">{{ data.course.promotion.display_label }}</span>{% endif %}<a href="{% url 'teacher_delete_assignment' data.assignment.id %}" class="able-btn able-btn-danger able-btn-sm" onclick="return confirm('Supprimer ce TP ?')"><i class="fa-solid fa-trash"></i></a></div></div>
+  <div class="able-card-body"><div class="d-flex flex-wrap gap-3 mb-3"><span class="able-badge high">{{ data.total }} reçus</span><span class="able-badge warn pending-badge">{{ data.pending }} à corriger</span>{% if data.assignment.due_date %}<span class="able-badge muted">Échéance : {{ data.assignment.due_date|date:"d/m/Y H:i" }}</span>{% endif %}</div>{% if data.assignment.description %}<p class="small" style="color:var(--able-muted);">{{ data.assignment.description }}</p>{% endif %}</div>
+  {% if data.submissions %}<div class="table-responsive"><table class="able-table"><thead><tr><th>Étudiant</th><th>Pièce jointe</th><th>Remise</th><th>Évaluation</th><th></th></tr></thead><tbody>{% for sub in data.submissions %}<tr><td><div class="able-person"><div class="av">{{ sub.student.username|slice:':1'|upper }}</div><div><strong>{{ sub.student.username }}</strong><small>{{ sub.student.email }}</small></div></div></td><td>{% if sub.file %}<a href="{{ sub.file.url }}" target="_blank" class="able-btn able-btn-outline able-btn-sm">Consulter</a>{% else %}<span class="able-badge muted">Introuvable</span>{% endif %}</td><td>{{ sub.submitted_at|date:"d/m/Y H:i" }}</td><td>{% if sub.is_graded %}<span class="able-badge medium">{{ sub.grade }}/20</span>{% else %}<span class="able-badge warn">En attente</span>{% endif %}</td><td class="text-end"><button class="able-btn able-btn-primary able-btn-sm" onclick="toggleGradeForm({{ sub.id }})">{% if sub.is_graded %}Rectifier{% else %}Noter{% endif %}</button></td></tr><tr id="grade-row-{{ sub.id }}" style="display:none;background:#f8fafc;"><td colspan="5"><div class="p-3"><form method="POST" action="{% url 'teacher_grade_submission' sub.id %}" class="row g-3 align-items-end">{% csrf_token %}<div class="col-md-7"><label class="able-label">Commentaire</label><textarea name="grade_comment" class="able-input" rows="2">{{ sub.grade_comment|default:'' }}</textarea></div><div class="col-md-3"><label class="able-label">Note</label><input type="number" name="grade" class="able-input" min="0" max="20" step="0.5" value="{{ sub.grade|default:'' }}" required></div><div class="col-md-2 d-flex gap-2"><button type="button" class="able-btn able-btn-outline able-btn-sm" onclick="toggleGradeForm({{ sub.id }})">Fermer</button><button type="submit" class="able-btn able-btn-primary able-btn-sm">Sauver</button></div></form></div></td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="able-card-body text-center py-4" style="color:var(--able-muted);">Aucun étudiant n'a encore rendu son travail.</div>{% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleGradeForm(subId) {
+  var row = document.getElementById('grade-row-' + subId);
+  if (row) row.style.display = (row.style.display === 'none' || row.style.display === '') ? 'table-row' : 'none';
+}
+document.addEventListener('DOMContentLoaded', function () {
+  let total = 0;
+  document.querySelectorAll('.pending-badge').forEach(el => {
+    const m = el.textContent.match(/\d+/);
+    if (m) total += parseInt(m[0], 10);
+  });
+  const c = document.getElementById('pendingCount');
+  if (c) c.textContent = total;
+});
+</script>
+{% endblock %}

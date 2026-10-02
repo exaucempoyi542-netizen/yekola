@@ -1,0 +1,181 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block page_title %}Centre de Diffusion{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in mb-5">
+    <div class="d-flex justify-content-end mb-4">
+        <div class="stat-card py-2 px-4 shadow-sm border-0 d-flex align-items-center bg-white"
+            style="border-radius: 20px;">
+            <div class="pulse-indicator bg-gold me-3"></div>
+            <span class="extra-small fw-900 text-navy text-uppercase letter-spacing-1">{{ active_lives.count }}
+                Session(s) en Ligne</span>
+        </div>
+    </div>
+
+    <!-- Live Launch Terminal -->
+    <div class="premium-card p-4 p-md-5 border-0 shadow-lg mb-5" style="border-bottom: 5px solid var(--gold);">
+        <div class="mb-5">
+            <h4 class="fw-900 text-navy mb-2">Initialisation de Session Interactive</h4>
+            <p class="text-muted extra-small fw-800 text-uppercase letter-spacing-1 max-width-600">Sélectionnez une
+                unité d'enseignement pour ouvrir une passerelle de diffusion synchrone.</p>
+        </div>
+
+        <div class="row g-4">
+            {% for course in courses %}
+            <div class="col-12 col-md-6 col-xxl-4">
+                <div class="premium-card p-4 border bg-ivory h-100 d-flex flex-column"
+                    style="transition: var(--transition);">
+                    <div class="icon-square bg-navy text-gold mb-4"
+                        style="width: 52px; height: 52px; border-radius: 14px; font-size: 1.2rem;">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h6 class="fw-900 text-navy mb-1 text-truncate">{{ course.title }}</h6>
+                    <div class="text-gold extra-small fw-800 text-uppercase letter-spacing-1 mb-4">
+                        {{ course.enrollments.count }} Étudiants Ciblés
+                    </div>
+
+                    <div class="mt-auto">
+                        <button class="btn-ministerial-gold w-100 py-3 shadow-sm live-start-btn"
+                            data-id="{{ course.id }}" style="height: 54px;">
+                            <i class="fas fa-video me-2"></i> Lancer le Direct
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5 opacity-50">
+                <div class="icon-square bg-ivory text-muted mx-auto mb-4"
+                    style="width: 80px; height: 80px; border-radius: 20px;"><i class="fas fa-video-slash fs-2"></i>
+                </div>
+                <h5 class="fw-900 text-navy">Aucune Passerelle Disponible</h5>
+                <p class="extra-small fw-800 text-uppercase letter-spacing-1">La publication d'une formation est requise
+                    pour activer le mode direct.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Monitoring Active Streams -->
+    {% if active_lives %}
+    <div class="mt-5">
+        <h5 class="fw-900 text-navy mb-4 px-2 d-flex align-items-center">
+            <i class="fas fa-satellite-dish text-gold me-3"></i> Monitorat des Sessions Actives
+        </h5>
+        <div class="premium-card border-0 shadow-lg overflow-hidden p-0">
+            <div class="table-responsive">
+                <table class="premium-table table-hover align-middle mb-0">
+                    <tbody class="border-0">
+                        {% for live in active_lives %}
+                        <tr class="animate-fade-in">
+                            <td class="ps-5 py-4">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="pulse-indicator bg-danger"></div>
+                                    <div>
+                                        <div class="fw-900 text-navy mb-0">{{ live.course.title }}</div>
+                                        <div class="text-muted extra-small fw-bold opacity-75">
+                                            SIGNAL ÉTABLI À {{ live.started_at|date:"H:i" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge-premium bg-danger text-white px-3"
+                                    style="font-size:0.6rem; animation: flash 1.5s infinite;">EN DIRECT</span>
+                            </td>
+                            <td class="text-end pe-5">
+                                <a href="{% url 'teacher_live_room' live.id %}"
+                                    class="btn btn-navy text-white fw-900 extra-small text-uppercase py-2 px-4 bg-navy rounded-pill">
+                                    Rejoindre le Flux
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .pulse-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        animation: pulse-gold 2s infinite;
+    }
+
+    @keyframes pulse-gold {
+        0% {
+            box-shadow: 0 0 0 0 rgba(197, 160, 89, 0.7);
+        }
+
+        70% {
+            box-shadow: 0 0 0 10px rgba(197, 160, 89, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(197, 160, 89, 0);
+        }
+    }
+
+    @keyframes pulse-red {
+        0% {
+            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+        }
+
+        70% {
+            box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+        }
+    }
+
+    @keyframes flash {
+        50% {
+            opacity: 0.6;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.live-start-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const courseId = this.getAttribute('data-id');
+                startLive(courseId, this);
+            });
+        });
+    });
+
+    async function startLive(courseId, btn) {
+        if (!confirm("Activer la salle de diffusion institutionnelle ?")) return;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-compass fa-spin me-2"></i> Synchronisation...';
+        try {
+            const response = await fetch(`/api/courses/${courseId}/start_live/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                window.location.href = `/teacher/live/${data.id}/`;
+            } else {
+                alert("Échec de l'initialisation du signal.");
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-video me-2"></i> Lancer le Direct';
+            }
+        } catch (e) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-video me-2"></i> Lancer le Direct';
+        }
+    }
+</script>
+{% endblock %}

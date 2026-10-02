@@ -1,0 +1,225 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block page_title %}Pilotage des Évaluations{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in mb-5">
+    <div class="d-flex flex-wrap justify-content-end align-items-center gap-3 mb-4">
+        <a href="{% url 'teacher_dashboard' %}" class="able-btn able-btn-outline">Retour</a>
+        <button class="btn-ministerial-gold shadow-sm px-4" data-bs-toggle="modal" data-bs-target="#createQuizModal">
+            <i class="fas fa-plus-circle me-2"></i> Initialiser un Quiz
+        </button>
+    </div>
+
+    <!-- Analytics Quick View -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="stat-card h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-square bg-ivory text-navy border" style="width:44px; height:44px; font-size:1rem;">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div>
+                        <div class="extra-small fw-800 text-muted text-uppercase">Total Quiz</div>
+                        <div class="fw-900 text-navy h5 mb-0">{{ quizzes.count }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Registry Grid -->
+    <div class="row g-4">
+        {% if quizzes %}
+        {% for quiz in quizzes %}
+        <div class="col-12 col-md-6 col-xxl-4">
+            <div class="premium-card p-4 h-100 d-flex flex-column shadow-sm">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div class="icon-square bg-navy text-gold"
+                        style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.2rem;">
+                        <i class="fas fa-file-invoice"></i>
+                    </div>
+                    <div class="text-end">
+                        {% if quiz.is_published %}
+                        <span class="badge-premium badge-gold mb-1" style="font-size: 0.6rem;">
+                            <i class="fas fa-broadcast-tower me-1"></i> Opérationnel
+                        </span>
+                        {% else %}
+                        <span class="badge-premium border text-muted mb-1" style="font-size: 0.6rem;">
+                            <i class="fas fa-pen-nib me-1"></i> Brouillon
+                        </span>
+                        {% endif %}
+
+                        {% if quiz.quiz_type  ==  'EVALUATION' %}
+                        <div class="extra-small fw-900 text-danger text-uppercase letter-spacing-1"
+                            style="font-size: 0.55rem;">
+                            <i class="fas fa-shield-halved me-1"></i> Bloquant
+                        </div>
+                        {% else %}
+                        <div class="extra-small fw-900 text-navy text-uppercase letter-spacing-1"
+                            style="font-size: 0.55rem;">
+                            <i class="fas fa-dumbbell me-1"></i> Exercice
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <h5 class="fw-900 text-navy mb-2">{{ quiz.title }}</h5>
+                <p class="text-muted extra-small fw-bold opacity-75 mb-4"
+                    style="line-height: 1.5; min-height: 2.25rem;">
+                    {{ quiz.description|default:"Aucune directive stratégique fournie."|truncatechars:100 }}
+                </p>
+
+                <div class="d-flex gap-4 mb-4 pt-3 border-top border-slate-light">
+                    <div class="d-flex align-items-center text-navy extra-small fw-900">
+                        <i class="fas fa-clock me-2 text-gold"></i> {{ quiz.time_limit }} MIN
+                    </div>
+                    <div class="d-flex align-items-center text-navy extra-small fw-900">
+                        <i class="fas fa-list-check me-2 text-gold"></i> {{ quiz.questions.count }} ITEMS
+                    </div>
+                </div>
+
+                <div class="mt-auto pt-3 d-grid gap-2">
+                    <a href="{% url 'teacher_quiz_edit' quiz.id %}"
+                        class="btn btn-navy text-white fw-800 extra-small text-uppercase py-3 rounded-3 shadow-sm bg-navy">
+                        <i class="fas fa-layer-group me-2"></i> Structurer les Items
+                    </a>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'teacher_quiz_results' quiz.id %}"
+                            class="btn btn-ivory border flex-grow-1 py-2 fw-800 extra-small text-uppercase text-navy"
+                            style="border-radius: 10px;">
+                            <i class="fas fa-chart-pie me-1 text-gold"></i> Scores
+                        </a>
+                        <button
+                            class="btn btn-ivory border flex-grow-1 py-2 fw-800 extra-small text-uppercase text-navy share-quiz-btn"
+                            data-code="{{ quiz.id_code }}" style="border-radius: 10px;">
+                            <i class="fas fa-share-alt me-1 text-gold"></i> Mobile
+                        </button>
+                    </div>
+                    <a href="{% url 'teacher_quiz_toggle_publish' quiz.id %}"
+                        class="btn {% if quiz.is_published %}btn-outline-warning{% else %}btn-outline-navy{% endif %} w-100 py-2 mt-1 fw-900 extra-small text-uppercase letter-spacing-1 rounded-pill">
+                        {% if quiz.is_published %}
+                        <i class="fas fa-eye-slash me-2"></i> Désactiver
+                        {% else %}
+                        <i class="fas fa-rocket me-2"></i> Mettre en ligne
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <div class="icon-square bg-ivory text-muted mx-auto mb-4" style="width:80px; height:80px;"><i
+                    class="fas fa-clipboard-question fs-1"></i></div>
+            <h4 class="fw-900 text-navy">Aucun test d'évaluation</h4>
+            <p class="text-muted extra-small fw-800 text-uppercase mb-4">La validation des acquis est une étape cruciale
+                du cycle LMD.</p>
+            <button class="btn-ministerial-gold shadow-md" data-bs-toggle="modal"
+                data-bs-target="#createQuizModal">Lancer la Création</button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Initialisation Quiz -->
+<div class="modal fade" id="createQuizModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="bg-navy p-4 text-white d-flex justify-content-between align-items-center">
+                <h5 class="fw-900 mb-0">Initialisation de Quiz</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-4">
+                        <label class="form-label">Titre Stratégique</label>
+                        <input type="text" name="title" class="ministerial-input w-100" placeholder="ex: Examen Final"
+                            required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Directive Pédagogique</label>
+                        <textarea name="description" class="ministerial-input w-100" rows="3"
+                            placeholder="Instructions pour les agents..."></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Type de Contrôle</label>
+                        <select name="quiz_type" class="ministerial-input w-100 form-select">
+                            <option value="EVALUATION" selected>🎯 Quiz de Validation (LMD Standard)</option>
+                            <option value="SIMPLE">📝 Exercice de Renforcement</option>
+                        </select>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">Temps Limite (Min)</label>
+                            <input type="number" name="time_limit" class="ministerial-input w-100" value="30" min="1"
+                                required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Ordre Séquentiel</label>
+                            <input type="number" name="order" class="ministerial-input w-100" value="1" min="1"
+                                required>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 border-top">
+                    <button type="submit" class="btn-ministerial-gold w-100 py-3 shadow-sm">Confirmer l'Archivage <i
+                            class="fas fa-check-circle ms-2"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Partage Mobile -->
+<div class="modal fade" id="shareLinkModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="bg-navy p-4 text-white d-flex justify-content-between align-items-center">
+                <h5 class="fw-900 mb-0">Interfaçage Mobile</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div id="qrcode" class="d-inline-block p-4 bg-white border rounded-4 mb-4 shadow-sm"></div>
+                <div class="bg-ivory p-3 mb-4 rounded-3 text-start border">
+                    <div class="extra-small fw-800 text-muted text-uppercase mb-1">Passerelle Numérique</div>
+                    <code id="shareLinkCode" class="text-navy fw-900"
+                        style="word-break: break-all; font-size: 0.8rem;">---</code>
+                </div>
+                <button class="btn-ministerial w-100 py-3 shadow-sm" onclick="copyShareLink()">
+                    <i class="fas fa-copy me-2"></i> Copier la Passerelle
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.share-quiz-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const code = this.getAttribute('data-code');
+                showShareLink(code);
+            });
+        });
+    });
+
+    function showShareLink(code) {
+        const fullUrl = `${window.location.origin}/quiz/${code}/`;
+        document.getElementById('shareLinkCode').innerText = fullUrl;
+        const qrContainer = document.getElementById('qrcode');
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, { text: fullUrl, width: 220, height: 220, colorDark: '#0f172a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
+        new bootstrap.Modal(document.getElementById('shareLinkModal')).show();
+    }
+    function copyShareLink() {
+        navigator.clipboard.writeText(document.getElementById('shareLinkCode').innerText);
+        alert('Passerelle copiée !');
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "super_admin/base.html" %}
+{% load static %}
+
+{% block title %}Gestion des Provinces | Yekola Pro{% endblock %}
+
+{% block extra_css %}
+<style>
+    .province-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .province-item-card {
+        background: white;
+        border-radius: 24px;
+        border: 1px solid var(--slate-light);
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: var(--transition);
+    }
+
+    .province-item-card:hover {
+        border-color: var(--gold);
+        transform: translateY(-3px);
+    }
+
+    .prov-badge {
+        background: var(--navy);
+        color: var(--gold);
+        padding: 8px 12px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Gestion des Zones Provinciales{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+
+    <div class="executive-card mb-4 p-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <div class="fw-800 text-dark">Réseau territorial</div>
+            <div class="text-muted small">{{ total_provinces }} / {{ expected_provinces }} provinces RDC configurées</div>
+        </div>
+        <form action="{% url 'super_admin:admin_add_province' %}" method="POST" class="d-flex flex-wrap gap-2">
+            {% csrf_token %}
+            <select name="code" class="ministerial-input" required>
+                <option value="">Choisir une province…</option>
+                {% for code, label in rdc_provinces %}
+                <option value="{{ code }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-gold px-4 fw-800">Synchroniser / Ajouter</button>
+        </form>
+    </div>
+
+    <div class="province-grid">
+        {% for prov in provinces %}
+        <div class="province-item-card shadow-sm">
+            <div class="d-flex align-items-center gap-3">
+                <div class="prov-badge">{{ prov.code|slice:":3"|upper }}</div>
+                <div>
+                    <h6 class="fw-800 text-dark mb-0">{{ prov.name|default:prov.code }}</h6>
+                    <span class="text-muted extra-small fw-bold">ZONE ACTIVE</span>
+                </div>
+            </div>
+            <i class="fa-solid fa-circle-check text-emerald fs-5"></i>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="text-muted extra-small fw-bold">AUCUNE PROVINCE CONFIGURÉE</div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

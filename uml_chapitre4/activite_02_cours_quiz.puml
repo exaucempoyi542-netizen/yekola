@@ -1,0 +1,67 @@
+@startuml Activite_Cours_Quiz
+!theme plain
+skinparam activityFontSize 12
+skinparam activityFontColor #111111
+skinparam activityBackgroundColor #BBDEFB
+skinparam activityBorderColor #1565C0
+skinparam activityBorderThickness 1.5
+skinparam activityDiamondBackgroundColor #FFD94A
+skinparam activityDiamondBorderColor #E65100
+skinparam activityDiamondFontColor #111111
+skinparam activityStartColor #66BB6A
+skinparam activityEndColor #EF5350
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1.5
+title Diagramme d'activite - Consultation de Cours et Passation de Quiz
+
+start
+
+:Acceder au catalogue des cours;
+
+:Selectionner un cours de sa promotion;
+
+:S'inscrire au cours;
+
+:Ouvrir une leçon du cours;
+
+if (Leçon verrouillee ?) then (Oui)
+
+  :Message "Quiz precedent requis\n(Score >= 50%)";
+
+  stop
+
+else (Non)
+
+  :Consulter le contenu\n(Video, PDF, PPT, Texte);
+
+  :Lancer le quiz du module;
+
+  :Repondre aux questions;
+
+  :Soumettre les reponses;
+
+  if (Score >= 50% ?) then (Oui)
+
+    :Enregistrer la tentative\ncomme Reussie;
+
+    :Debloquer la leçon suivante;
+
+    :Mettre a jour la progression (%);
+
+  else (Non)
+
+    :Enregistrer la tentative\ncomme Echec;
+
+    :Afficher le score obtenu\net les erreurs;
+
+    :Inviter a re-essayer;
+
+    stop
+
+  endif
+
+endif
+
+end
+
+@enduml

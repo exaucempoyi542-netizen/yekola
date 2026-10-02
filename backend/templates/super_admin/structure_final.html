@@ -1,0 +1,282 @@
+{% extends 'super_admin/base.html' %}
+{% load static %}
+
+{% block title %}Structure Académique | Yekola Pro{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mgmt-card {
+        background: white;
+        border-radius: 28px;
+        border: 1px solid var(--slate-light);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        transition: var(--transition);
+        overflow: hidden;
+    }
+
+    .mgmt-card:hover {
+        border-color: var(--gold);
+    }
+
+    .mgmt-header {
+        padding: 1.5rem;
+        background: var(--navy);
+        color: white;
+    }
+
+    .mgmt-body {
+        padding: 1.5rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-pane {
+        background: var(--ivory);
+        padding: 1.25rem;
+        border-radius: 20px;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--slate-light);
+    }
+
+    .ministerial-input {
+        background: white;
+        border: 1.5px solid var(--slate-light);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+        color: var(--navy);
+        width: 100%;
+        transition: var(--transition);
+        outline: none;
+    }
+
+    .ministerial-input:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 4px rgba(197, 160, 89, 0.1);
+    }
+
+    .ministerial-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1.2rem;
+    }
+
+    .data-list {
+        flex-grow: 1;
+        overflow-y: auto;
+        max-height: 400px;
+        padding-right: 4px;
+    }
+
+    .data-list::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .data-list::-webkit-scrollbar-thumb {
+        background: var(--slate-light);
+        border-radius: 10px;
+    }
+
+    .data-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: white;
+        border: 1px solid var(--ivory);
+        border-radius: 14px;
+        margin-bottom: 0.75rem;
+        transition: var(--transition);
+    }
+
+    .data-item:hover {
+        background: var(--ivory);
+        border-color: var(--gold-light);
+    }
+
+    .btn-add-gold {
+        background: var(--gold);
+        color: var(--navy);
+        border: none;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        transition: var(--transition);
+    }
+
+    .btn-add-gold:hover {
+        background: var(--navy);
+        color: var(--gold);
+        transform: scale(1.1);
+    }
+
+    .btn-delete-subtle {
+        color: var(--slate);
+        background: none;
+        border: none;
+        padding: 8px;
+        border-radius: 8px;
+        transition: var(--transition);
+    }
+
+    .btn-delete-subtle:hover {
+        color: #EF4444;
+        background: #FEF2F2;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Structure Académique{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <div class="row g-4">
+        <div class="col-xl-4 col-lg-6">
+            <div class="mgmt-card">
+                <div class="mgmt-header d-flex align-items-center gap-3">
+                    <div class="icon-square bg-gold text-navy" style="width:36px; height:36px; font-size:1rem;"><i
+                            class="fa-solid fa-building-columns"></i></div>
+                    <h6 class="m-0 fw-800 text-uppercase small letter-spacing-1">Universités</h6>
+                </div>
+                <div class="mgmt-body">
+                    <div class="form-pane">
+                        <form action="{% url 'super_admin:admin_add_university' %}" method="POST">
+                            {% csrf_token %}
+                            <select name="province_id" class="ministerial-input ministerial-select mb-2" required>
+                                <option value="">— Province de la RDC —</option>
+                                {% for prov in provinces %}
+                                <option value="{{ prov.pk }}">{{ prov.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="d-flex gap-2">
+                                <input type="text" name="name" class="ministerial-input" placeholder="Nom de université"
+                                    required>
+                                <button type="submit" class="btn-add-gold"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="data-list">
+                        {% for uni in universities %}
+                        <div class="data-item">
+                            <div>
+                                <div class="fw-800 text-dark small">{{ uni.name }}</div>
+                                <div class="text-muted extra-small fw-bold text-uppercase">
+                                    {% if uni.province %}{{ uni.province.name }}{% else %}N/A{% endif %}
+                                </div>
+                            </div>
+                            <a href="{% url 'super_admin:admin_delete_university' uni.pk %}" class="btn-delete-subtle"
+                                onclick="return confirm('Confirmer?')">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </a>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-5 text-muted extra-small fw-bold">AUCUNE UNIVERSITÉ</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-6">
+            <div class="mgmt-card">
+                <div class="mgmt-header d-flex align-items-center gap-3">
+                    <div class="icon-square bg-gold text-navy" style="width:36px; height:36px; font-size:1rem;"><i
+                            class="fa-solid fa-graduation-cap"></i></div>
+                    <h6 class="m-0 fw-800 text-uppercase small letter-spacing-1">Facultés</h6>
+                </div>
+                <div class="mgmt-body">
+                    <div class="form-pane">
+                        <form action="{% url 'super_admin:admin_add_faculty' %}" method="POST">
+                            {% csrf_token %}
+                            <select name="university_id" class="ministerial-input ministerial-select mb-2" required>
+                                <option value="">Choisir une Université</option>
+                                {% for uni in universities %}
+                                <option value="{{ uni.id }}">{{ uni.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="d-flex gap-2">
+                                <input type="text" name="name" class="ministerial-input" placeholder="Nom de faculté"
+                                    required>
+                                <button type="submit" class="btn-add-gold"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="data-list">
+                        {% for uni in universities %}
+                        {% for fac in uni.faculties.all %}
+                        <div class="data-item">
+                            <div>
+                                <div class="fw-800 text-dark small">{{ fac.name }}</div>
+                                <div class="text-muted extra-small fw-bold text-uppercase">{{ uni.name }}</div>
+                            </div>
+                            <a href="{% url 'super_admin:admin_delete_faculty' fac.pk %}" class="btn-delete-subtle"
+                                onclick="return confirm('Supprimer?')">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </a>
+                        </div>
+                        {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-12">
+            <div class="mgmt-card">
+                <div class="mgmt-header d-flex align-items-center gap-3">
+                    <div class="icon-square bg-gold text-navy" style="width:36px; height:36px; font-size:1rem;"><i
+                            class="fa-solid fa-users-gear"></i></div>
+                    <h6 class="m-0 fw-800 text-uppercase small letter-spacing-1">Promotions</h6>
+                </div>
+                <div class="mgmt-body">
+                    <div class="form-pane">
+                        <form action="{% url 'super_admin:admin_add_promotion' %}" method="POST">
+                            {% csrf_token %}
+                            <select name="faculty_id" class="ministerial-input ministerial-select mb-2" required>
+                                <option value="">Choisir une Faculté</option>
+                                {% for uni in universities %}
+                                {% for fac in uni.faculties.all %}
+                                <option value="{{ fac.id }}">{{ uni.name }} — {{ fac.name }}</option>
+                                {% endfor %}
+                                {% endfor %}
+                            </select>
+                            <div class="d-flex gap-2">
+                                <input type="text" name="name" class="ministerial-input" placeholder="Nom de promotion"
+                                    required>
+                                <button type="submit" class="btn-add-gold"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="data-list">
+                        {% for uni in universities %}
+                        {% for fac in uni.faculties.all %}
+                        {% for promo in fac.promotions.all %}
+                        <div class="data-item">
+                            <div>
+                                <div class="fw-800 text-dark small">{{ promo.name }}</div>
+                                <div class="text-muted extra-small fw-bold text-uppercase">{{ fac.name }} ({{ uni.name }})</div>
+                            </div>
+                            <a href="{% url 'super_admin:admin_delete_promotion' promo.pk %}" class="btn-delete-subtle"
+                                onclick="return confirm('Supprimer?')">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </a>
+                        </div>
+                        {% endfor %}
+                        {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

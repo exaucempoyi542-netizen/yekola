@@ -1,0 +1,347 @@
+{% extends "teacher/base.html" %}
+{% load static %}
+
+{% block title %}Comptes étudiants · Décanat{% endblock %}
+{% block page_title %}Comptes étudiants{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+  --grille-meta: #0A1628;
+  --grille-meta-bg: #F5F8FB;
+}
+
+.table-etudiants-wrap .table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table.table-etudiants {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 1rem;
+  margin: 0;
+  border: 1px solid var(--campus-border, #D0D7E2);
+}
+
+table.table-etudiants th,
+table.table-etudiants td {
+  vertical-align: middle;
+  word-wrap: break-word;
+  overflow: hidden;
+  padding: .55rem .65rem;
+  border: 1px solid var(--campus-border, #D0D7E2);
+}
+
+table.table-etudiants thead th {
+  font-size: .78rem;
+  letter-spacing: .04em;
+  padding: .65rem .7rem;
+}
+
+table.table-etudiants th.col-matricule,
+table.table-etudiants td.col-matricule {
+  width: 9.5rem;
+  min-width: 9.5rem;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--able-card, #fff);
+  box-shadow: 2px 0 4px rgba(15, 23, 42, .06);
+}
+
+table.table-etudiants thead th.col-matricule {
+  z-index: 3;
+  background: var(--grille-meta, #0A1628);
+  color: #fff;
+}
+
+table.table-etudiants tbody td.col-matricule {
+  background: var(--grille-meta-bg, #F5F8FB);
+}
+
+table.table-etudiants th.col-nom,
+table.table-etudiants td.col-nom {
+  width: 14rem;
+  min-width: 10rem;
+}
+
+table.table-etudiants th.col-sexe,
+table.table-etudiants td.col-sexe {
+  width: 5rem;
+  min-width: 4.5rem;
+  text-align: center;
+}
+
+table.table-etudiants th.col-promo,
+table.table-etudiants td.col-promo {
+  width: 12rem;
+  min-width: 9rem;
+}
+
+table.table-etudiants th.col-gmail,
+table.table-etudiants td.col-gmail {
+  width: 14rem;
+  min-width: 10rem;
+}
+
+table.table-etudiants .cell-ellipsis {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+table.table-etudiants.grille-compact { font-size: .9rem; }
+table.table-etudiants.grille-compact th,
+table.table-etudiants.grille-compact td { padding: .45rem .55rem; }
+table.table-etudiants.grille-dense { font-size: .82rem; }
+table.table-etudiants.grille-dense th,
+table.table-etudiants.grille-dense td { padding: .35rem .45rem; }
+table.table-etudiants.grille-ultra { font-size: .74rem; }
+table.table-etudiants.grille-ultra th,
+table.table-etudiants.grille-ultra td { padding: .28rem .35rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="able-card mb-3">
+    <div class="able-card-head">
+        <h2>Comptes étudiants</h2>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <span class="able-badge muted">
+                {{ students_filtered_count }} affiché{{ students_filtered_count|pluralize:"s" }}
+                {% if students_filtered_count != students_total_count %}
+                / {{ students_total_count }} au total
+                {% endif %}
+            </span>
+            <button type="button" class="able-btn able-btn-primary able-btn-sm" data-bs-toggle="modal" data-bs-target="#createStudentModal">
+                <i class="fa-solid fa-user-plus"></i> Créer un compte
+            </button>
+        </div>
+    </div>
+    <div class="able-card-body pb-0">
+        <p class="small mb-3" style="color:var(--able-muted);">
+            Mot de passe par défaut du système :
+            <strong>{{ default_student_password }}</strong>.
+            Vous pouvez le personnaliser à la création de chaque compte.
+        </p>
+        <form method="get" action="{% url 'dean_students' %}" class="row g-3 mb-3" id="deanStudentFilterForm">
+            <div class="col-md-6">
+                <label class="able-label">Recherche</label>
+                <input
+                    type="text"
+                    name="q"
+                    class="able-input"
+                    placeholder="Matricule, nom ou Gmail…"
+                    value="{{ student_filters.q }}"
+                >
+            </div>
+            <div class="col-md-4">
+                <label class="able-label">Promotion</label>
+                <select name="promotion" class="able-input">
+                    <option value="">Toutes les promotions</option>
+                    {% for promo in faculty_promotions %}
+                    <option value="{{ promo.id }}" {% if student_filters.promotion_id == promo.id|stringformat:"s" %}selected{% endif %}>
+                        {{ promo.display_label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button type="submit" class="able-btn able-btn-primary able-btn-sm w-100">
+                    <i class="fa-solid fa-filter"></i> Filtrer
+                </button>
+            </div>
+            <div class="col-12">
+                <a href="{% url 'dean_students' %}" class="able-btn able-btn-outline able-btn-sm">Réinitialiser</a>
+            </div>
+        </form>
+    </div>
+    <div class="table-etudiants-wrap">
+    <div class="table-responsive" id="dean-students">
+        <table class="able-table table-etudiants" id="deanStudentsTable" data-row-count="{{ students_filtered_count }}">
+            <thead>
+                <tr>
+                    <th class="col-matricule">Matricule</th>
+                    <th class="col-nom">Nom</th>
+                    <th class="col-sexe">Sexe</th>
+                    <th class="col-promo">Promotion</th>
+                    <th class="col-gmail">Gmail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in faculty_students %}
+                <tr>
+                    <td class="col-matricule">
+                        <strong class="cell-ellipsis" title="{{ student.matricule|default:student.username }}">
+                            {{ student.matricule|default:student.username }}
+                        </strong>
+                    </td>
+                    <td class="col-nom">
+                        <span class="cell-ellipsis" title="{{ student.get_full_name|default:'—' }}">
+                            {{ student.get_full_name|default:"—" }}
+                        </span>
+                    </td>
+                    <td class="col-sexe">{{ student.get_gender_display|default:"—" }}</td>
+                    <td class="col-promo">
+                        {% if student.class_group %}
+                        <span class="cell-ellipsis" title="{{ student.class_group.promotion.display_label }}">
+                            {{ student.class_group.promotion.display_label }}
+                        </span>
+                        {% else %}
+                        <span class="able-badge muted">Non classé</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-gmail">
+                        <span class="cell-ellipsis" title="{{ student.email|default:'—' }}">
+                            {{ student.email|default:"—" }}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">
+                        Aucun étudiant ne correspond à ces critères.
+                        {% if student_filters.q or student_filters.promotion_id %}
+                        <br><a href="{% url 'dean_students' %}" class="small">Voir tous les comptes</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createStudentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Créer un compte étudiant</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'dean_create_student' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="small mb-3" style="color:var(--able-muted);">
+                        Mot de passe par défaut :
+                        <strong>{{ default_student_password }}</strong>.
+                        Vous pouvez le modifier ci-dessous avant de créer le compte.
+                    </p>
+                    <div class="mb-3">
+                        <label class="able-label">Matricule</label>
+                        <input type="text" name="matricule" class="able-input" placeholder="Ex. 2023-03.2667" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <label class="able-label">Prénom</label>
+                            <input type="text" name="prenom" id="studentPrenom" class="able-input" placeholder="Ex. Exaucé" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="able-label">Nom</label>
+                            <input type="text" name="nom" id="studentNom" class="able-input" placeholder="Ex. Mpoyi" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="able-label">Post-nom</label>
+                            <input type="text" name="postnom" class="able-input" placeholder="Optionnel">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="able-label">Sexe</label>
+                        <select name="gender" class="able-input" required>
+                            <option value="">Sélectionner…</option>
+                            <option value="M">Masculin</option>
+                            <option value="F">Féminin</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="able-label">Gmail (généré automatiquement)</label>
+                        <div class="able-input bg-light" id="studentGmailPreview" style="color:var(--able-muted);">
+                            prenomnom@gmail.com
+                        </div>
+                        <div class="small mt-1" style="color:var(--able-muted);">
+                            Format : prénom + nom, sans accents (ex. exaucempoyi@gmail.com).
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="able-label">Mot de passe initial</label>
+                        <input
+                            type="text"
+                            name="password"
+                            id="studentInitialPassword"
+                            class="able-input"
+                            value="{{ default_student_password }}"
+                            minlength="6"
+                            required
+                            autocomplete="new-password"
+                        >
+                        <div class="small mt-1" style="color:var(--able-muted);">
+                            Minimum 6 caractères. Communiquez ce mot de passe à l'étudiant.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="able-label">Promotion LMD</label>
+                        <select name="promotion_id" class="able-input" required>
+                            <option value="">Sélectionner…</option>
+                            {% for promo in faculty_promotions %}
+                            <option value="{{ promo.id }}">{{ promo.display_label }}</option>
+                            {% empty %}
+                            <option value="" disabled>Aucune promotion LMD</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="able-btn able-btn-outline" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="able-btn able-btn-primary">Créer le compte</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function normalizePart(value) {
+        return (value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '');
+    }
+
+    function updateGmailPreview() {
+        const prenom = document.getElementById('studentPrenom');
+        const nom = document.getElementById('studentNom');
+        const preview = document.getElementById('studentGmailPreview');
+        if (!preview || !prenom || !nom) return;
+        const base = normalizePart(prenom.value) + normalizePart(nom.value);
+        preview.textContent = (base || 'prenomnom') + '@gmail.com';
+    }
+
+    ['studentPrenom', 'studentNom'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateGmailPreview);
+    });
+    updateGmailPreview();
+
+    function applyStudentsTableDensity(table) {
+        if (!table) return;
+        table.classList.remove('grille-compact', 'grille-dense', 'grille-ultra');
+        const rowCount = parseInt(table.dataset.rowCount || '0', 10);
+        if (rowCount > 55) table.classList.add('grille-ultra');
+        else if (rowCount > 35) table.classList.add('grille-dense');
+        else if (rowCount > 20) table.classList.add('grille-compact');
+    }
+    applyStudentsTableDensity(document.getElementById('deanStudentsTable'));
+});
+</script>
+{% endblock %}

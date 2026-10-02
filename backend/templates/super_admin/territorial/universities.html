@@ -1,0 +1,144 @@
+{% extends "super_admin/territorial_base.html" %}
+{% block title %}Parc universitaire · Yekola{% endblock %}
+{% block page_title %}Établissements{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-end gap-2 mb-3">
+    <a href="{% url 'super_admin:territorial_manage_structure' %}" class="able-btn able-btn-primary">
+        <i class="fa-solid fa-sitemap"></i> Gérer la structure
+    </a>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Établissements</div>
+                    <div class="kpi-value">{{ total_unis }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-building-columns"></i></div>
+            </div>
+            <div class="kpi-foot"><i class="fa-solid fa-location-dot"></i> {{ province.name }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Rapports reçus</div>
+                    <div class="kpi-value">{{ reports_received }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-file-circle-check"></i></div>
+            </div>
+            <div class="kpi-foot">Reçus ou consolidés</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Admins (Université)</div>
+                    <div class="kpi-value">{{ managers_count }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-user-tie"></i></div>
+            </div>
+            <div class="kpi-foot">Rectorat / gestion</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Rapports manquants</div>
+                    <div class="kpi-value">{{ reports_missing }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            </div>
+            <div class="kpi-foot">À relancer</div>
+        </div>
+    </div>
+</div>
+
+<div class="able-card">
+    <div class="able-card-head">
+        <h2>Liste des établissements</h2>
+        <span class="able-badge muted">{{ total_unis }} établissement{{ total_unis|pluralize:"s" }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="able-table">
+            <thead>
+                <tr>
+                    <th>Établissement</th>
+                    <th>Type</th>
+                    <th>Admin (Université)</th>
+                    <th>Effectifs</th>
+                    <th>Rapport</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>
+                        <div class="able-person">
+                            <div class="av">{{ row.university.name|slice:":1" }}</div>
+                            <div>
+                                <strong>{{ row.university.name }}</strong>
+                                <small>{{ province.name }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if row.university.institution_type == 'PRIVATE' %}
+                        <span class="able-badge high">Privé</span>
+                        {% else %}
+                        <span class="able-badge medium">Public</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if row.manager %}
+                        <div class="able-person">
+                            <div class="av" style="background:rgba(244,194,43,.2);color:#b8860b;">
+                                {{ row.manager.username|slice:":1"|upper }}
+                            </div>
+                            <div>
+                                <strong>{{ row.manager.get_full_name|default:row.manager.username }}</strong>
+                                <small>{{ row.manager.email }}</small>
+                            </div>
+                        </div>
+                        {% else %}
+                        <span class="able-badge muted">Non assigné</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="font-weight:700;color:#1d2630;">{{ row.students }} étudiants</div>
+                        <small style="color:var(--able-muted);">{{ row.teachers }} enseignants</small>
+                    </td>
+                    <td>
+                        {% if row.report_status == 'submitted' %}
+                        <span class="able-badge warn">Reçu</span>
+                        {% elif row.report_status == 'validated' %}
+                        <span class="able-badge medium">Consolidé</span>
+                        {% else %}
+                        <span class="able-badge low">Manquant</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'super_admin:territorial_university_detail' row.university.id %}"
+                           class="btn btn-sm btn-outline-primary">
+                            Fiche <i class="fa-solid fa-arrow-right ms-1"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-5">Aucun établissement enregistré.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,617 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block page_title %}Mes étudiants{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ——— Table Mes étudiants : grille type registre (bleu de nuit) ——— */
+.table-etudiants-wrap {
+  padding: 0 0 1rem;
+}
+
+.table-etudiants-wrap .table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--campus-border, #D0D7E2);
+  background: #fff;
+  border-radius: 0 0 14px 14px;
+}
+
+table.table-etudiants {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: .9rem;
+  margin: 0;
+  color: var(--campus-text, #152033);
+  font-family: 'Public Sans', 'DM Sans', 'Segoe UI', sans-serif;
+  background: #fff;
+}
+
+table.table-etudiants th,
+table.table-etudiants td {
+  vertical-align: middle;
+  word-wrap: break-word;
+  overflow: hidden;
+  border: 1px solid var(--campus-border, #D0D7E2) !important;
+  padding: .72rem .85rem;
+  color: var(--campus-text, #152033);
+  background: #fff;
+}
+
+table.table-etudiants tbody tr:last-child td {
+  border-bottom: 1px solid var(--campus-border, #D0D7E2) !important;
+}
+
+table.table-etudiants thead th {
+  background: var(--campus-elevated, #F5F8FB);
+  font-weight: 700;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  text-align: left;
+  color: var(--campus-ink, #0A1628);
+  border: 1px solid var(--campus-border, #D0D7E2);
+}
+
+table.table-etudiants tbody tr:nth-child(even) td {
+  background: var(--campus-elevated, #F5F8FB);
+}
+
+table.table-etudiants tbody tr:hover td {
+  background: rgba(30, 58, 95, 0.08);
+}
+
+table.table-etudiants th.col-matricule,
+table.table-etudiants td.col-matricule {
+  width: 9.5rem;
+  min-width: 9.5rem;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  box-shadow: 2px 0 4px rgba(15, 23, 42, .06);
+}
+
+table.table-etudiants thead th.col-matricule {
+  z-index: 3;
+  background: var(--campus-elevated, #F5F8FB);
+}
+
+table.table-etudiants tbody td.col-matricule {
+  background: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+table.table-etudiants tbody tr:nth-child(even) td.col-matricule {
+  background: var(--campus-elevated, #F5F8FB);
+}
+
+table.table-etudiants tbody tr:hover td.col-matricule {
+  background: rgba(30, 58, 95, 0.08);
+}
+
+table.table-etudiants th.col-nom,
+table.table-etudiants td.col-nom {
+  width: 16rem;
+  min-width: 11rem;
+}
+
+table.table-etudiants td.col-nom {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .015em;
+  text-align: left;
+}
+
+table.table-etudiants th.col-gmail,
+table.table-etudiants td.col-gmail {
+  width: 13rem;
+  min-width: 10rem;
+  text-align: center;
+}
+
+table.table-etudiants th.col-promo,
+table.table-etudiants td.col-promo {
+  width: 10rem;
+  min-width: 8rem;
+  text-align: center;
+}
+
+table.table-etudiants th.col-progression,
+table.table-etudiants td.col-progression {
+  width: 7rem;
+  min-width: 6rem;
+  text-align: center;
+}
+
+table.table-etudiants .cell-ellipsis {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  color: inherit;
+}
+
+table.table-etudiants td.col-gmail .cell-ellipsis,
+table.table-etudiants td.col-promo .cell-ellipsis {
+  text-align: center;
+}
+
+table.table-etudiants .cell-promo-sub {
+  font-size: .72em;
+  color: var(--campus-muted, #5B6B7F);
+  margin-top: 2px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+table.table-etudiants .able-badge {
+  border: 1px solid var(--campus-border, #D0D7E2);
+  background: var(--campus-elevated, #F5F8FB);
+  color: var(--campus-ink, #0A1628);
+  font-weight: 600;
+}
+
+table.table-etudiants .able-badge.medium {
+  background: #E6F4F1;
+  border-color: #9BC5BC;
+  color: #0F766E;
+}
+
+table.table-etudiants .able-badge.high {
+  background: #EEF2F7;
+  border-color: #9EB0C4;
+  color: #152A45;
+}
+
+table.table-etudiants .able-badge.muted {
+  background: #F5F8FB;
+  border-color: #B4C2D4;
+  color: #5A6B82;
+}
+
+table.table-etudiants.grille-compact {
+  font-size: .84rem;
+}
+table.table-etudiants.grille-compact th,
+table.table-etudiants.grille-compact td {
+  padding: .55rem .65rem;
+}
+table.table-etudiants.grille-compact th.col-matricule,
+table.table-etudiants.grille-compact td.col-matricule {
+  width: 8.5rem;
+  min-width: 8.5rem;
+}
+table.table-etudiants.grille-compact th.col-nom,
+table.table-etudiants.grille-compact td.col-nom {
+  width: 13rem;
+  min-width: 9rem;
+}
+
+table.table-etudiants.grille-dense {
+  font-size: .78rem;
+}
+table.table-etudiants.grille-dense th,
+table.table-etudiants.grille-dense td {
+  padding: .42rem .5rem;
+  line-height: 1.25;
+}
+table.table-etudiants.grille-dense th.col-matricule,
+table.table-etudiants.grille-dense td.col-matricule {
+  width: 7.8rem;
+  min-width: 7.8rem;
+}
+table.table-etudiants.grille-dense th.col-nom,
+table.table-etudiants.grille-dense td.col-nom {
+  width: 12rem;
+  min-width: 8rem;
+}
+table.table-etudiants.grille-dense th.col-gmail,
+table.table-etudiants.grille-dense td.col-gmail {
+  width: 10rem;
+  min-width: 8.5rem;
+}
+table.table-etudiants.grille-dense th.col-promo,
+table.table-etudiants.grille-dense td.col-promo {
+  width: 7.5rem;
+  min-width: 6.5rem;
+}
+table.table-etudiants.grille-dense .cell-promo-sub {
+  font-size: .68em;
+}
+table.table-etudiants.grille-dense .able-badge {
+  font-size: .66rem;
+  padding: .12rem .32rem;
+}
+
+table.table-etudiants.grille-ultra {
+  font-size: .74rem;
+}
+table.table-etudiants.grille-ultra th,
+table.table-etudiants.grille-ultra td {
+  padding: .36rem .42rem;
+  line-height: 1.2;
+}
+table.table-etudiants.grille-ultra th.col-matricule,
+table.table-etudiants.grille-ultra td.col-matricule {
+  width: 7rem;
+  min-width: 7rem;
+}
+table.table-etudiants.grille-ultra th.col-nom,
+table.table-etudiants.grille-ultra td.col-nom {
+  width: 10rem;
+  min-width: 7.5rem;
+}
+table.table-etudiants.grille-ultra th.col-gmail,
+table.table-etudiants.grille-ultra td.col-gmail {
+  width: 9rem;
+  min-width: 8rem;
+}
+table.table-etudiants.grille-ultra th.col-promo,
+table.table-etudiants.grille-ultra td.col-promo {
+  width: 6.5rem;
+  min-width: 6rem;
+}
+table.table-etudiants.grille-ultra th.col-progression,
+table.table-etudiants.grille-ultra td.col-progression {
+  width: 5.5rem;
+  min-width: 5rem;
+}
+table.table-etudiants.grille-ultra .cell-promo-sub {
+  font-size: .65em;
+}
+table.table-etudiants.grille-ultra .able-badge {
+  font-size: .64rem;
+  padding: .1rem .28rem;
+}
+
+/* ——— En-tête & toolbar ——— */
+.students-page-head {
+  flex-wrap: wrap;
+}
+
+.students-page-toolbar {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.students-search-input {
+  width: 260px;
+  max-width: 100%;
+}
+
+/* ——— Liste cartes mobile ——— */
+.students-mobile-list {
+  display: none;
+  padding: 0 1rem 1rem;
+}
+
+.student-mobile-card {
+  background: #fff;
+  border: 1px solid #9EB0C4;
+  border-radius: 0;
+  padding: .85rem 1rem;
+  margin-bottom: .65rem;
+}
+
+.student-mobile-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-bottom: .65rem;
+  padding-bottom: .55rem;
+  border-bottom: 1px solid #9EB0C4;
+}
+
+.student-mobile-card-top strong {
+  font-size: .92rem;
+  line-height: 1.3;
+  color: #152A45;
+  text-transform: uppercase;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.student-mobile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: .75rem;
+  padding: .28rem 0;
+  font-size: .84rem;
+}
+
+.student-mobile-row .label {
+  flex: 0 0 auto;
+  color: #5A6B82;
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  min-width: 5.5rem;
+}
+
+.student-mobile-row .value {
+  flex: 1;
+  text-align: right;
+  color: #152A45;
+  word-break: break-word;
+}
+
+.students-scroll-hint {
+  display: none;
+  padding: .45rem 1rem .65rem;
+  font-size: .72rem;
+  color: var(--able-muted, #64748b);
+  text-align: center;
+}
+
+@media (max-width: 767.98px) {
+  .students-page-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .students-page-head h2 {
+    width: 100%;
+  }
+
+  .students-page-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .students-search-input {
+    width: 100% !important;
+  }
+
+  .students-notes-btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .students-mobile-list {
+    display: block;
+  }
+
+  .table-etudiants-wrap {
+    display: none !important;
+  }
+
+  .students-scroll-hint {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .students-page-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .students-page-toolbar {
+    width: 100%;
+  }
+
+  .students-search-input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  table.table-etudiants th.col-matricule,
+  table.table-etudiants td.col-matricule {
+    position: static;
+    box-shadow: none;
+  }
+
+  .table-etudiants-wrap .table-responsive {
+    overflow-x: auto;
+  }
+
+  table.table-etudiants {
+    min-width: 720px;
+  }
+
+  .students-scroll-hint {
+    display: block;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="able-kpi soft"><div class="kpi-top"><div><div class="kpi-label">Étudiants</div><div class="kpi-value">{{ students|length }}</div></div><div class="kpi-icon"><i class="fa-solid fa-user-graduate"></i></div></div><div class="kpi-foot">Promotion(s) de vos cours</div></div></div>
+  <div class="col-md-4"><div class="able-kpi soft"><div class="kpi-top"><div><div class="kpi-label">Université</div><div class="kpi-value" style="font-size:1rem;">{% if teacher.assigned_university %}{{ teacher.assigned_university.name|truncatechars:18 }}{% else %}Yekola{% endif %}</div></div><div class="kpi-icon"><i class="fa-solid fa-building-columns"></i></div></div><div class="kpi-foot">Entité académique</div></div></div>
+  <div class="col-md-4"><div class="able-kpi soft"><div class="kpi-top"><div><div class="kpi-label">Promotion</div><div class="kpi-value" style="font-size:1rem;">{% if current_promotion %}{{ current_promotion.display_label }}{% else %}Toutes{% endif %}</div></div><div class="kpi-icon"><i class="fa-solid fa-layer-group"></i></div></div><div class="kpi-foot">Filtre actif</div></div></div>
+</div>
+
+<div class="able-card mb-3">
+  <div class="able-card-head students-page-head">
+    <h2>Annuaire des apprenants</h2>
+    <div class="students-page-toolbar">
+      <input type="text" id="searchInput" class="able-input students-search-input" placeholder="Rechercher un étudiant...">
+      <a href="{% url 'teacher_dashboard' %}" class="able-btn able-btn-outline able-btn-sm students-notes-btn">
+        <i class="fa-solid fa-file-lines me-1"></i> Notes par cours
+      </a>
+    </div>
+  </div>
+  <div class="able-card-body pb-0">
+    <p class="small mb-3" style="color:var(--able-muted);">
+      Liste automatique des étudiants inscrits dans les promotions de vos cours attribués par le décanat.
+      Les identités (matricule, nom, Gmail) sont gérées exclusivement par le décanat.
+    </p>
+  </div>
+
+  <div class="students-mobile-list" id="studentsMobileList">
+    {% for student in students %}
+    <article class="student-mobile-card">
+      <div class="student-mobile-card-top">
+        <strong>{{ student.display_full_name|default:"—" }}</strong>
+        {% if student.progress_complete %}
+        <span class="able-badge medium">Terminé</span>
+        {% elif student.quiz_progress.has_quizzes %}
+        <span class="able-badge muted">{{ student.progress_label }}</span>
+        {% else %}
+        <span class="able-badge high">{{ student.progress_label }}</span>
+        {% endif %}
+      </div>
+      <div class="student-mobile-row">
+        <span class="label">Matricule</span>
+        <span class="value">{{ student.matricule|default:student.username }}</span>
+      </div>
+      <div class="student-mobile-row">
+        <span class="label">Gmail</span>
+        <span class="value">{{ student.email|default:"—" }}</span>
+      </div>
+      <div class="student-mobile-row">
+        <span class="label">Promotion</span>
+        <span class="value">
+          {% if student.class_group %}
+          {{ student.class_group.promotion.display_label }}
+          {% else %}
+          Non classé
+          {% endif %}
+        </span>
+      </div>
+      {% if student.class_group %}
+      <div class="student-mobile-row">
+        <span class="label">Université</span>
+        <span class="value">{{ student.class_group.promotion.faculty.university.name }}</span>
+      </div>
+      {% endif %}
+    </article>
+    {% empty %}
+    <div class="text-center py-4 px-2">
+      <div class="able-avatar mx-auto mb-3" style="background:var(--able-blue-soft);color:var(--able-blue);"><i class="fa-solid fa-users"></i></div>
+      <div style="font-weight:700;color:#1d2630;">Aucun étudiant pour le moment</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <p class="students-scroll-hint mb-0">
+    <i class="fa-solid fa-arrows-left-right me-1"></i> Faites glisser horizontalement pour voir toutes les colonnes.
+  </p>
+
+  <div class="table-etudiants-wrap">
+  <div class="table-responsive">
+    <table class="able-table table-etudiants" id="studentsTable" data-row-count="{{ students|length }}">
+      <thead>
+        <tr>
+          <th class="col-matricule">Matricule</th>
+          <th class="col-nom">Nom complet</th>
+          <th class="col-gmail">Gmail</th>
+          <th class="col-promo">Promotion</th>
+          <th class="col-progression">Progression</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in students %}
+        <tr>
+          <td class="col-matricule">
+            <strong class="cell-ellipsis" title="{{ student.matricule|default:student.username }}">
+              {{ student.matricule|default:student.username }}
+            </strong>
+          </td>
+          <td class="col-nom">
+            <span class="cell-ellipsis" title="{{ student.display_full_name|default:'—' }}">
+              {{ student.display_full_name|default:"—" }}
+            </span>
+          </td>
+          <td class="col-gmail">
+            <span class="cell-ellipsis" title="{{ student.email|default:'—' }}">
+              {{ student.email|default:"—" }}
+            </span>
+          </td>
+          <td class="col-promo">
+            {% if student.class_group %}
+            <span class="cell-ellipsis cell-promo-main"
+                  title="{{ student.class_group.promotion.display_label }} — {{ student.class_group.promotion.faculty.university.name }}">
+              {{ student.class_group.promotion.display_label }}
+            </span>
+            <small class="cell-ellipsis cell-promo-sub"
+                   title="{{ student.class_group.promotion.faculty.university.name }}">
+              {{ student.class_group.promotion.faculty.university.name }}
+            </small>
+            {% else %}
+            <span class="able-badge muted">Non classé</span>
+            {% endif %}
+          </td>
+          <td class="col-progression">
+            {% if student.progress_complete %}
+            <span class="able-badge medium">Terminé</span>
+            {% elif student.quiz_progress.has_quizzes %}
+            <span class="able-badge muted">{{ student.progress_label }}</span>
+            {% else %}
+            <span class="able-badge high">{{ student.progress_label }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center py-5">
+            <div class="able-avatar mx-auto mb-3" style="background:var(--able-blue-soft);color:var(--able-blue);"><i class="fa-solid fa-users"></i></div>
+            <div style="font-weight:700;color:#1d2630;">Aucun étudiant pour le moment</div>
+            <div class="small mt-1" style="color:var(--able-muted);">
+              Les étudiants apparaîtront ici dès que le décanat vous aura attribué un cours
+              et qu'ils seront inscrits dans la promotion concernée.
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const table = document.getElementById('studentsTable');
+  const isMobile = window.matchMedia('(max-width: 767.98px)').matches;
+
+  if (table && !isMobile) {
+    table.classList.remove('grille-compact', 'grille-dense', 'grille-ultra');
+    const rowCount = parseInt(table.dataset.rowCount || '0', 10);
+    if (rowCount > 75) {
+      table.classList.add('grille-ultra');
+    } else if (rowCount > 45) {
+      table.classList.add('grille-dense');
+    } else if (rowCount > 25) {
+      table.classList.add('grille-compact');
+    }
+  }
+
+  const searchInput = document.getElementById('searchInput');
+  if (!searchInput) return;
+
+  function filterStudents() {
+    const filter = searchInput.value.toLowerCase();
+    document.querySelectorAll('#studentsTable tbody tr').forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.indexOf(filter) > -1 ? '' : 'none';
+    });
+    document.querySelectorAll('#studentsMobileList .student-mobile-card').forEach(card => {
+      const text = card.textContent.toLowerCase();
+      card.style.display = text.indexOf(filter) > -1 ? '' : 'none';
+    });
+  }
+
+  searchInput.addEventListener('input', filterStudents);
+});
+</script>
+{% endblock %}

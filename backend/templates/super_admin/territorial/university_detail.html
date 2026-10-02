@@ -1,0 +1,443 @@
+{% extends "super_admin/territorial_base.html" %}
+{% block title %}{{ university.name }} · Yekola{% endblock %}
+{% block page_title %}Fiche établissement{% endblock %}
+
+{% block extra_css %}
+<style>
+.table-structure-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table.table-structure {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  font-size: .95rem;
+  margin: 0;
+  border: 1px solid #C9C4D9;
+}
+
+table.table-structure th,
+table.table-structure td {
+  vertical-align: middle;
+  padding: .65rem .75rem;
+  border: 1px solid #C9C4D9;
+}
+
+table.table-structure thead th {
+  background: #152A45 !important;
+  color: #fff !important;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+table.table-structure tbody tr:nth-child(even) td {
+  background: #F8F7FF;
+}
+
+table.table-structure tbody tr:hover td {
+  background: #F1EFFF !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <div class="text-muted small mb-1">{{ province.name }}</div>
+        <h1 class="h4 mb-0" style="font-weight:800;color:#1d2630;">{{ university.name }}</h1>
+    </div>
+    <a href="{% url 'super_admin:territorial_universities' %}" class="able-btn able-btn-outline">Retour</a>
+</div>
+
+{# —— Cartes statistiques —— #}
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Étudiants</div>
+                    <div class="kpi-value">{{ students|default:0 }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-user-graduate"></i></div>
+            </div>
+            <div class="kpi-foot"><i class="fa-solid fa-users"></i> Effectif</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Réussite</div>
+                    <div class="kpi-value" style="color:{% if success_rate != None and success_rate >= 70 %}#0f9d58{% elif success_rate != None and success_rate >= 50 %}#b8860b{% elif success_rate != None %}#c62828{% else %}inherit{% endif %};">
+                        {% if success_rate != None %}{{ success_rate }}%{% else %}—{% endif %}
+                    </div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-chart-line"></i></div>
+            </div>
+            <div class="kpi-foot"><i class="fa-solid fa-trophy"></i> Taux de réussite</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Échec</div>
+                    <div class="kpi-value" style="color:{% if failure_rate != None and failure_rate >= 50 %}#c62828{% elif failure_rate != None %}#b8860b{% else %}inherit{% endif %};">
+                        {% if failure_rate != None %}{{ failure_rate }}%{% else %}—{% endif %}
+                    </div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            </div>
+            <div class="kpi-foot"><i class="fa-solid fa-percent"></i> Taux d'échec</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Admis</div>
+                    <div class="kpi-value">{{ passed_students|default:"—" }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="kpi-foot"><i class="fa-solid fa-user-check"></i> Réussites</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Échoués</div>
+                    <div class="kpi-value">{{ failed_students|default:"—" }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+            </div>
+            <div class="kpi-foot"><i class="fa-solid fa-user-xmark"></i> Échecs</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Enseignants</div>
+                    <div class="kpi-value">{{ teachers|default:0 }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+            </div>
+            <div class="kpi-foot"><i class="fa-solid fa-briefcase"></i> Corps enseignant</div>
+        </div>
+    </div>
+</div>
+
+{# —— Courbe d'évolution —— #}
+<div class="able-card mb-3">
+    <div class="able-card-head">
+        <h2><i class="fa-solid fa-chart-area me-2" style="color:var(--able-blue);"></i>Évolution du taux de réussite</h2>
+        <span class="able-badge muted">
+            {% if chart_mode == 'semestres' %}Par semestre{% else %}Par année académique{% endif %}
+        </span>
+    </div>
+    <div class="able-card-body">
+        {% if has_chart_data %}
+        <div style="position:relative;height:280px;">
+            <canvas id="successEvolutionChart"></canvas>
+        </div>
+        <p class="small text-muted mb-0 mt-2">
+            Source : rapports consolidés de l'établissement
+            {% if latest_report %}· dernier dépôt {{ latest_report.submitted_at|date:"d/m/Y" }} ({{ latest_report.academic_year }}){% endif %}.
+        </p>
+        {% else %}
+        <div class="text-center py-5">
+            <div class="able-avatar mx-auto mb-3" style="background:var(--able-blue-soft);color:var(--able-blue);">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <p class="mb-1" style="font-weight:700;">Pas encore de courbe disponible</p>
+            <p class="mb-0 small text-muted">Les taux apparaîtront dès qu'un rapport universitaire sera transmis.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Facultés</div>
+                    <div class="kpi-value">{{ faculties|length }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-landmark"></i></div>
+            </div>
+            <div class="kpi-foot"><i class="fa-solid fa-layer-group"></i> Filières actives</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Rapports</div>
+                    <div class="kpi-value">{{ reports|length }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-file-lines"></i></div>
+            </div>
+            <div class="kpi-foot"><i class="fa-solid fa-clock-rotate-left"></i> Historique</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-xl-8">
+        <div class="able-card h-100">
+            <div class="able-card-head">
+                <h2>Identité de l'établissement</h2>
+            </div>
+            <div class="able-card-body">
+                <form method="POST" class="row g-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_identity">
+                    <div class="col-md-6">
+                        <label class="able-label" for="address">Adresse</label>
+                        <input id="address" type="text" name="address" class="able-input"
+                               value="{{ university.address }}"
+                               placeholder="Avenue, commune, ville">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="able-label" for="phone">Téléphone</label>
+                        <input id="phone" type="text" name="phone" class="able-input"
+                               value="{{ university.phone }}"
+                               placeholder="+243 …">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="able-label" for="email">Email</label>
+                        <input id="email" type="email" name="email" class="able-input"
+                               value="{{ university.email }}"
+                               placeholder="contact@universite.ac.cd">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="able-label" for="capacity">Capacité</label>
+                        <input id="capacity" type="number" name="capacity" class="able-input" min="0"
+                               value="{{ university.capacity|default_if_none:'' }}"
+                               placeholder="Ex. 5000">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="able-label" for="institution_type">Type</label>
+                        <select id="institution_type" name="institution_type" class="able-input">
+                            <option value="PUBLIC" {% if university.institution_type == 'PUBLIC' %}selected{% endif %}>Public</option>
+                            <option value="PRIVATE" {% if university.institution_type == 'PRIVATE' %}selected{% endif %}>Privé</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <div class="able-label mb-1">Sessions académiques</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% if university.s1_closed %}
+                            <span class="able-badge low">S1 clôturé</span>
+                            {% else %}
+                            <span class="able-badge medium">S1 ouvert</span>
+                            {% endif %}
+                            {% if university.s2_closed %}
+                            <span class="able-badge low">S2 clôturé</span>
+                            {% else %}
+                            <span class="able-badge medium">S2 ouvert</span>
+                            {% endif %}
+                            {% if university.is_grading_locked %}
+                            <span class="able-badge warn">Notes verrouillées</span>
+                            {% else %}
+                            <span class="able-badge high">Saisie des notes active</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="able-btn able-btn-primary able-btn-sm">
+                            <i class="fa-solid fa-floppy-disk"></i> Enregistrer les informations
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="able-card h-100">
+            <div class="able-card-head">
+                <h2>Admin (Université)</h2>
+            </div>
+            <div class="able-card-body">
+                {% if manager %}
+                <div class="able-person">
+                    <div class="av" style="width:48px;height:48px;font-size:1rem;background:rgba(244,194,43,.2);color:#b8860b;">
+                        {{ manager.username|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <strong style="font-size:.95rem;">{{ manager.get_full_name|default:manager.username }}</strong>
+                        <small>{{ manager.email }}</small>
+                        {% if manager.phone %}<small>{{ manager.phone }}</small>{% endif %}
+                    </div>
+                </div>
+                <div class="mt-3">
+                    {% if manager.is_active %}
+                    <span class="able-badge medium">Compte actif</span>
+                    {% else %}
+                    <span class="able-badge low">Compte suspendu</span>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="mb-0" style="color:var(--able-muted);">Aucun admin (université) assigné.</p>
+                <a href="{% url 'super_admin:territorial_manage_structure' %}" class="able-btn able-btn-outline able-btn-sm mt-3">
+                    Assigner un admin (université)
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-7">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2>Facultés / filières</h2>
+                <span class="able-badge muted">{{ faculties|length }}</span>
+            </div>
+            <div class="table-responsive table-structure-wrap">
+                <table class="table-structure">
+                    <thead>
+                        <tr>
+                            <th>Faculté</th>
+                            <th>Étudiants</th>
+                            <th>Promotions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in faculties %}
+                        <tr>
+                            <td>
+                                <strong>{{ f.name }}</strong>
+                                <div class="small" style="color:var(--able-muted);">{{ university.name }}</div>
+                            </td>
+                            <td style="font-weight:700;">{{ f.student_count }}</td>
+                            <td>{{ f.promo_count }} promo.</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-4">Aucune faculté enregistrée.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-5">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2>Historique des rapports</h2>
+            </div>
+            <div class="able-card-body">
+                {% if reports %}
+                <ul class="able-timeline">
+                    {% for r in reports %}
+                    <li>
+                        <div class="when">{{ r.submitted_at|date:"d/m/Y" }}</div>
+                        <div class="dot {% if r.is_validated %}green{% else %}yellow{% endif %}">
+                            <i class="fa-solid fa-file-lines"></i>
+                        </div>
+                        <div class="txt">
+                            <strong>{{ r.academic_year }}</strong> — réussite {{ r.success_rate }}%
+                            <div class="mt-1">
+                                {% if r.is_validated %}
+                                <span class="able-badge medium">Consolidé</span>
+                                {% else %}
+                                <span class="able-badge warn">En attente</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-4">
+                    <div class="able-avatar mx-auto mb-3" style="background:var(--able-blue-soft);color:var(--able-blue);">
+                        <i class="fa-solid fa-inbox"></i>
+                    </div>
+                    <p class="mb-1" style="font-weight:700;color:#1d2630;">Aucun rapport déposé</p>
+                    <p class="mb-0 small" style="color:var(--able-muted);">
+                        Les rapports universitaires de cet établissement apparaîtront ici.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if has_chart_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const ctx = document.getElementById('successEvolutionChart');
+    if (!ctx) return;
+    const labels = {{ chart_labels_json|safe }};
+    const success = {{ chart_success_json|safe }};
+    const failure = {{ chart_failure_json|safe }};
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Taux de réussite (%)',
+                    data: success,
+                    borderColor: '#1E3A5F',
+                    backgroundColor: 'rgba(30,58,95,.12)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#1E3A5F',
+                },
+                {
+                    label: "Taux d'échec (%)",
+                    data: failure,
+                    borderColor: '#c62828',
+                    backgroundColor: 'rgba(198,40,40,.08)',
+                    fill: false,
+                    tension: 0.35,
+                    pointRadius: 3,
+                    borderDash: [5, 4],
+                    pointBackgroundColor: '#c62828',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } },
+                tooltip: {
+                    callbacks: {
+                        label: (item) => `${item.dataset.label}: ${item.parsed.y}%`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: { callback: (v) => v + '%' },
+                    grid: { color: 'rgba(0,0,0,.06)' }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

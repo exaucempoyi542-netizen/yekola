@@ -1,0 +1,120 @@
+{% extends "super_admin/territorial_base.html" %}
+{% block title %}Benchmarking · Yekola{% endblock %}
+{% block page_title %}Benchmarking{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Établissements</div>
+                    <div class="kpi-value">{{ rows|length }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-ranking-star"></i></div>
+            </div>
+            <div class="kpi-foot">Classement provincial</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Meilleure réussite</div>
+                    <div class="kpi-value">
+                        {% if best_rate != None %}{{ best_rate }}%{% else %}—{% endif %}
+                    </div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-trophy"></i></div>
+            </div>
+            <div class="kpi-foot">{{ best_uni|default:"—"|truncatechars:22 }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Avec données</div>
+                    <div class="kpi-value">{{ with_data }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-chart-column"></i></div>
+            </div>
+            <div class="kpi-foot">Rapport disponible</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Sans données</div>
+                    <div class="kpi-value">{{ no_data }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-circle-question"></i></div>
+            </div>
+            <div class="kpi-foot">N/D</div>
+        </div>
+    </div>
+</div>
+
+<div class="able-card">
+    <div class="able-card-head">
+        <h2>Classement des établissements</h2>
+        <span class="able-badge muted">{{ province.name }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="able-table" id="benchTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Établissement</th>
+                    <th>Étudiants</th>
+                    <th>Enseignants</th>
+                    <th>Ratio E/É</th>
+                    <th>Taux de réussite</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr data-has-rate="{% if row.success_rate != None %}1{% else %}0{% endif %}">
+                    <td>
+                        {% if forloop.counter == 1 and row.success_rate != None %}
+                        <span class="able-badge medium">1er</span>
+                        {% elif forloop.counter == 2 and row.success_rate != None %}
+                        <span class="able-badge high">2e</span>
+                        {% elif forloop.counter == 3 and row.success_rate != None %}
+                        <span class="able-badge warn">3e</span>
+                        {% else %}
+                        <span style="font-weight:800;color:var(--able-muted);">{{ forloop.counter }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="able-person">
+                            <div class="av">{{ row.university.name|slice:":1" }}</div>
+                            <div>
+                                <strong>{{ row.university.name }}</strong>
+                                <small>{{ row.university.get_institution_type_display }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="font-weight:700;">{{ row.students }}</td>
+                    <td>{{ row.teachers }}</td>
+                    <td>{% if row.ratio %}{{ row.ratio }}{% else %}—{% endif %}</td>
+                    <td>
+                        {% if row.success_rate != None %}
+                        <span class="able-badge {% if row.success_rate >= 50 %}medium{% else %}low{% endif %}">
+                            {{ row.success_rate }}%
+                        </span>
+                        {% else %}
+                        <span class="able-badge muted">N/D</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-4">Pas de données.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

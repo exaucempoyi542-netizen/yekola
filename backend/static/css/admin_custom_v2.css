@@ -1,0 +1,405 @@
+/* ================================================
+   EduRDC Admin - Design Pro Ultra Premium
+   ================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+/* ─── ROOT VARIABLES ────────────────────────────── */
+:root {
+  --primary:    #2563EB;
+  --primary-dk: #1D4ED8;
+  --accent:     #0EA5E9;
+  --success:    #10B981;
+  --danger:     #EF4444;
+  --warning:    #F59E0B;
+  --sidebar-bg: #0F172A;
+  --sidebar-hover: rgba(255,255,255,0.06);
+  --sidebar-active: linear-gradient(90deg, #2563EB, #3B82F6);
+  --body-bg:    #F1F5F9;
+  --card-bg:    #FFFFFF;
+  --text-main:  #0F172A;
+  --text-muted: #64748B;
+  --border:     #E2E8F0;
+  --radius:     12px;
+  --shadow:     0 4px 24px rgba(0,0,0,0.07);
+}
+
+/* ─── BASE ──────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html body,
+html body .content-wrapper,
+html body .wrapper {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  background-color: var(--body-bg) !important;
+  color: var(--text-main) !important;
+}
+
+/* ─── NAVBAR TOP ────────────────────────────────── */
+html body .main-header.navbar,
+html body .main-header.navbar.navbar-expand,
+html body nav.main-header {
+  background: linear-gradient(135deg, #152A45 0%, #1E3A5F 50%, #243B5C 100%) !important;
+  box-shadow: 0 2px 20px rgba(13,71,161,0.25) !important;
+  border-bottom: none !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 56px !important;
+}
+
+html body .main-header .nav-link,
+html body .main-header .navbar-nav > .nav-item > .nav-link {
+  color: rgba(255,255,255,0.9) !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+  transition: color 0.2s !important;
+}
+html body .main-header .nav-link:hover {
+  color: #fff !important;
+}
+
+/* Brand logo area */
+html body .brand-link,
+html body .main-sidebar .brand-link {
+  background: #060D1F !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  padding: 14px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  min-height: 56px !important;
+}
+html body .brand-text,
+html body .brand-link .brand-text {
+  color: #fff !important;
+  font-weight: 800 !important;
+  font-size: 1.15rem !important;
+  letter-spacing: -0.3px !important;
+}
+
+/* ─── SIDEBAR ───────────────────────────────────── */
+html body .main-sidebar,
+html body .control-sidebar,
+html body aside.main-sidebar {
+  background-color: var(--sidebar-bg) !important;
+  box-shadow: 3px 0 30px rgba(0,0,0,0.12) !important;
+}
+
+html body .main-sidebar .nav-sidebar > .nav-item > .nav-link {
+  border-radius: 8px !important;
+  margin: 2px 10px !important;
+  padding: 10px 12px !important;
+  color: #94A3B8 !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+html body .main-sidebar .nav-sidebar > .nav-item > .nav-link:hover {
+  background-color: var(--sidebar-hover) !important;
+  color: #fff !important;
+  transform: translateX(3px) !important;
+}
+
+html body .main-sidebar .nav-sidebar > .nav-item > .nav-link.active,
+html body .main-sidebar .nav-sidebar > .nav-item.menu-open > .nav-link {
+  background: linear-gradient(90deg, #2563EB, #3B82F6) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.35) !important;
+  transform: none !important;
+}
+
+html body .main-sidebar .nav-treeview .nav-link {
+  color: #64748B !important;
+  font-size: 0.82rem !important;
+  padding: 7px 12px 7px 36px !important;
+  margin: 1px 10px !important;
+  border-radius: 8px !important;
+  transition: all 0.2s !important;
+}
+html body .main-sidebar .nav-treeview .nav-link:hover {
+  background: var(--sidebar-hover) !important;
+  color: #fff !important;
+}
+html body .main-sidebar .nav-treeview .nav-link.active {
+  color: #60A5FA !important;
+  background: rgba(59,130,246,0.1) !important;
+}
+
+/* Sidebar icons */
+html body .main-sidebar .nav-icon {
+  color: #475569 !important;
+  font-size: 0.95rem !important;
+  width: 18px !important;
+}
+html body .main-sidebar .nav-sidebar > .nav-item > .nav-link.active .nav-icon {
+  color: #fff !important;
+}
+
+/* Sidebar nav header */
+html body .main-sidebar .nav-header {
+  color: #334155 !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.2px !important;
+  padding: 18px 18px 6px !important;
+}
+
+/* ─── CONTENT AREA ──────────────────────────────── */
+html body .content {
+  padding: 24px !important;
+}
+html body .content-header {
+  padding: 16px 24px 8px !important;
+}
+html body .content-header h1 {
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  color: var(--text-main) !important;
+}
+
+/* ─── CARDS ─────────────────────────────────────── */
+html body .card,
+html body .card.card-outline-secondary,
+html body .card.card-outline-primary {
+  border-radius: var(--radius) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+  background: var(--card-bg) !important;
+  margin-bottom: 20px !important;
+  overflow: hidden !important;
+}
+
+html body .card-header {
+  background: #FAFBFF !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 16px 20px !important;
+  font-weight: 700 !important;
+  color: var(--text-main) !important;
+}
+
+html body .card-body {
+  padding: 20px !important;
+}
+
+/* ─── TABLES ─────────────────────────────────────── */
+html body table.table th,
+html body #result_list thead th,
+html body #result_list thead th a {
+  background: #F8FAFC !important;
+  color: var(--text-muted) !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  padding: 14px 16px !important;
+  border-bottom: 2px solid var(--border) !important;
+  white-space: nowrap !important;
+}
+
+html body table.table td,
+html body #result_list tbody td {
+  padding: 14px 16px !important;
+  color: #334155 !important;
+  font-size: 0.875rem !important;
+  border-bottom: 1px solid #F1F5F9 !important;
+  vertical-align: middle !important;
+}
+
+html body #result_list tbody tr:hover td {
+  background: #EFF6FF !important;
+}
+
+/* ─── BUTTONS ───────────────────────────────────── */
+html body .btn,
+html body input[type="submit"],
+html body input[type="button"] {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+  border-radius: 8px !important;
+  padding: 8px 18px !important;
+  transition: all 0.25s ease !important;
+  border: none !important;
+  letter-spacing: 0.2px !important;
+}
+
+html body .btn-primary,
+html body input[type="submit"].default,
+html body [class*="btn-primary"] {
+  background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.3) !important;
+}
+html body .btn-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.4) !important;
+}
+
+html body .btn-success,
+html body [class*="btn-success"] {
+  background: linear-gradient(135deg, #10B981, #059669) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(16,185,129,0.3) !important;
+}
+html body .btn-danger,
+html body [class*="btn-danger"] {
+  background: linear-gradient(135deg, #EF4444, #DC2626) !important;
+  color: #fff !important;
+}
+html body .btn-warning,
+html body [class*="btn-warning"] {
+  background: linear-gradient(135deg, #F59E0B, #D97706) !important;
+  color: #fff !important;
+}
+
+html body .btn-secondary,
+html body [class*="btn-secondary"] {
+  background: #F1F5F9 !important;
+  color: #475569 !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06) !important;
+}
+
+/* ─── BREADCRUMB ────────────────────────────────── */
+html body .breadcrumb {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+html body .breadcrumb-item,
+html body .breadcrumb-item a,
+html body .breadcrumb-item.active {
+  font-size: 0.8rem !important;
+  color: var(--text-muted) !important;
+}
+html body .breadcrumb-item a:hover {
+  color: var(--primary) !important;
+}
+
+/* ─── FORM CONTROLS ─────────────────────────────── */
+html body .form-control,
+html body select.form-control,
+html body textarea.form-control,
+html body input.form-control {
+  border-radius: 8px !important;
+  border: 1.5px solid #CBD5E1 !important;
+  padding: 9px 14px !important;
+  font-size: 0.875rem !important;
+  font-family: 'Inter', sans-serif !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+  background: #fff !important;
+  color: var(--text-main) !important;
+}
+html body .form-control:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(37,130,246,0.12) !important;
+  outline: none !important;
+}
+
+/* ─── PAGINATION ─────────────────────────────────── */
+html body .pagination .page-link {
+  border-radius: 8px !important;
+  margin: 0 2px !important;
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+  color: var(--primary) !important;
+  border-color: var(--border) !important;
+}
+html body .pagination .page-item.active .page-link {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #fff !important;
+}
+
+/* ─── SEARCH BAR ─────────────────────────────────── */
+html body #searchbar {
+  border-radius: 8px !important;
+  border: 1.5px solid #CBD5E1 !important;
+  padding: 8px 14px !important;
+}
+
+/* ─── LOGIN PAGE ─────────────────────────────────── */
+html body.login-page {
+  background: linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #152A45 100%) !important;
+  min-height: 100vh !important;
+}
+html body.login-page .login-box {
+  width: 380px !important;
+}
+html body.login-page .card {
+  border-radius: 20px !important;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.3) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  background: rgba(255,255,255,0.97) !important;
+  backdrop-filter: blur(10px) !important;
+}
+html body.login-page .login-logo {
+  margin-bottom: 20px !important;
+}
+html body.login-page .login-logo img {
+  width: 60px !important;
+  height: 60px !important;
+  border-radius: 12px !important;
+}
+html body.login-page .login-box-msg {
+  font-size: 0.9rem !important;
+  color: var(--text-muted) !important;
+  font-weight: 500 !important;
+  margin-bottom: 20px !important;
+}
+html body.login-page .input-group {
+  margin-bottom: 14px !important;
+}
+html body.login-page .input-group .form-control {
+  border-right: none !important;
+}
+html body.login-page .input-group .input-group-text {
+  background: #fff !important;
+  border-left: none !important;
+  border-color: #CBD5E1 !important;
+  color: var(--text-muted) !important;
+}
+html body.login-page .btn-primary {
+  width: 100% !important;
+  padding: 12px !important;
+  font-size: 0.95rem !important;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.4) !important;
+  margin-top: 6px !important;
+}
+
+/* ─── STATS BOXES ─────────────────────────────────── */
+html body .small-box {
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow) !important;
+  overflow: hidden !important;
+}
+
+/* ─── ALERTS & MESSAGES ──────────────────────────── */
+html body .alert {
+  border-radius: var(--radius) !important;
+  border: none !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+}
+
+/* ─── FOOTER ─────────────────────────────────────── */
+html body .main-footer {
+  background: #fff !important;
+  border-top: 1px solid var(--border) !important;
+  font-size: 0.8rem !important;
+  color: var(--text-muted) !important;
+  padding: 12px 24px !important;
+}
+
+/* ─── ACTIONS AREA ───────────────────────────────── */
+html body #changelist-form .actions {
+  background: #F8FAFC !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  margin-bottom: 14px !important;
+  border: 1px solid var(--border) !important;
+}

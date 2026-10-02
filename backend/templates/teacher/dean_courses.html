@@ -1,0 +1,163 @@
+{% extends "teacher/base.html" %}
+{% load static %}
+
+{% block title %}Cours de la faculté · Décanat{% endblock %}
+{% block page_title %}Cours de la faculté{% endblock %}
+
+{% block extra_css %}
+<style>
+.table-faculte-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+table.table-faculte {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  font-size: 1rem;
+  margin: 0;
+  border: 1px solid var(--campus-border, #D0D7E2);
+}
+table.table-faculte th,
+table.table-faculte td {
+  vertical-align: middle;
+  padding: .6rem .75rem;
+  border: 1px solid var(--campus-border, #D0D7E2);
+}
+table.table-faculte thead th {
+  background: var(--campus-ink, #0A1628) !important;
+  color: #F4F8F6 !important;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: .7rem .75rem;
+  border-color: var(--campus-ink-mid, #152A45);
+}
+table.table-faculte tbody tr:nth-child(even) td {
+  background: var(--campus-elevated, #F5F8FB);
+}
+table.table-faculte tbody tr:hover td {
+  background: rgba(30, 58, 95, 0.08) !important;
+}
+table.table-faculte .able-badge {
+  white-space: nowrap;
+  display: inline-block;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="able-card mb-3">
+    <div class="able-card-head d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h2 class="mb-0">Cours de la faculté</h2>
+        <button type="button" class="able-btn able-btn-primary able-btn-sm" data-bs-toggle="modal" data-bs-target="#createCourseModal">
+            <i class="fa-solid fa-plus"></i> Nouveau
+        </button>
+    </div>
+    <div class="table-responsive table-faculte-wrap">
+        <table class="able-table table-faculte">
+            <thead>
+                <tr>
+                    <th>Cours</th>
+                    <th>Promotion</th>
+                    <th>Semestre</th>
+                    <th>Crédits</th>
+                    <th>Enseignant</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in faculty_courses %}
+                <tr>
+                    <td>
+                        <div class="able-person">
+                            <div class="av">{{ course.title|slice:":1" }}</div>
+                            <div><strong>{{ course.title }}</strong></div>
+                        </div>
+                    </td>
+                    <td>{{ course.promotion.display_label|default:"—" }}</td>
+                    <td>S{{ course.semester }}</td>
+                    <td>{{ course.credits }} ECTS</td>
+                    <td>
+                        {% if course.teacher_id %}
+                        {{ course.teacher.get_full_name|default:course.teacher.username }}
+                        {% else %}
+                        <span class="able-badge warn">À affecter</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if not course.teacher_id %}
+                        <a href="{% url 'dean_delete_course' course.id %}" class="able-btn able-btn-danger able-btn-sm"
+                           onclick="return confirm('Supprimer ce cours ?')">Supprimer</a>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-4">Aucun cours. Créez le premier cours de votre faculté.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="createCourseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Nouveau cours</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'dean_create_course' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="small mb-3" style="color:var(--able-muted);">
+                        Rattaché à <strong>{{ request.user.assigned_faculty.name|default:"votre faculté" }}</strong>
+                    </p>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="able-label">Intitulé</label>
+                            <input type="text" name="title" class="able-input" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="able-label">Promotion LMD</label>
+                            <select name="promotion_id" class="able-input" required>
+                                <option value="">Sélectionner…</option>
+                                {% for promo in faculty_promotions %}
+                                <option value="{{ promo.id }}">{{ promo.display_label }}</option>
+                                {% empty %}
+                                <option value="" disabled>Aucune promotion LMD</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="able-label">Semestre</label>
+                            <select name="semester" class="able-input" required>
+                                <option value="1">S1</option>
+                                <option value="2">S2</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="able-label">Crédits ECTS</label>
+                            <input type="number" name="credits" class="able-input" value="3" min="1" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="able-label">Description</label>
+                            <textarea name="description" class="able-input" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="able-btn able-btn-outline" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="able-btn able-btn-primary">Créer le cours</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

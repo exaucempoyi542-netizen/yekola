@@ -1,0 +1,189 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S'inscrire | Yekola Pro Enseignant</title>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'teacher/css/teacher.css' %}?v=3">
+    <style>
+        body {
+            background: radial-gradient(circle at bottom right, #f1f5f9 0%, #cbd5e1 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 0;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 1.5rem;
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius-2xl);
+            padding: 4rem;
+            box-shadow: 0 40px 100px -20px rgba(15, 23, 42, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .brand-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--primary);
+            color: white;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            margin: 0 auto 2rem;
+            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+        }
+
+        .auth-header h1 {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+            text-align: center;
+            letter-spacing: -0.02em;
+        }
+
+        .auth-header p {
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 3.5rem;
+            font-weight: 500;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.6rem;
+            display: block;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 2.5rem;
+            color: var(--text-muted);
+            font-size: 0.938rem;
+        }
+
+        .login-link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        @media (max-width: 768px) {
+            .auth-card {
+                padding: 3rem 1.75rem;
+            }
+
+            .auth-header h1 {
+                font-size: 1.75rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-container animate-fade-in">
+        <div class="auth-card">
+            <div class="brand-icon">
+                <i class="fas fa-edit"></i>
+            </div>
+
+            <div class="auth-header">
+                <h1>Rejoindre Yekola</h1>
+                <p>Créez votre profil d'éducateur expert</p>
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+
+                {% if error %}
+                <div class="alert alert-danger border-0 small fw-bold mb-4"
+                    style="border-radius: 12px; background: #fef2f2; color: #991b1b;">
+                    <i class="fas fa-exclamation-triangle me-2"></i> {{ error }}
+                </div>
+                {% endif %}
+
+                <div class="row g-md-4">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Nom d'utilisateur</label>
+                        <div class="input-group-premium">
+                            <i class="fas fa-user-tag"></i>
+                            <input type="text" name="username" class="form-input-premium" placeholder="ex: prof_jean"
+                                required autofocus>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Adresse Email</label>
+                        <div class="input-group-premium">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" name="email" class="form-input-premium" placeholder="nom@exemple.cd"
+                                required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Mot de passe</label>
+                    <div class="input-group-premium">
+                        <i class="fas fa-key"></i>
+                        <input type="password" name="password" class="form-input-premium"
+                            placeholder="Minimum 8 caractères" required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Confirmation</label>
+                    <div class="input-group-premium">
+                        <i class="fas fa-shield-check"></i>
+                        <input type="password" name="confirm_password" class="form-input-premium"
+                            placeholder="Répéter le mot de passe" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-premium w-100 py-3 mt-2">
+                    Créer mon compte <i class="fas fa-check-circle ms-2"></i>
+                </button>
+            </form>
+
+            <div class="login-link">
+                Vous avez déjà un compte ? <a href="{% url 'unified_login' %}">Se connecter</a>
+            </div>
+
+            <p class="text-center text-muted small mt-4 mb-0 opacity-50" style="font-size: 0.75rem;">
+                En continuant, vous acceptez les conditions d'utilisation de Yekola Pro.
+            </p>
+        </div>
+
+        <div class="text-center mt-4 small text-muted">
+            &copy; 2026 Yekola Pro. L'éducation à l'ère numérique.
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

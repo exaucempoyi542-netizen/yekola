@@ -1,0 +1,102 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block page_title %}Centre de Messagerie{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-fade-in">
+    <div class="col-12 col-xl-8">
+        <div class="premium-card p-0 shadow-lg border-0 overflow-hidden">
+            <div class="p-3 px-4 border-bottom bg-navy text-white d-flex justify-content-end align-items-center">
+                <span class="badge-premium badge-gold" style="font-size: 0.65rem;">
+                    <i class="fas fa-comments me-2"></i> {{ rooms|length }} DISCUSSIONS
+                </span>
+            </div>
+
+            <div class="chat-list-container bg-white">
+                {% if rooms %}
+                <div class="list-group list-group-flush">
+                    {% for room in rooms %}
+                    <a href="{% url 'teacher_chat_room' room.id %}"
+                        class="list-group-item list-group-item-action border-bottom-0 p-4 ministerial-list-item"
+                        style="border-bottom: 1px solid var(--ivory) !important;">
+                        <div class="d-flex align-items-center w-100">
+                            <div class="position-relative">
+                                <div class="icon-square bg-navy text-gold fw-900 shadow-sm"
+                                    style="width: 56px; height: 56px; border-radius: 16px; font-size: 1.2rem;">
+                                    {% if room.is_group %}
+                                    <i class="fas fa-users"></i>
+                                    {% else %}
+                                    {% for participant in room.participants.all %}
+                                    {% if participant != request.user %}
+                                    {{ participant.username|slice:":1"|upper }}
+                                    {% endif %}
+                                    {% endfor %}
+                                    {% endif %}
+                                </div>
+                                {% if room.last_message %}
+                                {% if not room.last_message.is_read and room.last_message.sender != request.user %}
+                                <span
+                                    class="position-absolute top-0 start-100 translate-middle p-2 bg-gold border border-white rounded-circle shadow-sm"
+                                    style="margin-left:-8px; margin-top:8px;"></span>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+
+                            <div class="flex-grow-1 ms-4 overflow-hidden">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h6 class="fw-900 text-navy mb-0">
+                                        {% if room.is_group %}
+                                        {{ room.name|default:"Groupe de Formation" }}
+                                        {% else %}
+                                        {% for participant in room.participants.all %}
+                                        {% if participant != request.user %}
+                                        {{ participant.username }}
+                                        {% endif %}
+                                        {% endfor %}
+                                        {% endif %}
+                                    </h6>
+                                    <span class="text-muted extra-small fw-800">{{
+                                        room.last_message.created_at|date:"H:i" }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <p class="text-muted extra-small fw-bold mb-0 text-truncate pe-3">
+                                        {% if room.last_message %}
+                                        {% if room.last_message.sender  ==  request.user %}
+                                        <span class="text-gold fw-900">VOUS:</span>
+                                        {% endif %}
+                                        {{ room.last_message.content }}
+                                        {% else %}
+                                        <span class="opacity-50 fst-italic">Signal en attente...</span>
+                                        {% endif %}
+                                    </p>
+                                    <i class="fas fa-chevron-right text-gold x-small opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5 my-5 opacity-50">
+                    <div class="icon-square bg-ivory text-muted mx-auto mb-4"
+                        style="width: 80px; height: 80px; border-radius: 24px;">
+                        <i class="fas fa-comments fs-2"></i>
+                    </div>
+                    <h5 class="fw-900 text-navy">Messagerie Vierge</h5>
+                    <p class="extra-small fw-800 text-uppercase letter-spacing-1">Aucun dialogue n'est archivé à ce
+                        jour.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .ministerial-list-item:hover {
+        padding-left: 3rem !important;
+        background: var(--ivory) !important;
+    }
+</style>
+{% endblock %}

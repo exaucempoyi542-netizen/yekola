@@ -1,0 +1,127 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Yekola · Administration Provinciale{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'super_admin/css/able-pro.css' %}?v=7">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="able-body">
+    <div class="able-overlay" id="sidebarOverlay"></div>
+    <div class="able-wrapper">
+        <aside class="able-sidebar" id="sidebar">
+            <div class="able-brand">
+                <div class="able-brand-mark">E</div>
+                <div class="able-brand-name">
+                    Yekola
+                    <span>Tutelle provinciale</span>
+                </div>
+            </div>
+
+            <div class="able-profile">
+                <div class="able-avatar">{{ request.user.username|slice:":1"|upper }}</div>
+                <div class="min-width-0">
+                    <strong class="text-truncate d-block">{{ request.user.get_full_name|default:request.user.username }}</strong>
+                    <small>{{ request.user.assigned_province.name|default:"Province" }}</small>
+                </div>
+            </div>
+
+            <nav class="able-nav">
+                <div class="able-nav-label">Navigation</div>
+                <a href="{% url 'super_admin:territorial_dashboard' %}" class="able-nav-link {% if request.resolver_match.url_name == 'territorial_dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-gauge-high"></i><span>Tableau de bord</span>
+                </a>
+                <a href="{% url 'super_admin:territorial_universities' %}" class="able-nav-link {% if 'universit' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-building-columns"></i><span>Établissements</span>
+                </a>
+                <a href="{% url 'super_admin:territorial_manage_structure' %}" class="able-nav-link {% if 'structure' in request.resolver_match.url_name or 'manager' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-sitemap"></i><span>Structure & Admins (Université)</span>
+                </a>
+                <a href="{% url 'super_admin:territorial_reports' %}" class="able-nav-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-file-lines"></i><span>Rapports</span>
+                </a>
+                <div class="able-nav-label">Analyse</div>
+                <a href="{% url 'super_admin:territorial_benchmark' %}" class="able-nav-link {% if request.resolver_match.url_name == 'territorial_benchmark' %}active{% endif %}">
+                    <i class="fa-solid fa-chart-column"></i><span>Benchmarking</span>
+                </a>
+                <a href="{% url 'super_admin:territorial_lmd' %}" class="able-nav-link {% if request.resolver_match.url_name == 'territorial_lmd' %}active{% endif %}">
+                    <i class="fa-solid fa-book"></i><span>Conformité LMD</span>
+                </a>
+                <a href="{% url 'super_admin:territorial_alerts' %}" class="able-nav-link {% if 'alert' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-bell"></i><span>Alertes</span>
+                </a>
+            </nav>
+
+            <div class="able-sidebar-foot">
+                <a href="{% url 'unified_logout' %}" class="able-logout">
+                    <i class="fa-solid fa-power-off"></i> Déconnexion
+                </a>
+            </div>
+        </aside>
+
+        <div class="able-main">
+            <header class="able-topbar">
+                <div class="able-topbar-left">
+                    <button type="button" class="able-burger" id="sidebarToggle" aria-label="Menu">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="fw-semibold">{% block page_title %}Tableau de bord{% endblock %}</div>
+                </div>
+                <div class="able-top-actions">
+                    <a class="able-icon-btn" href="{% url 'super_admin:territorial_alerts' %}" title="Alertes">
+                        <i class="fa-regular fa-bell"></i>
+                    </a>
+                    <details class="able-user-menu">
+                        <summary class="able-icon-btn" title="{{ request.user.username }}">
+                            <i class="fa-regular fa-user"></i>
+                        </summary>
+                        <div class="able-user-dropdown">
+                            <div class="user-meta">
+                                <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                                <small>{{ request.user.username }}</small>
+                            </div>
+                            <a href="{% url 'super_admin:change_password' %}">
+                                <i class="fa-solid fa-key"></i> Changer le mot de passe
+                            </a>
+                        </div>
+                    </details>
+                </div>
+            </header>
+
+            <main class="able-content">
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} border-0 shadow-sm mb-3">
+                    {{ message }}
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const toggle = document.getElementById('sidebarToggle');
+            if (toggle) toggle.addEventListener('click', () => {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('active');
+            });
+            if (overlay) overlay.addEventListener('click', () => {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('active');
+            });
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

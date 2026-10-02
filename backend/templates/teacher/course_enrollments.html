@@ -1,0 +1,213 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block page_title %}Analyse des Apprenants{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in mb-5">
+    <div class="d-flex flex-wrap justify-content-end align-items-center gap-3 mb-4">
+        <a href="{% url 'teacher_dashboard' %}" class="able-btn able-btn-outline">Retour</a>
+        <div class="stat-card py-2 px-4 shadow-sm border-0 d-flex align-items-center bg-white"
+            style="border-radius: 18px;">
+            <div class="pe-3 border-end me-3">
+                <div class="extra-small fw-800 text-muted text-uppercase mb-0">Taux de Réussite</div>
+                <div class="fw-900 text-gold h4 mb-0">{{ avg_progress|floatformat:0 }}<span
+                        class="extra-small opacity-50">%</span></div>
+            </div>
+            <div class="icon-square bg-navy text-white" style="width:40px; height:40px; font-size:1rem;">
+                <i class="fas fa-chart-line"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Dashboard -->
+    <div class="row g-4 mb-5">
+        <div class="col-6 col-md-3">
+            <div class="stat-card h-100">
+                <div class="extra-small fw-800 text-muted text-uppercase mb-2">Inscriptions</div>
+                <div class="d-flex align-items-end justify-content-between">
+                    <h2 class="fw-900 text-navy mb-0">{{ total_enrolled }}</h2>
+                    <i class="fas fa-users text-gold opacity-50 mb-1"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card h-100 gold">
+                <div class="extra-small fw-800 text-navy text-uppercase mb-2">Certifiés</div>
+                <div class="d-flex align-items-end justify-content-between">
+                    <h2 class="fw-900 text-navy mb-0">{{ finished_count }}</h2>
+                    <i class="fas fa-award text-navy opacity-50 mb-1"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card h-100">
+                <div class="extra-small fw-800 text-muted text-uppercase mb-2">Flux Actif</div>
+                <div class="d-flex align-items-end justify-content-between">
+                    <h2 class="fw-900 text-navy mb-0">{{ in_progress_count }}</h2>
+                    <i class="fas fa-person-running text-gold opacity-50 mb-1"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card h-100">
+                <div class="extra-small fw-800 text-muted text-uppercase mb-2">Engagement</div>
+                <div class="d-flex align-items-end justify-content-between">
+                    <h2 class="fw-900 text-navy mb-0">{{ avg_progress|floatformat:0 }}%</h2>
+                    <i class="fas fa-bullseye text-gold opacity-50 mb-1"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Registry -->
+    <div class="premium-card p-0 shadow-lg border-0 overflow-hidden">
+        <div
+            class="p-4 p-md-5 border-bottom bg-ivory d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
+            <div>
+                <h4 class="fw-900 text-navy mb-1">Registre des Participants</h4>
+                <p class="text-muted extra-small fw-800 text-uppercase letter-spacing-1 mb-0">Contrôle de conformité et
+                    suivi individuel</p>
+            </div>
+            <div class="search-box-premium position-relative">
+                <input type="text" id="studentSearch" class="ministerial-input ps-5"
+                    placeholder="Filtrer par identité..." style="min-width: 300px;">
+                <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+            </div>
+        </div>
+
+        <!-- Desktop View -->
+        <div class="table-responsive d-none d-md-block">
+            <table class="premium-table table-hover align-middle mb-0" id="enrollmentsTable">
+                <thead>
+                    <tr class="bg-navy text-white text-uppercase extra-small fw-800 letter-spacing-1">
+                        <th class="ps-5 py-4">Identité de l'Apprenant</th>
+                        <th>Coordonnées</th>
+                        <th>Dernière Session</th>
+                        <th style="min-width: 250px;">Progression Académique</th>
+                        <th class="text-center pe-5">État Statutaire</th>
+                    </tr>
+                </thead>
+                <tbody class="border-0">
+                    {% for enrollment in enrollments %}
+                    <tr class="animate-fade-in" style="animation-delay: {{ forloop.counter0 }}0ms;">
+                        <td class="ps-5 py-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="avatar-sm bg-ivory text-navy border fw-900 d-flex align-items-center justify-content-center"
+                                    style="width: 44px; height: 44px; border-radius: 12px; font-size: 0.9rem;">
+                                    {{ enrollment.student.username|slice:":1"|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-900 text-navy student-name mb-0">{{ enrollment.student.username }}
+                                    </div>
+                                    <div class="text-muted extra-small fw-bold opacity-75">Inscrit le {{
+                                        enrollment.enrolled_at|date:"d M Y" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="mailto:{{ enrollment.student.email }}"
+                                class="text-gold text-decoration-none extra-small fw-900">
+                                <i class="far fa-envelope me-2 opacity-50"></i>{{ enrollment.student.email|default:"SANS
+                                EMAIL" }}
+                            </a>
+                        </td>
+                        <td class="extra-small fw-800 text-muted">{{ enrollment.enrolled_at|date:"d M Y" }}<br /><span
+                                class="text-navy opacity-50">{{ enrollment.enrolled_at|date:"H:i" }}</span></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-3 pe-4">
+                                <div class="flex-grow-1">
+                                    <div class="progress"
+                                        style="height: 10px; background-color: var(--ivory); border-radius: 20px;">
+                                        <div class="progress-bar {% if enrollment.progress >= 100 %}bg-gold{% else %}bg-navy{% endif %} shadow-sm"
+                                            role="progressbar"
+                                            style="width: {{ enrollment.progress }}%; border-radius: 20px;"></div>
+                                    </div>
+                                </div>
+                                <span class="extra-small fw-900 text-navy">{{ enrollment.progress|floatformat:0
+                                    }}%</span>
+                            </div>
+                        </td>
+                        <td class="text-center pe-5">
+                            {% if enrollment.status_kind == 'done' %}
+                            <span class="badge-premium badge-gold" style="font-size: 0.6rem;"><i
+                                    class="fas fa-check me-1"></i> TERMINÉ</span>
+                            {% elif enrollment.status_kind == 'progress' %}
+                            <span class="badge-premium badge-navy" style="font-size: 0.6rem;"><i
+                                    class="fas fa-spinner fa-spin me-1"></i> {{ enrollment.status_label }}</span>
+                            {% else %}
+                            <span class="badge-premium border text-muted" style="font-size: 0.6rem;"><i
+                                    class="fas fa-clock me-1"></i> {{ enrollment.status_label|upper }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="opacity-30 py-5">
+                                <i class="fas fa-users-slash fs-1 mb-3"></i>
+                                <h5 class="fw-900 text-navy">Registre Vierge</h5>
+                                <p class="extra-small fw-800 text-uppercase">Aucune inscription mobile détectée pour
+                                    cette formation.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile View -->
+        <div class="d-md-none p-3 space-y-4">
+            {% for enrollment in enrollments %}
+            <div class="ministerial-list-item flex-column align-items-stretch p-4 mb-3 animate-fade-in">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="icon-square bg-navy text-gold" style="width:48px; height:48px; font-size:1rem;">
+                        {{ enrollment.student.username|slice:":1"|upper }}
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="fw-900 text-navy student-name mb-0">{{ enrollment.student.username }}</div>
+                        <div class="text-muted extra-small fw-bold opacity-75">{{ enrollment.student.email|default:"Sans
+                            email" }}</div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="extra-small fw-800 text-muted text-uppercase">Progression</span>
+                        <span class="extra-small fw-900 text-navy">{{ enrollment.progress|floatformat:0 }}%</span>
+                    </div>
+                    <div class="progress" style="height: 8px; background-color: var(--ivory); border-radius: 20px;">
+                        <div class="progress-bar {% if enrollment.progress >= 100 %}bg-gold{% else %}bg-navy{% endif %}"
+                            role="progressbar" style="width: {{ enrollment.progress }}%; border-radius: 20px;"></div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                    <div class="extra-small fw-800 text-muted text-uppercase">Statut :</div>
+                    {% if enrollment.status_kind == 'done' %}
+                    <span class="badge-premium badge-gold" style="font-size: 0.6rem;">TERMINÉ</span>
+                    {% elif enrollment.status_kind == 'progress' %}
+                    <span class="badge-premium badge-navy" style="font-size: 0.6rem;">{{ enrollment.status_label }}</span>
+                    {% else %}
+                    <span class="badge-premium border text-muted" style="font-size: 0.6rem;">{{ enrollment.status_label|upper }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('studentSearch').addEventListener('keyup', function () {
+        const query = this.value.toLowerCase().trim();
+        const rows = document.querySelectorAll('#enrollmentsTable tbody tr');
+        rows.forEach(row => {
+            const name = row.querySelector('.student-name')?.textContent.toLowerCase() || '';
+            const email = row.querySelector('a')?.textContent.toLowerCase() || '';
+            row.style.display = (name.includes(query) || email.includes(query)) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}

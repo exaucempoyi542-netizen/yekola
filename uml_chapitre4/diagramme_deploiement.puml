@@ -1,0 +1,87 @@
+@startuml Diagramme_Deploiement_EduRDC
+!theme plain
+skinparam nodeFontSize 11
+skinparam nodeFontStyle bold
+skinparam componentFontSize 10
+skinparam databaseFontSize 10
+skinparam cloudFontSize 11
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1.2
+skinparam linetype ortho
+
+title Diagramme de Deploiement — Plateforme MayeleNet
+
+' ============================================================
+' CLIENT TIER
+' ============================================================
+package "Niveau Client (Utilisateurs)" {
+  node "Smartphone Etudiant\n[Android / iOS]" as MobileDevice #E3F2FD {
+    component "Application Mobile Flutter\n(MayeleNet Mobile App)" as MobileApp
+    database "Hive / SQLite\n(Stockage local Offline)" as LocalDB
+    MobileApp ..> LocalDB : Persistance locale
+  }
+
+  node "Poste Client / Navigateur Web\n[PC / Tablette]" as DesktopDevice #E3F2FD {
+    component "Navigateur Web\n(Chrome, Firefox, Edge)" as Browser
+    component "Portail Enseignant & Decanat\n(HTML5 / CSS3 / JavaScript)" as WebPortal
+    Browser *-- WebPortal
+  }
+}
+
+' ============================================================
+' APPLICATION SERVER TIER
+' ============================================================
+node "Serveur d'Application MayeleNet\n[Ubuntu Linux Server]" as AppServer #FFF3E0 {
+  node "Serveur Web & Reverse Proxy" as WebServer {
+    component "Nginx" as Nginx
+  }
+
+  node "Conteneur d'Application Django" as DjangoContainer {
+    component "Serveur WSGI / Gunicorn" as Gunicorn
+    component "API REST Backend\n(Django REST Framework)" as BackendAPI
+    component "Module RBAC & Auth JWT" as AuthModule
+    component "Gestionnaire de Cotation LMD" as LMDModule
+
+    Gunicorn --> BackendAPI
+    BackendAPI *-- AuthModule
+    BackendAPI *-- LMDModule
+  }
+
+  node "Systeme de Fichiers Serveur" as FileSystem {
+    artifact "Fichiers Medias\n(PDF, Videos, PPT, Vignettes)" as MediaFiles
+  }
+
+  Nginx --> Gunicorn : Proxification HTTP (Port 8000)
+  BackendAPI --> MediaFiles : Lecture / Écriture
+}
+
+' ============================================================
+' DATABASE TIER
+' ============================================================
+node "Serveur Base de Donnees MySQL" as DBServer #E8F5E9 {
+  database "Base de Donnees MySQL\n(edurdc_db)" as MainDB {
+    [Tables: Users, Courses, Grades, Quizzes, AuditLogs]
+  }
+}
+
+' ============================================================
+' EXTERNAL SERVICES TIER
+' ============================================================
+cloud "Services Cloud Externes" as CloudServices #F3E5F5 {
+  node "Serveur de Visio-Conference" as JitsiCloud {
+    component "Jitsi Meet Server\n(Sessions Live)" as Jitsi
+  }
+}
+
+' ============================================================
+' CONNECTIONS & PROTOCOLS
+' ============================================================
+MobileApp -- Nginx : HTTPS / REST API (JSON)
+WebPortal -- Nginx : HTTPS / HTML / REST API
+
+BackendAPI -- MainDB : TCP/IP / SQL (Port 3306)
+
+MobileApp ..> Jitsi : WebRTC / HTTPS (Sessions Live)
+WebPortal ..> Jitsi : WebRTC / HTTPS (Sessions Live)
+
+@enduml

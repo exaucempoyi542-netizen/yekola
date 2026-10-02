@@ -1,0 +1,68 @@
+@startuml Figure_4_6_Activite_Cycle_Vie_Cote
+!theme plain
+skinparam activityFontSize 12
+title Figure 4.6 — Diagramme d'activité : Cycle de vie d'une cote
+
+|Enseignant|
+start
+:Ouvrir le carnet de cotes\ndu cours affecté;
+
+if (Verrouillage actif ?\nnotes verrouillées\nou semestre clôturé) then (oui)
+  :Afficher le message\n« Saisie bloquée »;
+  stop
+else (non)
+  :Saisir / modifier\nTP, Interro, Examen;
+  :Calculer le total /20\net les crédits ECTS;
+  :Enregistrer l'état **Brouillon**;
+endif
+
+if (Envoyer au Décanat ?) then (oui)
+  :Passer à **Soumis au Décanat**;
+  :Synchroniser la note de cours;
+  :Écrire dans le journal d'audit;
+else (non)
+  :Rester en brouillon;
+  stop
+endif
+
+|Décanat|
+:Consulter les cotes soumises;
+
+if (Correction encore possible\net verrou inactif ?) then (oui)
+  |Enseignant|
+  :Corriger les composantes;
+  :Resoumettre au Décanat;
+  |Décanat|
+else (non)
+endif
+
+:Lancer la délibération annuelle\n(promotion LMD);
+
+:Calculer les crédits S1 + S2\npour chaque étudiant;
+:Créer le rapport de résultats\net les lignes Réussite / Échec;
+:Marquer les cotes **Validées par le Décanat**;
+:Produire le rapport facultaire;
+
+|Gestionnaire|
+:Consulter les résultats consolidés;
+:Créer le rapport universitaire;
+:Transmettre à la province;
+
+|Administrateur provincial|
+:Consolider le rapport provincial;
+:Transmettre au Ministère;
+
+|Super-Administrateur|
+:Valider le rapport provincial;
+:Mettre à jour les indicateurs nationaux;
+
+stop
+
+legend right
+  |= État |= Signification |
+  | Brouillon | Saisie par l'enseignant |
+  | Soumis au Décanat | Visible pour délibération |
+  | Validé par le Décanat | Intégré au rapport annuel |
+endlegend
+
+@enduml

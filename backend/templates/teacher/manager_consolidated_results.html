@@ -1,0 +1,28 @@
+{% extends "teacher/base.html" %}
+{% load static %}
+
+{% block page_title %}Résultats consolidés{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-end gap-2 mb-3">
+    <a href="{% url 'manager_dashboard' %}" class="able-btn able-btn-outline">Retour</a>
+    <form method="POST" action="{% url 'manager_generate_uni_report' %}" class="m-0">
+        {% csrf_token %}
+        <button type="submit" class="able-btn able-btn-primary"
+            onclick="return confirm('Envoyer le rapport annuel consolidé à l\'Administrateur Provincial ?');">
+            Envoyer à l'Admin Provincial
+        </button>
+    </form>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="able-kpi soft"><div class="kpi-top"><div><div class="kpi-label">Rapports reçus</div><div class="kpi-value">{{ reports|length }}</div></div><div class="kpi-icon"><i class="fa-solid fa-inbox"></i></div></div><div class="kpi-foot">Décanats</div></div></div>
+  <div class="col-md-4"><div class="able-kpi soft"><div class="kpi-top"><div><div class="kpi-label">En attente</div><div class="kpi-value">{{ pending_faculty_reports_count }}</div></div><div class="kpi-icon"><i class="fa-solid fa-clock"></i></div></div><div class="kpi-foot">Avant envoi</div></div></div>
+  <div class="col-md-4"><div class="able-kpi soft"><div class="kpi-top"><div><div class="kpi-label">Dernier envoi</div><div class="kpi-value" style="font-size:1rem;">{% if latest_uni_report %}OK{% else %}—{% endif %}</div></div><div class="kpi-icon"><i class="fa-solid fa-paper-plane"></i></div></div><div class="kpi-foot">{% if latest_uni_report %}{{ latest_uni_report.submitted_at|date:'d/m/Y H:i' }}{% else %}Aucun{% endif %}</div></div></div>
+</div>
+
+<div class="able-card mb-3"><div class="able-card-head"><h2>Rapports reçus des Décanats</h2><span class="able-badge muted">{{ reports|length }}</span></div>{% if reports %}<div class="table-responsive"><table class="able-table"><thead><tr><th>Promotion</th><th>Faculté</th><th>Date</th><th>Réussites</th><th></th></tr></thead><tbody>{% for report in reports %}<tr><td><strong>{{ report.promotion.display_label }}</strong><br><small style="color:var(--able-muted);">{% if report.semester %}S{{ report.semester }}{% else %}Annuel{% endif %}</small></td><td>{{ report.faculty.name }}</td><td>{{ report.submitted_at|date:'d/m/Y H:i' }}</td><td><strong>{{ report.passed_students }}</strong> <span style="color:var(--able-muted);">/ {{ report.total_students }}</span></td><td class="text-end"><a href="?report_id={{ report.id }}" class="able-btn able-btn-outline able-btn-sm">{% if selected_report and selected_report.id == report.id %}Affiché{% else %}Voir{% endif %}</a></td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="able-card-body text-center py-4" style="color:var(--able-muted);">Aucun rapport annuel reçu.</div>{% endif %}</div>
+
+<div class="able-card"><div class="able-card-head"><h2>{% if selected_report %}{{ selected_report.title }}{% else %}Détail du rapport{% endif %}</h2><span class="able-badge muted">{% if selected_report %}{{ lines|length }} étudiant{{ lines|length|pluralize }}{% else %}Aucun rapport sélectionné{% endif %}</span></div>{% if selected_report %}<div class="table-responsive"><table class="able-table"><thead><tr><th>Nom complet</th><th>Faculté</th><th>Promotion</th><th>S1 /30</th><th>S2 /30</th><th>Total /60</th><th>Résultat</th></tr></thead><tbody>{% for line in lines %}<tr><td><strong>{{ line.full_name }}</strong></td><td>{{ line.faculty_label }}</td><td>{{ line.promotion_label }}</td><td>{{ line.s1_credits_earned }}/{{ line.s1_credits_total }}</td><td>{{ line.s2_credits_earned }}/{{ line.s2_credits_total }}</td><td><strong>{{ line.credits_earned }}/{{ line.credits_total }}</strong></td><td>{% if line.result == 'REUSSITE' %}<span class="able-badge medium">Réussite</span>{% else %}<span class="able-badge low">Échec</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="7" class="text-center text-muted py-4">Aucune ligne dans ce rapport.</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="able-card-body text-center py-5"><div class="able-avatar mx-auto mb-3" style="background:var(--able-blue-soft);color:var(--able-blue);"><i class="fa-solid fa-table"></i></div><div style="font-weight:700;color:#1d2630;">Sélectionnez un rapport</div><div class="small mt-1" style="color:var(--able-muted);">Cliquez sur « Voir » pour afficher le détail S1 + S2.</div></div>{% endif %}</div>
+{% endblock %}

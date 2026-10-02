@@ -1,0 +1,833 @@
+{% extends "teacher/base.html" %}
+{% load static %}
+
+{% block page_title %}Gérer la grille{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+  --grille-meta: #0A1628;
+  --grille-accent: #1E3A5F;
+  --grille-meta-bg: #F5F8FB;
+  --grille-alt: #F3F6FA;
+  --grille-line: #D0D7E2;
+}
+
+.print-only { display: none; }
+
+.grille-wrap {
+  background: #fff;
+  border: 1px solid var(--grille-line);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, .06);
+}
+
+.grille-wrap .table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table.grille-cotes {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: .82rem;
+  margin: 0;
+}
+
+/* Densité écran selon le nombre de cours */
+table.grille-cotes.grille-compact {
+  font-size: .74rem;
+}
+table.grille-cotes.grille-compact thead th {
+  font-size: .64rem;
+  padding: .32rem .22rem;
+}
+table.grille-cotes.grille-compact thead th small {
+  font-size: .54rem;
+}
+table.grille-cotes.grille-compact tbody td {
+  padding: .32rem .22rem;
+}
+table.grille-cotes.grille-compact tbody td.col-meta {
+  font-size: .72rem;
+}
+table.grille-cotes.grille-compact th.col-note,
+table.grille-cotes.grille-compact td:not(.col-meta) {
+  width: 4.6rem;
+  min-width: 4.6rem;
+  max-width: 4.6rem;
+}
+
+table.grille-cotes.grille-dense {
+  font-size: .66rem;
+}
+table.grille-cotes.grille-dense thead th {
+  font-size: .58rem;
+  padding: .28rem .16rem;
+  line-height: 1.15;
+}
+table.grille-cotes.grille-dense thead th small {
+  font-size: .5rem;
+  line-height: 1.1;
+}
+table.grille-cotes.grille-dense tbody td {
+  padding: .28rem .16rem;
+}
+table.grille-cotes.grille-dense tbody td.col-meta {
+  font-size: .64rem;
+  max-width: 8.5rem;
+}
+table.grille-cotes.grille-dense .print-score {
+  font-size: .62rem;
+}
+table.grille-cotes.grille-dense .print-credits {
+  font-size: .52rem;
+}
+table.grille-cotes.grille-dense th.col-note,
+table.grille-cotes.grille-dense td:not(.col-meta) {
+  width: 3.75rem;
+  min-width: 3.75rem;
+  max-width: 3.75rem;
+}
+
+table.grille-cotes.grille-ultra {
+  font-size: .58rem;
+}
+table.grille-cotes.grille-ultra thead th {
+  font-size: .52rem;
+  padding: .22rem .12rem;
+  line-height: 1.1;
+}
+table.grille-cotes.grille-ultra thead th small {
+  font-size: .46rem;
+}
+table.grille-cotes.grille-ultra tbody td {
+  padding: .22rem .12rem;
+}
+table.grille-cotes.grille-ultra tbody td.col-meta {
+  font-size: .58rem;
+  max-width: 7.5rem;
+}
+table.grille-cotes.grille-ultra .print-score {
+  font-size: .56rem;
+}
+table.grille-cotes.grille-ultra .print-credits {
+  font-size: .48rem;
+}
+table.grille-cotes.grille-ultra .able-badge {
+  font-size: .52rem;
+  padding: .12rem .28rem;
+}
+table.grille-cotes.grille-ultra th.col-note,
+table.grille-cotes.grille-ultra td:not(.col-meta) {
+  width: 3.1rem;
+  min-width: 3.1rem;
+  max-width: 3.1rem;
+}
+
+table.grille-cotes th.col-meta,
+table.grille-cotes td.col-meta {
+  width: 11rem;
+  min-width: 9rem;
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  box-shadow: 2px 0 4px rgba(15, 23, 42, .06);
+}
+
+table.grille-cotes thead th.col-meta {
+  z-index: 4;
+}
+
+table.grille-cotes thead th .course-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+table.grille-cotes thead th .course-meta {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+table.grille-cotes tbody td.col-meta strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+table.grille-cotes th,
+table.grille-cotes td {
+  border: 1px solid var(--grille-line);
+  padding: .45rem .35rem;
+  vertical-align: middle;
+  text-align: center;
+  word-wrap: break-word;
+}
+
+table.grille-cotes thead th {
+  color: #fff;
+  font-weight: 700;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+table.grille-cotes thead th.col-meta { background: var(--grille-meta); }
+table.grille-cotes thead th.col-note { background: var(--grille-accent); }
+
+table.grille-cotes thead th small {
+  display: block;
+  font-weight: 600;
+  opacity: .85;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: .62rem;
+  margin-top: 2px;
+}
+
+table.grille-cotes tbody td.col-meta {
+  background: var(--grille-meta-bg);
+  text-align: left;
+  padding-left: .65rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+table.grille-cotes tbody td.col-a { background: #fff; }
+table.grille-cotes tbody td.col-b { background: var(--grille-alt); }
+
+table.grille-cotes .print-score {
+  display: block;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+table.grille-cotes .print-credits {
+  display: block;
+  font-size: .7rem;
+  color: #64748b;
+}
+
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 8mm;
+    }
+
+    html, body {
+        background: #fff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .able-sidebar,
+    .able-overlay,
+    .able-topbar,
+    .able-burger,
+    .able-top-actions,
+    .no-print,
+    .alert,
+    .modal,
+    .able-kpi,
+    .able-card-body.border-top {
+        display: none !important;
+    }
+
+    .able-wrapper,
+    .able-main,
+    .able-content {
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        box-shadow: none !important;
+    }
+
+    .able-main { margin-left: 0 !important; }
+
+    .print-only { display: block !important; }
+
+    #deliberation-sheet {
+        display: block !important;
+        width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+    }
+
+    #deliberation-sheet .able-card-head {
+        display: none !important;
+    }
+
+    .grille-wrap {
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .print-sheet-header {
+        margin-bottom: 6pt;
+        padding-bottom: 4pt;
+        border-bottom: 1px solid #333;
+    }
+
+    .print-sheet-header h1 {
+        margin: 0;
+        font-size: 11pt;
+        font-weight: 700;
+        color: #000;
+    }
+
+    .print-sheet-header p {
+        margin: 2pt 0 0;
+        font-size: 8pt;
+        color: #333;
+    }
+
+    body.print-one-student #deliberation-print-table tbody tr:not(.print-target) {
+        display: none !important;
+    }
+
+    body.print-one-student #deliberation-print-table {
+        font-size: 10pt !important;
+    }
+
+    #deliberation-print-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        table-layout: fixed !important;
+        font-size: var(--print-font-size, 8pt) !important;
+        line-height: 1.15 !important;
+        color: #000 !important;
+    }
+
+    #deliberation-print-table th,
+    #deliberation-print-table td {
+        border: 0.4pt solid #444 !important;
+        padding: 2pt 3pt !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    #deliberation-print-table thead th.col-meta,
+    #deliberation-print-table thead th.col-note {
+        background: #111827 !important;
+        color: #fff !important;
+    }
+
+    #deliberation-print-table tbody td.col-meta {
+        background: #eef1f5 !important;
+    }
+
+    #deliberation-print-table tbody td.col-b {
+        background: #f3f4f6 !important;
+    }
+
+    #deliberation-print-table .able-badge {
+        border: none !important;
+        background: transparent !important;
+        color: #000 !important;
+        padding: 0 !important;
+        font-size: inherit !important;
+        font-weight: 700 !important;
+    }
+
+    .table-responsive {
+        overflow: visible !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-end gap-2 mb-3 no-print">
+    <a href="{% url 'dean_dashboard' %}" class="able-btn able-btn-outline">Retour</a>
+</div>
+
+<div class="row g-3 mb-3 no-print">
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Promotions</div>
+                    <div class="kpi-value">{{ promotions|length }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-layer-group"></i></div>
+            </div>
+            <div class="kpi-foot">Disponibles au jury</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Étudiants</div>
+                    <div class="kpi-value">{% if selected_promo %}{{ students_data|length }}{% else %}—{% endif %}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-user-graduate"></i></div>
+            </div>
+            <div class="kpi-foot">{% if selected_promo %}{{ selected_promo.display_label }}{% else %}Charger une promotion{% endif %}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">
+                        {% if selected_grille_type == 'annual' %}Cours S1+S2
+                        {% elif selected_grille_type == 's2' %}Cours S2
+                        {% elif selected_grille_type == 's1' %}Cours S1
+                        {% else %}Cours{% endif %}
+                    </div>
+                    <div class="kpi-value">{% if selected_grille_type %}{{ courses|length }}{% else %}—{% endif %}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-book"></i></div>
+            </div>
+            <div class="kpi-foot">{% if available_credits %}{{ available_credits }} ECTS{% else %}Crédits affichés{% endif %}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Réussites</div>
+                    <div class="kpi-value">{% if selected_promo %}{{ success_count|default:0 }}{% else %}—{% endif %}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-trophy"></i></div>
+            </div>
+            <div class="kpi-foot">
+                {% if selected_grille_type == 'annual' %}
+                Sur {{ credits_reference|default:60 }} crédits annuels
+                {% elif selected_grille_type == 's2' %}
+                Sur {{ semester_credits_reference|default:30 }} crédits S2
+                {% else %}
+                Sur {{ semester_credits_reference|default:30 }} crédits S1
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if selected_promo and selected_grille_type and students_data %}
+<div class="row g-3 mb-3 no-print">
+    <div class="col-lg-8">
+        <div class="able-card h-100">
+            <div class="able-card-head">
+                <h2 class="mb-0"><i class="fa-solid fa-chart-column me-2"></i>Histogramme · réussite / échec</h2>
+            </div>
+            <div class="able-card-body">
+                <p class="small text-muted mb-3">
+                    {{ selected_promo.display_label }}
+                    · {{ grille_label }}{% if session_label %} · {{ session_label }}{% endif %}
+                    · {{ students_data|length }} étudiant{{ students_data|length|pluralize }}
+                </p>
+                <div class="able-chart-box" style="height:260px;">
+                    <canvas id="delibSuccessBarChart" aria-label="Histogramme réussite et échec"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="able-card h-100">
+            <div class="able-card-head">
+                <h2 class="mb-0">Synthèse</h2>
+            </div>
+            <div class="able-card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-3" style="border-bottom:1px solid var(--campus-border,#D0D7E2);">
+                    <div>
+                        <div class="small text-muted text-uppercase fw-bold" style="letter-spacing:.04em;">Réussites</div>
+                        <div class="fs-4 fw-bold" style="color:#0F766E;">{{ success_count }}</div>
+                    </div>
+                    <span class="able-badge medium">{{ success_rate|default:0 }}%</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted text-uppercase fw-bold" style="letter-spacing:.04em;">Échecs</div>
+                        <div class="fs-4 fw-bold" style="color:#B91C1C;">{{ failure_count }}</div>
+                    </div>
+                    <span class="able-badge low">{{ failure_rate|default:0 }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="able-card mb-3 no-print">
+    <div class="able-card-head">
+        <h2>Gérer grilles</h2>
+        <span class="able-badge muted">1er semestre · 2ème semestre · Annuelle</span>
+    </div>
+    <div class="able-card-body">
+        <form method="GET" class="row g-3 align-items-end" id="grille-filter-form">
+            <div class="col-md-4">
+                <label class="able-label">Promotion</label>
+                <select name="promo_id" class="able-input" required>
+                    <option value="">Choisir une promotion…</option>
+                    {% for promo in promotions %}
+                    <option value="{{ promo.id }}" {% if selected_promo and selected_promo.id == promo.id %}selected{% endif %}>
+                        {{ promo.faculty.name }} — {{ promo.display_label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="able-label">Type de grille</label>
+                <select name="grille_type" id="grille-type-select" class="able-input" required>
+                    <option value="">Choisir…</option>
+                    <option value="s1" {% if selected_grille_type == 's1' %}selected{% endif %}>Grille 1er semestre</option>
+                    <option value="s2" {% if selected_grille_type == 's2' %}selected{% endif %}>Grille 2ème semestre</option>
+                    <option value="annual" {% if selected_grille_type == 'annual' %}selected{% endif %}>Grille annuelle</option>
+                </select>
+            </div>
+            <div class="col-md-3" id="session-field-wrap">
+                <label class="able-label">Session</label>
+                <select name="session" id="session-select" class="able-input">
+                    <option value="normale" {% if selected_session == 'normale' or not selected_session %}selected{% endif %}>Grille normale</option>
+                    <option value="rattrapage" {% if selected_session == 'rattrapage' %}selected{% endif %}>Grille rattrapage</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="able-btn able-btn-primary w-100">
+                    <i class="fa-solid fa-table"></i> Charger
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if selected_promo and selected_grille_type %}
+<div class="able-card" id="deliberation-sheet">
+    <div class="able-card-head no-print">
+        <h2>
+            {{ selected_promo.display_label }}
+            · {{ grille_label }}{% if session_label %} · {{ session_label }}{% endif %}
+        </h2>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="able-badge muted">{{ students_data|length }} étudiant{{ students_data|length|pluralize }}</span>
+            {% if selected_session == 'rattrapage' %}
+            <span class="able-badge low">Échecs session normale</span>
+            {% endif %}
+            {% if students_data %}
+            <button type="button" class="able-btn able-btn-outline able-btn-sm" onclick="printDeliberation()">
+                <i class="fa-solid fa-print"></i> Imprimer tout
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="print-only print-sheet-header">
+        <h1 id="print-sheet-title">{{ grille_label }} — {{ selected_promo.display_label }}</h1>
+        <p id="print-sheet-meta">
+            {{ selected_promo.faculty.name }}
+            · {{ grille_label }}{% if session_label %} · {{ session_label }}{% endif %}
+            · {{ students_data|length }} étudiant{{ students_data|length|pluralize }}
+            · {{ courses|length }} cours
+            · Imprimé le {% now "d/m/Y H:i" %}
+        </p>
+    </div>
+
+    <div class="grille-wrap">
+    <div class="table-responsive">
+        <table class="grille-cotes" id="deliberation-print-table" data-course-count="{{ courses|length }}">
+            <thead>
+                <tr>
+                    <th class="col-meta">Étudiant</th>
+                    {% for course in courses %}
+                    <th class="col-note" title="{{ course.title }} — S{{ course.semester }} · {{ course.effective_credits }} ECTS{% if course.teacher %} · {{ course.teacher.get_full_name|default:course.teacher.username }}{% endif %}">
+                        <span class="course-title">{{ course.title }}</span>
+                        <small class="course-meta">
+                            S{{ course.semester }} · {{ course.effective_credits }} ECTS
+                            {% if course.teacher %}
+                            · {{ course.teacher.get_full_name|default:course.teacher.username }}
+                            {% endif %}
+                        </small>
+                    </th>
+                    {% endfor %}
+                    {% if show_annual_columns %}
+                    <th class="col-note">S1</th>
+                    <th class="col-note">S2</th>
+                    <th class="col-note">Total</th>
+                    <th class="col-note">Résultat</th>
+                    {% else %}
+                    <th class="col-note">{% if selected_grille_type == 's2' %}Crédits S2{% else %}Crédits S1{% endif %}</th>
+                    <th class="col-note">Résultat</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in students_data %}
+                <tr data-student-name="{{ item.full_name }}">
+                    <td class="col-meta" title="{{ item.full_name }}">
+                        <div class="d-flex align-items-center justify-content-between gap-2">
+                            <strong class="text-truncate">{{ item.full_name }}</strong>
+                            <button type="button"
+                                    class="able-btn able-btn-outline able-btn-sm no-print flex-shrink-0"
+                                    title="Imprimer le résultat de cet étudiant"
+                                    onclick="printStudentResult(this)">
+                                <i class="fa-solid fa-print"></i>
+                            </button>
+                        </div>
+                    </td>
+                    {% for course_data in item.courses %}
+                    <td class="{% if forloop.counter0|divisibleby:2 %}col-a{% else %}col-b{% endif %}">
+                        {% if course_data.audit %}
+                        <span class="print-score">{{ course_data.score|floatformat:1 }}/20</span>
+                        <span class="print-credits">
+                            {% if course_data.is_passed %}{{ course_data.credits_earned }} cr{% else %}0/{{ course_data.credits }}{% endif %}
+                        </span>
+                        {% else %}
+                        <span style="color:#94a3b8;">—</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    {% if show_annual_columns %}
+                    <td class="{% if courses|length|divisibleby:2 %}col-a{% else %}col-b{% endif %}">{{ item.s1_credits_earned }}/30</td>
+                    <td class="{% if courses|length|divisibleby:2 %}col-b{% else %}col-a{% endif %}">{{ item.s2_credits_earned }}/30</td>
+                    <td class="{% if courses|length|divisibleby:2 %}col-a{% else %}col-b{% endif %}"><strong>{{ item.earned_credits }}/60</strong></td>
+                    <td class="{% if courses|length|divisibleby:2 %}col-b{% else %}col-a{% endif %}">
+                        {% if item.is_success %}
+                        <span class="able-badge medium">Réussite</span>
+                        {% else %}
+                        <span class="able-badge low">Échec</span>
+                        {% endif %}
+                    </td>
+                    {% else %}
+                    <td class="{% if courses|length|divisibleby:2 %}col-a{% else %}col-b{% endif %}">
+                        <strong>
+                            {% if selected_grille_type == 's2' %}{{ item.s2_credits_earned }}{% else %}{{ item.s1_credits_earned }}{% endif %}/30
+                        </strong>
+                    </td>
+                    <td class="{% if courses|length|divisibleby:2 %}col-b{% else %}col-a{% endif %}">
+                        {% if item.is_success %}
+                        <span class="able-badge medium">Réussite</span>
+                        {% else %}
+                        <span class="able-badge low">Échec</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{% if show_annual_columns %}{{ courses|length|add:5 }}{% else %}{{ courses|length|add:3 }}{% endif %}" class="text-center text-muted py-4" style="background:#fff;">
+                        {% if selected_session == 'rattrapage' %}
+                        Aucun étudiant en échec pour la session rattrapage.
+                        {% else %}
+                        Aucun étudiant trouvé.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    </div>
+
+    {% if students_data and can_transmit_annual and selected_grille_type == 'annual' %}
+    <div class="able-card-body border-top d-flex flex-wrap justify-content-between gap-2 no-print">
+        <p class="small mb-0" style="color:var(--able-muted);">
+            La transmission additionne automatiquement S1 + S2 et envoie le rapport annuel à l'Admin (Université).
+        </p>
+        <form method="POST" action="{% url 'generate_academic_report' %}">
+            {% csrf_token %}
+            <input type="hidden" name="promotion_id" value="{{ selected_promo.id }}">
+            <button type="submit" class="able-btn able-btn-primary"
+                onclick="return confirm('Transmettre le rapport annuel consolidé à l\'Admin (Université) ?')">
+                Transmettre le rapport annuel
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<div class="able-card no-print">
+    <div class="able-card-body text-center py-5">
+        <div class="able-avatar mx-auto mb-3" style="background:var(--able-blue-soft);color:var(--able-blue);">
+            <i class="fa-solid fa-table"></i>
+        </div>
+        <strong style="display:block;color:#1d2630;">Gérer grilles</strong>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+function applyGrilleDensity(table) {
+    if (!table) return;
+
+    table.classList.remove('grille-compact', 'grille-dense', 'grille-ultra');
+
+    const courseCount = parseInt(table.dataset.courseCount || '0', 10);
+    const totalCols = table.querySelectorAll('thead th').length;
+    const rowCount = table.querySelectorAll('tbody tr').length;
+    const density = totalCols * Math.max(rowCount, 1);
+
+    if (courseCount > 15 || totalCols > 18 || density > 320) {
+        table.classList.add('grille-ultra');
+    } else if (courseCount > 11 || totalCols > 14 || density > 220) {
+        table.classList.add('grille-dense');
+    } else if (courseCount > 8 || totalCols > 11 || density > 140) {
+        table.classList.add('grille-compact');
+    }
+
+    let fontSize = 9;
+    if (density > 320 || totalCols > 16 || rowCount > 45) fontSize = 5.5;
+    else if (density > 220 || totalCols > 12 || rowCount > 35) fontSize = 6.5;
+    else if (density > 140 || totalCols > 9 || rowCount > 25) fontSize = 7.5;
+    else if (density > 80 || totalCols > 7 || rowCount > 18) fontSize = 8.5;
+
+    table.style.setProperty('--print-font-size', fontSize + 'pt');
+    document.documentElement.style.setProperty('--print-font-size', fontSize + 'pt');
+}
+
+function printDeliberation() {
+    const table = document.getElementById('deliberation-print-table');
+    if (!table) return;
+    document.body.classList.remove('print-one-student');
+    table.querySelectorAll('tbody tr').forEach(function (tr) {
+        tr.classList.remove('print-target');
+    });
+    applyGrilleDensity(table);
+    window.print();
+}
+
+function printStudentResult(btn) {
+    const row = btn.closest('tr');
+    const table = document.getElementById('deliberation-print-table');
+    const titleEl = document.getElementById('print-sheet-title');
+    const metaEl = document.getElementById('print-sheet-meta');
+    if (!row || !table || !titleEl || !metaEl) return;
+
+    const studentName = (row.dataset.studentName || row.querySelector('.col-meta strong')?.textContent || 'Étudiant').trim();
+    const originalTitle = titleEl.textContent;
+    const originalMeta = metaEl.innerHTML;
+
+    document.body.classList.add('print-one-student');
+    table.querySelectorAll('tbody tr').forEach(function (tr) {
+        tr.classList.toggle('print-target', tr === row);
+    });
+
+    titleEl.textContent = 'Résultat de grille — ' + studentName;
+    metaEl.innerHTML = originalMeta.replace(
+        /\d+\s+étudiant[s]?/,
+        'Étudiant : <strong>' + studentName + '</strong>'
+    );
+
+    applyGrilleDensity(table);
+
+    let cleaned = false;
+    const cleanup = function () {
+        if (cleaned) return;
+        cleaned = true;
+        document.body.classList.remove('print-one-student');
+        table.querySelectorAll('tbody tr').forEach(function (tr) {
+            tr.classList.remove('print-target');
+        });
+        titleEl.textContent = originalTitle;
+        metaEl.innerHTML = originalMeta;
+        window.removeEventListener('afterprint', cleanup);
+    };
+
+    window.addEventListener('afterprint', cleanup);
+    window.print();
+    setTimeout(cleanup, 1500);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    applyGrilleDensity(document.getElementById('deliberation-print-table'));
+
+    const typeSelect = document.getElementById('grille-type-select');
+    const sessionWrap = document.getElementById('session-field-wrap');
+    const sessionSelect = document.getElementById('session-select');
+
+    function syncSessionVisibility() {
+        if (!typeSelect || !sessionWrap) return;
+        const isAnnual = typeSelect.value === 'annual';
+        sessionWrap.style.display = isAnnual ? 'none' : '';
+        if (sessionSelect) {
+            sessionSelect.disabled = isAnnual;
+            if (isAnnual) sessionSelect.value = 'normale';
+        }
+    }
+
+    if (typeSelect) {
+        typeSelect.addEventListener('change', syncSessionVisibility);
+        syncSessionVisibility();
+    }
+
+    const chartEl = document.getElementById('delibSuccessBarChart');
+    if (!chartEl || typeof Chart === 'undefined') return;
+
+    Chart.defaults.font.family = "'Public Sans', 'DM Sans', sans-serif";
+    Chart.defaults.color = '#5B6B7F';
+
+    const successCount = {{ success_count|default:0 }};
+    const failureCount = {{ failure_count|default:0 }};
+
+    new Chart(chartEl, {
+        type: 'bar',
+        data: {
+            labels: ['Réussite', 'Échec'],
+            datasets: [{
+                label: "Nombre d'étudiants",
+                data: [successCount, failureCount],
+                backgroundColor: ['#0F766E', '#ff5370'],
+                borderRadius: 8,
+                maxBarThickness: 64
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label(ctx) {
+                            const n = ctx.parsed.y;
+                            const total = successCount + failureCount;
+                            const pct = total ? Math.round((n / total) * 1000) / 10 : 0;
+                            return ' ' + n + ' étudiant' + (n > 1 ? 's' : '') + ' (' + pct + '%)';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    grid: { color: '#e3eaf2' },
+                    title: {
+                        display: true,
+                        text: "Nombre d'étudiants",
+                        font: { weight: '600', size: 11 }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 12, weight: '700' } }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

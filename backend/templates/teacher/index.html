@@ -1,0 +1,445 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yekola — Plateforme de formation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #0A1628;
+            --ink-soft: #152A45;
+            --ink-mid: #1E3A5F;
+            --blue: #152A45;
+            --fog: #F3F6FA;
+            --muted: #5B6B7F;
+            --text: #152033;
+            --white: #FFFFFF;
+            --ease: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            color: var(--text);
+            background: var(--fog);
+            line-height: 1.55;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .media {
+            overflow: hidden;
+            border-radius: 4px;
+            aspect-ratio: 16 / 9;
+            background: #d8e0ea;
+            box-shadow: 0 24px 50px rgba(11, 28, 51, 0.14);
+        }
+
+        .media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .nav {
+            position: absolute;
+            inset: 0 0 auto 0;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem clamp(1.25rem, 4vw, 3rem);
+        }
+
+        .nav-brand {
+            font-family: 'Fraunces', serif;
+            font-weight: 700;
+            font-size: 1.55rem;
+            letter-spacing: -0.03em;
+            text-decoration: none;
+            color: var(--white);
+        }
+
+        .nav-cta {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.7rem 1.2rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            color: var(--white);
+            font-weight: 600;
+            font-size: 0.92rem;
+            text-decoration: none;
+            backdrop-filter: blur(8px);
+            transition: background 0.25s var(--ease), transform 0.25s var(--ease);
+        }
+
+        .nav-cta:hover {
+            background: rgba(255, 255, 255, 0.24);
+            transform: translateY(-1px);
+        }
+
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: grid;
+            align-items: end;
+            overflow: hidden;
+            color: var(--white);
+            background: linear-gradient(135deg, #0A1628, #152A45);
+        }
+
+        .hero-photo {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            z-index: 0;
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background: linear-gradient(180deg, rgba(8, 20, 38, 0.22) 0%, rgba(8, 20, 38, 0.7) 52%, rgba(8, 20, 38, 0.92) 100%);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            width: min(680px, 100%);
+            padding: 0 clamp(1.25rem, 4vw, 3rem) clamp(2.5rem, 7vh, 4.5rem);
+            animation: rise 0.9s var(--ease) both;
+        }
+
+        .hero-brand {
+            font-family: 'Fraunces', serif;
+            font-size: clamp(2.8rem, 7vw, 4.6rem);
+            font-weight: 700;
+            letter-spacing: -0.045em;
+            line-height: 0.95;
+            margin-bottom: 0.85rem;
+        }
+
+        .hero h1 {
+            font-family: 'Fraunces', serif;
+            font-size: clamp(1.4rem, 3vw, 2.05rem);
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            max-width: 20ch;
+            margin-bottom: 0.85rem;
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 1.6vw, 1.12rem);
+            color: rgba(232, 239, 248, 0.86);
+            max-width: 40ch;
+            margin-bottom: 1.6rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.85rem 1.45rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: transform 0.25s var(--ease), background 0.25s var(--ease);
+        }
+
+        .btn:hover { transform: translateY(-2px); }
+
+        .btn-light {
+            background: var(--white);
+            color: var(--ink);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+        }
+
+        .btn-dark {
+            background: var(--ink);
+            color: var(--white);
+        }
+
+        .btn-dark:hover { background: var(--ink-mid); }
+
+        .story {
+            padding: clamp(3.5rem, 8vw, 6rem) clamp(1.25rem, 4vw, 3rem);
+            background: var(--white);
+        }
+
+        .story-inner {
+            max-width: 1120px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: clamp(1.75rem, 4vw, 3.5rem);
+            align-items: center;
+        }
+
+        .story h2 {
+            font-family: 'Fraunces', serif;
+            font-size: clamp(1.7rem, 3vw, 2.35rem);
+            font-weight: 650;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+            color: var(--ink);
+            margin-bottom: 0.9rem;
+            max-width: 16ch;
+        }
+
+        .story p {
+            color: var(--muted);
+            font-size: 1.05rem;
+            max-width: 38ch;
+            margin-bottom: 1rem;
+        }
+
+        .story p:last-of-type { margin-bottom: 1.5rem; }
+
+        .features {
+            padding: clamp(3rem, 7vw, 5rem) clamp(1.25rem, 4vw, 3rem);
+            background:
+                linear-gradient(180deg, #EAF0F7 0%, var(--fog) 100%);
+        }
+
+        .features-inner {
+            max-width: 1120px;
+            margin: 0 auto;
+        }
+
+        .features h2 {
+            font-family: 'Fraunces', serif;
+            font-size: clamp(1.6rem, 3vw, 2.2rem);
+            font-weight: 650;
+            letter-spacing: -0.03em;
+            color: var(--ink);
+            margin-bottom: 2rem;
+            max-width: 18ch;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: clamp(1.5rem, 3vw, 2.5rem);
+        }
+
+        .feature-grid figure {
+            margin: 0;
+        }
+
+        .feature-grid .media {
+            margin-bottom: 1rem;
+            box-shadow: 0 16px 36px rgba(11, 28, 51, 0.1);
+        }
+
+        .feature-grid h3 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.25rem;
+            font-weight: 650;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+            margin-bottom: 0.4rem;
+        }
+
+        .feature-grid p {
+            color: var(--muted);
+            font-size: 0.98rem;
+            max-width: 36ch;
+        }
+
+        .closing {
+            padding: clamp(3rem, 7vw, 5rem) clamp(1.25rem, 4vw, 3rem);
+            text-align: center;
+            background:
+                radial-gradient(ellipse 80% 80% at 50% 0%, rgba(12, 74, 138, 0.12), transparent 60%),
+                var(--ink);
+            color: var(--white);
+        }
+
+        .closing h2 {
+            font-family: 'Fraunces', serif;
+            font-size: clamp(1.55rem, 3vw, 2.1rem);
+            font-weight: 650;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.7rem;
+        }
+
+        .closing p {
+            color: rgba(232, 239, 248, 0.78);
+            max-width: 42ch;
+            margin: 0 auto 1.5rem;
+        }
+
+        .closing .note {
+            margin-top: 1.5rem;
+            font-size: 0.88rem;
+            color: rgba(232, 239, 248, 0.5);
+        }
+
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(18px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 860px) {
+            .story-inner,
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .story h2,
+            .features h2 {
+                max-width: none;
+            }
+
+            .hero-content {
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 320px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav {
+                padding: 1rem 1.1rem;
+            }
+
+            .nav-brand {
+                font-size: 1.3rem;
+            }
+
+            .nav-cta {
+                padding: 0.55rem 0.95rem;
+                font-size: 0.85rem;
+            }
+
+            .hero-content {
+                padding-bottom: 2rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="hero">
+        <img class="hero-photo"
+             src="{% static 'teacher/img/landing_etab_hero.png' %}?v=3"
+             alt=""
+             width="1920" height="1080"
+             decoding="async">
+        <nav class="nav" aria-label="Navigation principale">
+            <a class="nav-brand" href="{% url 'teacher_portal_index' %}">Yekola</a>
+            <a class="nav-cta" href="{% url 'unified_login' %}">Se connecter</a>
+        </nav>
+
+        <div class="hero-content">
+            <div class="hero-brand">Yekola</div>
+            <h1>Plateforme de formation et de gestion des activités pédagogiques</h1>
+            <p>
+                Organisez les cours, suivez les apprentissages, évaluez les acquis
+                et pilotez les activités de formation dans un même espace numérique.
+            </p>
+            <a class="btn btn-light" href="{% url 'unified_login' %}">Accéder à la plateforme</a>
+        </div>
+    </header>
+
+    <section class="story">
+        <div class="story-inner">
+            <div class="media">
+                <img src="{% static 'teacher/img/landing_etab_cours.png' %}?v=3"
+                     alt="Cours et formation en milieu universitaire"
+                     width="1280" height="720" loading="lazy">
+            </div>
+            <div>
+                <h2>Une plateforme pensée pour la formation</h2>
+                <p>
+                    Yekola centralise la diffusion des contenus pédagogiques et le suivi
+                    des activités de formation : leçons, évaluations, travaux pratiques
+                    et progression des apprenants.
+                </p>
+                <p>
+                    L’objectif est simple : rendre la formation plus accessible,
+                    plus lisible et plus facile à administrer au quotidien.
+                </p>
+                <a class="btn btn-dark" href="{% url 'unified_login' %}">Se connecter</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="features-inner">
+            <h2>Former et gérer, au même endroit</h2>
+            <div class="feature-grid">
+                <figure>
+                    <div class="media">
+                        <img src="{% static 'teacher/img/landing_etab_etude.png' %}?v=3"
+                             alt="Étude et apprentissage avec supports de cours"
+                             width="1280" height="720" loading="lazy">
+                    </div>
+                    <h3>Activités de formation</h3>
+                    <p>
+                        Publiez des cours, organisez les leçons, proposez des quiz
+                        et des travaux pratiques pour accompagner l’apprentissage.
+                    </p>
+                </figure>
+                <figure>
+                    <div class="media">
+                        <img src="{% static 'teacher/img/landing_etab_groupe.png' %}?v=3"
+                             alt="Travail collaboratif et suivi pédagogique"
+                             width="1280" height="720" loading="lazy">
+                    </div>
+                    <h3>Gestion pédagogique</h3>
+                    <p>
+                        Suivez les résultats, validez les évaluations et disposez
+                        d’une vision claire des activités académiques en cours.
+                    </p>
+                </figure>
+            </div>
+        </div>
+    </section>
+
+    <footer class="closing">
+        <h2>Prêt à démarrer ?</h2>
+        <p>
+            Connectez-vous pour accéder à Yekola et gérer vos activités de formation.
+        </p>
+        <a class="btn btn-light" href="{% url 'unified_login' %}">Se connecter</a>
+        <p class="note">Yekola · Plateforme de formation</p>
+    </footer>
+</body>
+
+</html>

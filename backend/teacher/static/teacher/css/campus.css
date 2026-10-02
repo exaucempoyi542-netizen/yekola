@@ -1,0 +1,759 @@
+/*
+  Yekola Campus — Portail établissement
+  (Enseignant · Décanat · Admin Université)
+  Qualité soignée, identité bleu de nuit.
+  Typo : même stack que le portail super-admin (Public Sans / DM Sans).
+*/
+
+:root {
+  /* Identité Campus — bleu de nuit */
+  --campus-ink: #0A1628;
+  --campus-ink-mid: #152A45;
+  --campus-ink-soft: #1E3A5F;
+  --campus-accent: #1E3A5F;
+  --campus-accent-hover: #152A45;
+  --campus-copper: #C4A35A;
+  --campus-copper-soft: rgba(196, 163, 90, 0.16);
+
+  --campus-canvas: #F3F6FA;
+  --campus-canvas-deep: #E8EEF5;
+  --campus-surface: #FFFFFF;
+  --campus-elevated: #F5F8FB;
+  --campus-border: #D0D7E2;
+  --campus-border-strong: #9EB0C4;
+
+  --campus-text: #152033;
+  --campus-muted: #5B6B7F;
+  --campus-faint: #8A9AAD;
+
+  --campus-success: #0F766E;
+  --campus-success-bg: #CCFBF1;
+  --campus-warning: #B45309;
+  --campus-warning-bg: #FEF3C7;
+  --campus-danger: #B91C1C;
+  --campus-danger-bg: #FEE2E2;
+
+  --campus-radius: 14px;
+  --campus-radius-sm: 10px;
+  --campus-shadow: 0 1px 2px rgba(10, 22, 40, 0.04), 0 8px 24px rgba(10, 22, 40, 0.07);
+  --campus-shadow-hover: 0 2px 4px rgba(10, 22, 40, 0.05), 0 14px 32px rgba(10, 22, 40, 0.1);
+  --campus-font: "Public Sans", "DM Sans", sans-serif;
+  --campus-display: "Public Sans", "DM Sans", sans-serif;
+
+  /* Remap Able Pro tokens → Campus (templates utilisent able-*) */
+  --able-blue: var(--campus-accent);
+  --able-blue-dark: var(--campus-ink);
+  --able-blue-soft: rgba(30, 58, 95, 0.12);
+  --able-sidebar: #FFFFFF;
+  --able-bg: var(--campus-canvas);
+  --able-card: var(--campus-surface);
+  --able-text: var(--campus-text);
+  --able-muted: var(--campus-muted);
+  --able-border: var(--campus-border);
+  --able-yellow: var(--campus-copper);
+  --able-green: var(--campus-success);
+  --able-red: var(--campus-danger);
+  --able-cyan: var(--campus-ink-soft);
+  --sidebar-w: 268px;
+  --header-h: 64px;
+  --radius: var(--campus-radius);
+  --shadow: var(--campus-shadow);
+  --font: var(--campus-font);
+}
+
+/* Variantes de rôle — nuances du bleu de nuit */
+body.campus-body[data-role="TEACHER"] {
+  --campus-accent: #1E3A5F;
+  --able-blue: #1E3A5F;
+  --able-blue-soft: rgba(30, 58, 95, 0.12);
+}
+body.campus-body[data-role="DEAN"] {
+  --campus-accent: #243B6B;
+  --able-blue: #243B6B;
+  --able-blue-soft: rgba(36, 59, 107, 0.12);
+}
+body.campus-body[data-role="MANAGER"] {
+  --campus-accent: #152A45;
+  --able-blue: #152A45;
+  --able-blue-soft: rgba(21, 42, 69, 0.14);
+}
+
+/* Icônes noires — Enseignant & Décanat */
+body.campus-body[data-role="TEACHER"] i[class*="fa-"],
+body.campus-body[data-role="TEACHER"] .fas,
+body.campus-body[data-role="TEACHER"] .far,
+body.campus-body[data-role="TEACHER"] .fab,
+body.campus-body[data-role="TEACHER"] .fa-solid,
+body.campus-body[data-role="TEACHER"] .fa-regular,
+body.campus-body[data-role="TEACHER"] .fa-brands,
+body.campus-body[data-role="TEACHER"] .kpi-icon,
+body.campus-body[data-role="TEACHER"] .kpi-icon i,
+body.campus-body[data-role="TEACHER"] .able-nav-link i,
+body.campus-body[data-role="TEACHER"] .able-icon-btn i,
+body.campus-body[data-role="TEACHER"] .able-burger i,
+body.campus-body[data-role="TEACHER"] .able-btn i,
+body.campus-body[data-role="TEACHER"] .able-badge i,
+body.campus-body[data-role="TEACHER"] .able-logout i,
+body.campus-body[data-role="DEAN"] i[class*="fa-"],
+body.campus-body[data-role="DEAN"] .fas,
+body.campus-body[data-role="DEAN"] .far,
+body.campus-body[data-role="DEAN"] .fab,
+body.campus-body[data-role="DEAN"] .fa-solid,
+body.campus-body[data-role="DEAN"] .fa-regular,
+body.campus-body[data-role="DEAN"] .fa-brands,
+body.campus-body[data-role="DEAN"] .kpi-icon,
+body.campus-body[data-role="DEAN"] .kpi-icon i,
+body.campus-body[data-role="DEAN"] .able-nav-link i,
+body.campus-body[data-role="DEAN"] .able-icon-btn i,
+body.campus-body[data-role="DEAN"] .able-burger i,
+body.campus-body[data-role="DEAN"] .able-btn i,
+body.campus-body[data-role="DEAN"] .able-badge i,
+body.campus-body[data-role="DEAN"] .able-logout i {
+  color: #0A0A0A !important;
+}
+
+body.campus-body[data-role="TEACHER"] .able-kpi .kpi-icon,
+body.campus-body[data-role="TEACHER"] .able-kpi.blue .kpi-icon,
+body.campus-body[data-role="TEACHER"] .able-kpi.green .kpi-icon,
+body.campus-body[data-role="TEACHER"] .able-kpi.yellow .kpi-icon,
+body.campus-body[data-role="TEACHER"] .able-kpi.red .kpi-icon,
+body.campus-body[data-role="DEAN"] .able-kpi .kpi-icon,
+body.campus-body[data-role="DEAN"] .able-kpi.blue .kpi-icon,
+body.campus-body[data-role="DEAN"] .able-kpi.green .kpi-icon,
+body.campus-body[data-role="DEAN"] .able-kpi.yellow .kpi-icon,
+body.campus-body[data-role="DEAN"] .able-kpi.red .kpi-icon {
+  color: #0A0A0A !important;
+  background: rgba(10, 10, 10, 0.06) !important;
+}
+
+/* Garder les icônes lisibles sur fond sombre (nav active, boutons primaires) */
+body.campus-body[data-role="TEACHER"] .able-nav-link.active i,
+body.campus-body[data-role="TEACHER"] .able-btn-primary i,
+body.campus-body[data-role="TEACHER"] .able-btn-danger i,
+body.campus-body[data-role="DEAN"] .able-nav-link.active i,
+body.campus-body[data-role="DEAN"] .able-btn-primary i,
+body.campus-body[data-role="DEAN"] .able-btn-danger i {
+  color: #FFFFFF !important;
+}
+
+/* ---------- Shell ---------- */
+body.campus-body,
+body.able-body.campus-body {
+  margin: 0;
+  font-family: var(--campus-font) !important;
+  color: var(--campus-text);
+  background:
+    radial-gradient(ellipse 70% 45% at 100% 0%, rgba(30, 58, 95, 0.1), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 0% 100%, rgba(196, 163, 90, 0.06), transparent 50%),
+    linear-gradient(180deg, var(--campus-canvas) 0%, var(--campus-canvas-deep) 100%) !important;
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+body.campus-body .able-brand-name,
+body.campus-body .able-nav-link,
+body.campus-body .able-btn,
+body.campus-body .kpi-value,
+body.campus-body .kpi-label,
+body.campus-body .able-card-head h2,
+body.campus-body .able-topbar-left .fw-semibold,
+body.campus-body .campus-page-intro h1,
+body.campus-body h1,
+body.campus-body h2,
+body.campus-body h3,
+body.campus-body h4,
+body.campus-body h5,
+body.campus-body h6,
+body.campus-body p,
+body.campus-body span:not(.fa):not([class*="fa-"]),
+body.campus-body a,
+body.campus-body label,
+body.campus-body input,
+body.campus-body select,
+body.campus-body textarea,
+body.campus-body button,
+body.campus-body td,
+body.campus-body th,
+body.campus-body .able-badge,
+body.campus-body .able-label {
+  font-family: var(--campus-font) !important;
+}
+
+body.campus-body i[class*="fa-"],
+body.campus-body .fas,
+body.campus-body .far,
+body.campus-body .fab,
+body.campus-body .fa-solid,
+body.campus-body .fa-regular {
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+}
+
+body.campus-body h1,
+body.campus-body h2,
+body.campus-body h3,
+body.campus-body .able-brand-name,
+body.campus-body .able-card-head h2,
+body.campus-body .able-topbar-left .fw-semibold {
+  font-family: var(--campus-font);
+  letter-spacing: -0.01em;
+  font-weight: 700;
+}
+
+/* Sidebar */
+body.campus-body .able-sidebar {
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(12px);
+  border-right: 1px solid var(--campus-border) !important;
+  box-shadow: 4px 0 24px rgba(10, 22, 40, 0.04);
+}
+
+body.campus-body .able-brand {
+  background: transparent !important;
+  border-bottom: 1px solid var(--campus-border) !important;
+  height: auto !important;
+  min-height: var(--header-h);
+  padding: 1.1rem 1.2rem !important;
+}
+
+body.campus-body .able-brand-mark {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(145deg, var(--campus-ink) 0%, var(--campus-accent) 100%) !important;
+  color: #fff !important;
+  font-family: var(--campus-font) !important;
+  font-weight: 800 !important;
+  font-size: 1.15rem !important;
+  box-shadow: 0 4px 12px rgba(10, 22, 40, 0.2);
+}
+
+body.campus-body .able-brand-name {
+  font-size: 1.2rem !important;
+  color: var(--campus-ink) !important;
+  line-height: 1.15;
+}
+
+body.campus-body .able-brand-name span {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: var(--campus-font) !important;
+  font-weight: 500 !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--campus-muted) !important;
+}
+
+body.campus-body .able-profile {
+  margin: 0.85rem 1rem;
+  padding: 0.85rem 0.95rem !important;
+  border-radius: var(--campus-radius-sm);
+  background: var(--campus-elevated);
+  border: 1px solid var(--campus-border);
+}
+
+body.campus-body .able-avatar {
+  background: linear-gradient(145deg, var(--campus-accent), var(--campus-ink-soft)) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+}
+
+body.campus-body .able-nav-label {
+  font-size: 0.68rem !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
+  color: var(--campus-faint) !important;
+  margin: 1rem 1.15rem 0.4rem !important;
+  font-weight: 700 !important;
+}
+
+body.campus-body .able-nav-link {
+  margin: 0.15rem 0.75rem !important;
+  padding: 0.7rem 0.9rem !important;
+  border-radius: 11px !important;
+  color: var(--campus-muted) !important;
+  font-weight: 600 !important;
+  font-size: 0.92rem !important;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+body.campus-body .able-nav-link i {
+  width: 1.25rem;
+  text-align: center;
+  opacity: 0.85;
+}
+
+body.campus-body .able-nav-link:hover {
+  background: var(--able-blue-soft) !important;
+  color: var(--campus-ink) !important;
+}
+
+body.campus-body .able-nav-link.active {
+  background: var(--campus-ink) !important;
+  color: #F4F8F6 !important;
+  box-shadow: 0 6px 16px rgba(10, 22, 40, 0.18);
+}
+
+body.campus-body .able-nav-link.active i { opacity: 1; }
+
+body.campus-body .able-logout {
+  margin: 0.75rem 1rem 1.1rem !important;
+  border-radius: 11px !important;
+  border: 1px solid var(--campus-border) !important;
+  color: var(--campus-muted) !important;
+  font-weight: 600 !important;
+}
+
+body.campus-body .able-logout:hover {
+  background: var(--campus-danger-bg) !important;
+  border-color: #FECACA !important;
+  color: var(--campus-danger) !important;
+}
+
+body.campus-body .sidebar-promo-select {
+  width: 100%;
+  border: 1px solid var(--campus-border);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  background: #fff;
+  font-size: 0.85rem;
+  font-family: var(--campus-font);
+  color: var(--campus-text);
+}
+
+/* Topbar */
+body.campus-body .able-topbar {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--campus-border) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+body.campus-body .able-topbar-left .fw-semibold {
+  font-size: 1.15rem;
+  color: var(--campus-ink);
+}
+
+body.campus-body .able-burger,
+body.campus-body .able-icon-btn {
+  border-radius: 11px !important;
+  border: 1px solid var(--campus-border) !important;
+  background: #fff !important;
+  color: var(--campus-ink) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.campus-body .able-burger:hover,
+body.campus-body .able-icon-btn:hover {
+  border-color: var(--campus-accent) !important;
+  box-shadow: 0 0 0 3px var(--able-blue-soft);
+}
+
+body.campus-body .able-user-dropdown {
+  border-radius: var(--campus-radius-sm) !important;
+  border: 1px solid var(--campus-border) !important;
+  box-shadow: var(--campus-shadow-hover) !important;
+  overflow: hidden;
+}
+
+/* Content */
+body.campus-body .able-content {
+  padding: 1.5rem 1.65rem 2.5rem !important;
+  animation: campusFade 0.35s ease both;
+}
+
+@keyframes campusFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Cards */
+body.campus-body .able-card {
+  background: var(--campus-surface) !important;
+  border: 1px solid var(--campus-border) !important;
+  border-radius: var(--campus-radius) !important;
+  box-shadow: var(--campus-shadow) !important;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+body.campus-body .able-card:hover {
+  box-shadow: var(--campus-shadow-hover);
+}
+
+body.campus-body .able-card-head {
+  background: linear-gradient(180deg, #FBFCFA 0%, #F4F7F5 100%) !important;
+  border-bottom: 1px solid var(--campus-border) !important;
+  padding: 1rem 1.25rem !important;
+}
+
+body.campus-body .able-card-head h2 {
+  margin: 0;
+  font-size: 1.05rem !important;
+  color: var(--campus-ink) !important;
+}
+
+body.campus-body .able-card-body {
+  padding: 1.25rem !important;
+}
+
+/* KPI */
+body.campus-body .able-kpi {
+  border-radius: var(--campus-radius) !important;
+  border: 1px solid var(--campus-border) !important;
+  box-shadow: var(--campus-shadow) !important;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.campus-body .able-kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--campus-shadow-hover);
+}
+
+body.campus-body .able-kpi.soft {
+  background: linear-gradient(165deg, #FFFFFF 0%, var(--campus-elevated) 100%) !important;
+}
+
+body.campus-body .able-kpi .kpi-label {
+  font-size: 0.72rem !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700 !important;
+  color: var(--campus-muted) !important;
+}
+
+body.campus-body .able-kpi .kpi-value {
+  font-family: var(--campus-font) !important;
+  font-weight: 800 !important;
+  font-size: 1.65rem !important;
+  color: var(--campus-ink) !important;
+  letter-spacing: -0.02em;
+}
+
+body.campus-body .able-kpi.blue,
+body.campus-body .able-kpi.green,
+body.campus-body .able-kpi.yellow,
+body.campus-body .able-kpi.red {
+  background: linear-gradient(165deg, #FFFFFF 0%, var(--campus-elevated) 100%) !important;
+  color: var(--campus-text) !important;
+}
+
+body.campus-body .able-kpi.blue .kpi-value,
+body.campus-body .able-kpi.green .kpi-value,
+body.campus-body .able-kpi.yellow .kpi-value,
+body.campus-body .able-kpi.red .kpi-value {
+  color: var(--campus-ink) !important;
+}
+
+body.campus-body .able-kpi.blue .kpi-label,
+body.campus-body .able-kpi.green .kpi-label,
+body.campus-body .able-kpi.yellow .kpi-label,
+body.campus-body .able-kpi.red .kpi-label,
+body.campus-body .able-kpi.blue .kpi-foot,
+body.campus-body .able-kpi.green .kpi-foot,
+body.campus-body .able-kpi.yellow .kpi-foot,
+body.campus-body .able-kpi.red .kpi-foot {
+  color: var(--campus-muted) !important;
+}
+
+body.campus-body .able-kpi.blue .kpi-icon { background: rgba(30,58,95,.12) !important; color: #1E3A5F !important; }
+body.campus-body .able-kpi.green .kpi-icon { background: rgba(15,118,110,.12) !important; color: #0F766E !important; }
+body.campus-body .able-kpi.yellow .kpi-icon { background: rgba(176,141,87,.18) !important; color: #8A6A35 !important; }
+body.campus-body .able-kpi.red .kpi-icon { background: rgba(185,28,28,.1) !important; color: #B91C1C !important; }
+
+body.campus-body .able-kpi .kpi-foot {
+  border-top: 1px solid var(--campus-border) !important;
+  color: var(--campus-faint) !important;
+  font-size: 0.75rem !important;
+}
+
+/* Buttons */
+body.campus-body .able-btn {
+  border-radius: 11px !important;
+  font-weight: 600 !important;
+  font-family: var(--campus-font) !important;
+  letter-spacing: 0.01em;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+body.campus-body .able-btn-primary {
+  background: linear-gradient(145deg, var(--campus-accent), var(--campus-ink-soft)) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(30, 58, 95, 0.28);
+}
+
+body.campus-body .able-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(30, 58, 95, 0.35);
+  filter: brightness(1.05);
+}
+
+body.campus-body .able-btn-outline {
+  background: #fff !important;
+  border: 1px solid var(--campus-border-strong) !important;
+  color: var(--campus-ink) !important;
+}
+
+body.campus-body .able-btn-outline:hover {
+  border-color: var(--campus-accent) !important;
+  color: var(--campus-accent) !important;
+  background: var(--able-blue-soft) !important;
+}
+
+body.campus-body .able-btn-danger {
+  background: var(--campus-danger) !important;
+  border: none !important;
+  color: #fff !important;
+}
+
+body.campus-body .able-btn-danger:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.25);
+}
+
+body.campus-body .able-btn-sm {
+  padding: 0.35rem 0.75rem !important;
+  font-size: 0.82rem !important;
+}
+
+/* Forms */
+body.campus-body .able-label {
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--campus-muted) !important;
+  margin-bottom: 0.35rem;
+}
+
+body.campus-body .able-input,
+body.campus-body .form-control,
+body.campus-body .form-select,
+body.campus-body .ministerial-input {
+  border-radius: 11px !important;
+  border: 1px solid var(--campus-border) !important;
+  padding: 0.65rem 0.85rem !important;
+  background: #fff !important;
+  color: var(--campus-text) !important;
+  font-family: var(--campus-font) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.campus-body .able-input:focus,
+body.campus-body .form-control:focus,
+body.campus-body .form-select:focus {
+  border-color: var(--campus-accent) !important;
+  box-shadow: 0 0 0 3px var(--able-blue-soft) !important;
+  outline: none !important;
+}
+
+/* Badges */
+body.campus-body .able-badge {
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.02em;
+  padding: 0.3rem 0.55rem !important;
+}
+
+body.campus-body .able-badge.muted {
+  background: var(--campus-elevated) !important;
+  color: var(--campus-muted) !important;
+  border: 1px solid var(--campus-border);
+}
+
+body.campus-body .able-badge.medium,
+body.campus-body .able-badge.high {
+  background: var(--campus-success-bg) !important;
+  color: var(--campus-success) !important;
+}
+
+body.campus-body .able-badge.warn,
+body.campus-body .able-badge.low {
+  background: var(--campus-warning-bg) !important;
+  color: var(--campus-warning) !important;
+}
+
+/* Tables */
+body.campus-body table.table-structure thead th,
+body.campus-body .table thead th,
+body.campus-body .able-table thead th {
+  background: var(--campus-ink) !important;
+  color: #F4F8F6 !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700 !important;
+  border-color: var(--campus-ink-mid) !important;
+}
+
+body.campus-body .able-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+body.campus-body .able-table th,
+body.campus-body .able-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--campus-border);
+  vertical-align: middle;
+}
+
+body.campus-body .able-table tbody tr:hover td {
+  background: rgba(30, 58, 95, 0.06);
+}
+
+body.campus-body table.table-structure tbody tr:nth-child(even) td {
+  background: var(--campus-elevated) !important;
+}
+
+body.campus-body table.table-structure tbody tr:hover td {
+  background: rgba(30, 58, 95, 0.08) !important;
+}
+
+body.campus-body table.table-structure th,
+body.campus-body table.table-structure td {
+  border-color: var(--campus-border) !important;
+}
+
+/* Campus data grids (décanat / enseignant) */
+body.campus-body table.table-faculte thead th,
+body.campus-body table.table-etudiants thead th.col-matricule {
+  background: var(--campus-ink) !important;
+  color: #F4F8F6 !important;
+}
+
+body.campus-body .grille-wrap {
+  border-radius: var(--campus-radius) !important;
+  border-color: var(--campus-border) !important;
+  box-shadow: var(--campus-shadow) !important;
+}
+
+/* Legacy cards / dashboards */
+body.campus-body .premium-card,
+body.campus-body .stat-card,
+body.campus-body .dash-formations-card,
+body.campus-body .rd-block {
+  border-radius: var(--campus-radius) !important;
+  box-shadow: var(--campus-shadow) !important;
+  border: 1px solid var(--campus-border) !important;
+  background: var(--campus-surface) !important;
+}
+
+body.campus-body .btn-navy,
+body.campus-body .btn-ministerial,
+body.campus-body .rd-btn.primary {
+  background: linear-gradient(145deg, var(--campus-accent), var(--campus-ink-soft)) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  border-radius: 11px !important;
+}
+
+body.campus-body .btn-ministerial-gold {
+  background: var(--campus-copper) !important;
+  border-color: var(--campus-copper) !important;
+  color: #fff !important;
+  border-radius: 11px !important;
+}
+
+body.campus-body .btn-outline-navy,
+body.campus-body .rd-btn {
+  border-color: var(--campus-border-strong) !important;
+  color: var(--campus-ink) !important;
+  background: #fff !important;
+  border-radius: 11px !important;
+}
+
+body.campus-body .text-navy { color: var(--campus-ink) !important; }
+body.campus-body .text-gold { color: var(--campus-copper) !important; }
+
+/* Alerts */
+body.campus-body .alert {
+  border-radius: var(--campus-radius-sm) !important;
+  border: 1px solid transparent !important;
+  font-weight: 500;
+}
+
+body.campus-body .alert-success {
+  background: var(--campus-success-bg) !important;
+  color: var(--campus-success) !important;
+}
+
+body.campus-body .alert-danger,
+body.campus-body .alert-error {
+  background: var(--campus-danger-bg) !important;
+  color: var(--campus-danger) !important;
+}
+
+body.campus-body .alert-warning {
+  background: var(--campus-warning-bg) !important;
+  color: var(--campus-warning) !important;
+}
+
+body.campus-body .alert-info {
+  background: var(--able-blue-soft) !important;
+  color: var(--campus-accent) !important;
+}
+
+/* Modal */
+body.campus-body .modal-content {
+  border: 1px solid var(--campus-border) !important;
+  border-radius: var(--campus-radius) !important;
+  box-shadow: var(--campus-shadow-hover) !important;
+  overflow: hidden;
+}
+
+body.campus-body .modal-title {
+  font-family: var(--campus-font);
+  font-weight: 700;
+  color: var(--campus-ink);
+}
+
+/* Timeline / person */
+body.campus-body .able-person .av {
+  border-radius: 12px !important;
+}
+
+body.campus-body .able-timeline .dot {
+  border-radius: 10px !important;
+}
+
+/* Page header helper */
+.campus-page-intro {
+  margin-bottom: 1.25rem;
+}
+
+.campus-page-intro .eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--campus-muted);
+  margin-bottom: 0.25rem;
+}
+
+.campus-page-intro h1 {
+  font-family: var(--campus-font);
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--campus-ink);
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+.campus-page-intro p {
+  margin: 0.35rem 0 0;
+  color: var(--campus-muted);
+  max-width: 42rem;
+}
+
+@media (max-width: 991.98px) {
+  body.campus-body .able-content {
+    padding: 1.1rem 1rem 2rem !important;
+  }
+}

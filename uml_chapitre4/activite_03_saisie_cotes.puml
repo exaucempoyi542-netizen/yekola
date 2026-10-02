@@ -1,0 +1,59 @@
+@startuml Activite_Saisie_Cotes_Enseignant
+!theme plain
+skinparam activityFontSize 12
+skinparam activityFontColor #111111
+skinparam activityBackgroundColor #BBDEFB
+skinparam activityBorderColor #1565C0
+skinparam activityBorderThickness 1.5
+skinparam activityDiamondBackgroundColor #FFD94A
+skinparam activityDiamondBorderColor #E65100
+skinparam activityDiamondFontColor #111111
+skinparam activityStartColor #66BB6A
+skinparam activityEndColor #EF5350
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1.5
+title Diagramme d'activite - Saisie et Soumission des Cotes par l'Enseignant
+
+start
+
+:Se connecter au portail Web Enseignant;
+
+:Selectionner le cours attribue;
+
+:Ouvrir le carnet de cotes;
+
+if (Saisie verouillee ?\n(Notes bloquees ou semestre cloture)) then (Oui)
+
+  :Afficher message\n"Saisie des cotes bloquee";
+
+  stop
+
+else (Non)
+
+  :Saisir ou modifier les cotes\n(TP, Interrogation, Examen);
+
+  :Calculer le total sur 20\net determiner les credits ECTS;
+
+  :Enregistrer les cotes\nen etat BROUILLON (DRAFT);
+
+  if (Soumettre au Decanat ?) then (Oui)
+
+    :Passer le statut a\nSOUMIS_AU_DECANAT;
+
+    :Mettre a jour la note de cours\n(NoteCours);
+
+    :Journaliser l'action\ndans JournalAudit;
+
+    :Afficher confirmation\n"Cotes transmises au Decanat";
+
+  else (Non)
+
+    :Conserver les cotes\nen mode Brouillon;
+
+  endif
+
+endif
+
+end
+
+@enduml

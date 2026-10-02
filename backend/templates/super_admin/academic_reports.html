@@ -1,0 +1,307 @@
+{% extends "super_admin/base.html" %}
+{% load static %}
+
+{% block title %}Rapports Provinciaux | Yekola{% endblock %}
+{% block page_title %}Rapports Provinciaux{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ar-wrap { max-width: 1180px; }
+
+    .ar-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--slate-light);
+    }
+
+    .ar-header h1 {
+        font-family: 'Sora', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: var(--navy);
+        margin: 0 0 0.3rem;
+    }
+
+    .ar-header p {
+        margin: 0;
+        color: var(--slate);
+        font-size: 0.92rem;
+    }
+
+    .ar-block {
+        background: #fff;
+        border: 1px solid var(--slate-light);
+    }
+
+    .ar-block-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.9rem 1.2rem;
+        border-bottom: 1px solid var(--slate-light);
+        background: linear-gradient(180deg, #F8FAFC 0%, #fff 100%);
+    }
+
+    .ar-block-head h2 {
+        margin: 0;
+        font-family: 'Sora', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--navy);
+    }
+
+    .ar-block-head span {
+        font-size: 0.78rem;
+        color: var(--slate);
+    }
+
+    .ar-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+
+    .ar-table thead th {
+        background: var(--navy);
+        color: rgba(255,255,255,0.92);
+        font-size: 0.7rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        font-weight: 700;
+        padding: 0.85rem 1rem;
+        border: none;
+        white-space: nowrap;
+    }
+
+    .ar-table tbody td {
+        padding: 0.95rem 1rem;
+        border-bottom: 1px solid var(--slate-light);
+        vertical-align: middle;
+        font-size: 0.88rem;
+        background: #fff;
+    }
+
+    .ar-table tbody tr:last-child td { border-bottom: none; }
+    .ar-table tbody tr:hover td { background: #F8FAFC; }
+
+    .ar-title {
+        font-weight: 700;
+        color: var(--navy);
+        margin: 0 0 0.15rem;
+    }
+
+    .ar-meta {
+        margin: 0;
+        font-size: 0.78rem;
+        color: var(--slate);
+    }
+
+    .ar-status-wait {
+        color: #B45309;
+        font-weight: 700;
+        font-size: 0.82rem;
+    }
+
+    .ar-status-ok {
+        color: #059669;
+        font-weight: 700;
+        font-size: 0.82rem;
+    }
+
+    .ar-rate {
+        font-family: 'Sora', sans-serif;
+        font-weight: 800;
+        color: var(--navy);
+    }
+
+    .ar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        justify-content: flex-end;
+    }
+
+    .ar-btn {
+        display: inline-block;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-decoration: none;
+        border-radius: 6px;
+        padding: 0.35rem 0.7rem;
+        border: 1px solid var(--slate-light);
+        background: #fff;
+        color: var(--navy);
+        cursor: pointer;
+    }
+
+    .ar-btn:hover {
+        border-color: var(--navy);
+        background: #F8FAFC;
+        color: var(--navy);
+    }
+
+    .ar-btn.primary {
+        background: var(--navy);
+        border-color: var(--navy);
+        color: #fff;
+    }
+
+    .ar-btn.primary:hover {
+        opacity: 0.92;
+        color: #fff;
+        background: var(--navy);
+    }
+
+    .ar-btn.danger {
+        color: #B91C1C;
+        border-color: #FECACA;
+    }
+
+    .ar-btn.danger:hover {
+        background: #FEF2F2;
+        border-color: #DC2626;
+        color: #B91C1C;
+    }
+
+    .ar-empty {
+        padding: 2.75rem 1.25rem;
+        text-align: center;
+        color: var(--slate);
+    }
+
+    .ar-empty strong {
+        display: block;
+        color: var(--navy);
+        margin-bottom: 0.35rem;
+        font-size: 1rem;
+    }
+
+    @media (max-width: 991.98px) {
+        .ar-table thead { display: none; }
+        .ar-table tbody tr {
+            display: block;
+            border-bottom: 1px solid var(--slate-light);
+            padding: 0.85rem 0;
+        }
+        .ar-table tbody td {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            border: none;
+            padding: 0.3rem 1rem;
+        }
+        .ar-table tbody td::before {
+            content: attr(data-label);
+            font-size: 0.68rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--slate);
+            font-weight: 700;
+        }
+        .ar-table tbody td:first-child { display: block; }
+        .ar-table tbody td:first-child::before,
+        .ar-table tbody td:last-child::before { display: none; }
+        .ar-table tbody td:last-child {
+            justify-content: flex-end;
+            padding-top: 0.65rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in ar-wrap mb-5">
+
+    <section class="ar-block">
+        <div class="ar-block-head">
+            <h2>Rapports reçus</h2>
+            <span>{{ reports|length }} rapport{{ reports|length|pluralize }}</span>
+        </div>
+
+        {% if reports %}
+        <div class="table-responsive">
+            <table class="ar-table">
+                <thead>
+                    <tr>
+                        <th>Rapport</th>
+                        <th>Province</th>
+                        <th class="text-end">Établ.</th>
+                        <th class="text-end">Étudiants</th>
+                        <th class="text-end">Réussites</th>
+                        <th class="text-end">Échecs</th>
+                        <th class="text-end">Taux</th>
+                        <th class="text-end">Statut</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr>
+                        <td data-label="Rapport">
+                            <p class="ar-title">{{ report.title }}</p>
+                            <p class="ar-meta">
+                                {{ report.academic_year }}
+                                {% if report.submitted_by %}
+                                · {{ report.submitted_by.username }}
+                                {% endif %}
+                                · {{ report.submitted_at|date:"d/m/Y H:i" }}
+                            </p>
+                        </td>
+                        <td data-label="Province">{{ report.province.name }}</td>
+                        <td class="text-end" data-label="Établ.">
+                            {{ report.universities_reported }}/{{ report.total_universities }}
+                        </td>
+                        <td class="text-end" data-label="Étudiants">{{ report.total_students }}</td>
+                        <td class="text-end" data-label="Réussites">{{ report.passed_students }}</td>
+                        <td class="text-end" data-label="Échecs">{{ report.failed_students }}</td>
+                        <td class="text-end" data-label="Taux">
+                            <span class="ar-rate">{{ report.success_rate }}%</span>
+                        </td>
+                        <td class="text-end" data-label="Statut">
+                            {% if report.is_validated %}
+                            <span class="ar-status-ok">Validé</span>
+                            {% if report.validated_at %}
+                            <p class="ar-meta">{{ report.validated_at|date:"d/m/Y H:i" }}</p>
+                            {% endif %}
+                            {% else %}
+                            <span class="ar-status-wait">En attente</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end" data-label="Actions">
+                            {% if not report.is_validated %}
+                            <div class="ar-actions">
+                                <form method="POST" action="{% url 'super_admin:validate_academic_report' report.id %}" class="m-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reject">
+                                    <button type="submit" class="ar-btn danger"
+                                        onclick="return confirm('Rejeter et supprimer ce rapport ?')">Rejeter</button>
+                                </form>
+                                <form method="POST" action="{% url 'super_admin:validate_academic_report' report.id %}" class="m-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="validate">
+                                    <button type="submit" class="ar-btn primary"
+                                        onclick="return confirm('Valider ce rapport provincial ?')">Valider</button>
+                                </form>
+                            </div>
+                            {% else %}
+                            <span class="ar-meta">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="ar-empty">
+            <strong>Aucun rapport provincial</strong>
+            En attente des consolidations des Administrateurs Provinciaux.
+        </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}

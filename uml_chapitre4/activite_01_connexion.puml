@@ -1,0 +1,53 @@
+@startuml Activite_Connexion_Etudiant
+!theme plain
+skinparam activityFontSize 12
+skinparam activityFontColor #111111
+skinparam activityBackgroundColor #BBDEFB
+skinparam activityBorderColor #1565C0
+skinparam activityBorderThickness 1.5
+skinparam activityDiamondBackgroundColor #FFD94A
+skinparam activityDiamondBorderColor #E65100
+skinparam activityDiamondFontColor #111111
+skinparam activityStartColor #66BB6A
+skinparam activityEndColor #EF5350
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1.5
+title Diagramme d'activite - Connexion Etudiant
+
+start
+
+:Ouvrir l'application mobile;
+
+:Saisir matricule ou email\net mot de passe;
+
+if (Identifiants valides ?) then (Oui)
+
+  if (Profil complete ?) then (Non)
+
+    :Saisir adresse Gmail\n(@gmail.com);
+
+    if (Gmail deja utilise ?) then (Oui)
+      :Afficher erreur\n"Email deja existant";
+      stop
+    else (Non)
+      :Enregistrer l'email\nProfil marque complet;
+    endif
+
+  else (Oui)
+  endif
+
+  :Generer token JWT\n(access + refresh);
+
+  :Rediriger vers\nle tableau de bord;
+
+else (Non)
+
+  :Afficher erreur\n"Identifiants incorrects";
+
+  stop
+
+endif
+
+end
+
+@enduml

@@ -1,0 +1,52 @@
+@startuml Figure_4_4_Sequence_Rapport_Annuel_Decanat
+!theme plain
+skinparam sequenceMessageAlign center
+title Figure 4.4 — Diagramme de séquence : Génération du rapport annuel par le Décanat
+
+actor "Décanat" as D
+participant "Portail web\n(Django)" as UI
+participant "Service de\ndélibération" as SVC
+database "Base de données\nMySQL" as DB
+actor "Gestionnaire" as M
+
+D -> UI : S'authentifier (rôle Décanat)
+UI --> D : Session ouverte
+
+D -> UI : Choisir la promotion LMD et l'année académique
+UI -> SVC : Générer le rapport annuel (faculté, promotion, année)
+
+SVC -> DB : Charger les cours du semestre 1 et du semestre 2
+DB --> SVC : Liste des cours (semestre, crédits)
+
+SVC -> DB : Charger les étudiants du groupe de classe
+DB --> SVC : Liste des étudiants
+
+SVC -> DB : Charger les cotes soumises au Décanat
+DB --> SVC : Cotes par étudiant et par cours
+
+loop Pour chaque étudiant
+  SVC -> SVC : Additionner les crédits S1 (cours ≥ 10/20)
+  SVC -> SVC : Additionner les crédits S2 (cours ≥ 10/20)
+  SVC -> SVC : Total = S1 + S2\nVerdict = Réussite si 60/60, sinon Échec
+end
+
+SVC -> DB : Créer le rapport de résultats\net les lignes étudiant
+SVC -> DB : Marquer les cotes « Validées par le Décanat »
+SVC -> DB : Créer / mettre à jour le rapport facultaire
+DB --> SVC : Confirmation
+SVC --> UI : Rapport généré (réussites / échecs)
+UI --> D : Afficher la synthèse annuelle
+
+... Transmission hiérarchique ...
+
+M -> UI : Consulter les résultats consolidés (UC14)
+UI -> DB : Lire les rapports facultaires / annuels
+DB --> UI : Données consolidées
+UI --> M : Tableau des résultats facultaires
+
+note over D, M
+  Règle : S1/30 + S2/30 = /60
+  Réussite uniquement si 60 crédits obtenus.
+end note
+
+@enduml

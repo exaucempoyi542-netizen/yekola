@@ -1,0 +1,312 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    /* --- Ministerial Preview Canvas --- */
+    .preview-canvas {
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        gap: 2.5rem;
+        height: calc(100vh - 200px);
+        margin-top: 1rem;
+    }
+
+    .syllabus-sidebar {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--slate-light);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .syllabus-header {
+        padding: 2rem;
+        background: var(--navy);
+        color: var(--white);
+        border-bottom: 2px solid var(--gold);
+    }
+
+    .syllabus-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        background: var(--ivory);
+    }
+
+    .chapter-link {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 1rem 1.25rem;
+        border-radius: 12px;
+        color: var(--navy);
+        text-decoration: none !important;
+        transition: var(--transition);
+        margin-bottom: 0.75rem;
+        border: 1px solid transparent;
+        font-weight: 800;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .chapter-link:hover {
+        background: var(--white);
+        color: var(--gold);
+        transform: translateX(4px);
+    }
+
+    .chapter-link.active {
+        background: var(--white);
+        color: var(--gold);
+        border-color: var(--gold-light);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .chapter-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: var(--navy);
+        color: var(--gold);
+        font-size: 0.8rem;
+        flex-shrink: 0;
+    }
+
+    /* Viewer Stage */
+    .viewer-stage {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--slate-light);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+    }
+
+    .viewer-navbar {
+        padding: 1.5rem 2.5rem;
+        background: var(--navy);
+        color: var(--white);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 3px solid var(--gold);
+    }
+
+    .viewer-content-area {
+        flex: 1;
+        overflow-y: auto;
+        background: var(--ivory);
+    }
+
+    .zen-reader {
+        max-width: 900px;
+        margin: 0 auto;
+        background: var(--white);
+        min-height: 100%;
+        box-shadow: 0 0 50px rgba(15, 23, 42, 0.03);
+    }
+
+    .reading-surface {
+        padding: 5rem 4rem;
+    }
+
+    .reading-surface h1 {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 900;
+        font-size: 2.5rem;
+        color: var(--navy);
+        margin-bottom: 2.5rem;
+        letter-spacing: -0.04em;
+    }
+
+    .reading-content {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: var(--slate);
+        font-weight: 500;
+    }
+
+    .media-stage {
+        width: 100%;
+        height: 100%;
+        background: #020617;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #pdf-viewer-canvas {
+        box-shadow: var(--shadow-lg);
+        margin-bottom: 2rem;
+        background: white;
+    }
+
+    @media (max-width: 992px) {
+        .preview-canvas {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+
+        .syllabus-sidebar {
+            height: 400px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Inspection Pédagogique{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
+        <a href="{% url 'teacher_lesson_management' course.id %}" class="able-btn able-btn-outline">
+            <i class="fas fa-edit me-1"></i> Retour Atelier
+        </a>
+        <a href="{% url 'teacher_course_toggle_publish' course.id %}"
+           class="btn-ministerial-gold shadow-sm px-4 text-decoration-none d-inline-flex align-items-center"
+           onclick="return confirm('Publier ce cours pour le rendre visible sur mobile ?')">
+            <i class="fas fa-rocket me-2"></i>
+            {% if course.is_published %}Retirer de la publication{% else %}Certifier &amp; Publier{% endif %}
+        </a>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="preview-canvas">
+        <!-- Sidebar Navigation -->
+        <aside class="syllabus-sidebar">
+            <div class="syllabus-header">
+                <h6 class="fw-900 mb-1">Architecture du Cours</h6>
+                <div class="extra-small fw-800 text-gold text-uppercase letter-spacing-1 opacity-75">
+                    {{ lessons|length }} Modules Validés
+                </div>
+            </div>
+            <div class="syllabus-scroll" id="sidebar-scroll">
+                {% for lesson in lessons %}
+                <a href="?lesson={{ lesson.id }}"
+                    class="chapter-link {% if selected_lesson.id  ==  lesson.id %}active{% endif %}">
+                    <div class="chapter-icon">
+                        {% if lesson.content_type  ==  'VIDEO' %}<i class="fas fa-play"></i>
+                        {% elif lesson.content_type  ==  'PDF' %}<i class="fas fa-file-pdf"></i>
+                        {% elif lesson.content_type  ==  'PPT' %}<i class="fas fa-file-powerpoint"></i>
+                        {% else %}<i class="fas fa-pen-nib"></i>{% endif %}
+                    </div>
+                    <div class="text-truncate">{{ lesson.title }}</div>
+                </a>
+                {% endfor %}
+            </div>
+        </aside>
+
+        <!-- Content Stage -->
+        <main class="viewer-stage">
+            {% if selected_lesson %}
+            <div class="viewer-navbar">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge-premium badge-gold" style="font-size: 0.6rem;">
+                        {{ selected_lesson.get_content_type_display }}
+                    </span>
+                    <h5 class="fw-900 mb-0 opacity-90">{{ selected_lesson.title }}</h5>
+                </div>
+                <div class="extra-small fw-900 text-gold text-uppercase letter-spacing-1">
+                    <i class="fas fa-shield-halved me-2"></i> Vision Institutionnelle
+                </div>
+            </div>
+
+            <div class="viewer-content-area">
+                <div class="zen-reader">
+                    {% if selected_lesson.content_type  ==  'VIDEO' %}
+                    <div class="media-stage">
+                        <video controls class="w-100 shadow-xl" style="max-height: 80vh; background: black;">
+                            <source src="{{ selected_lesson.content_file.url }}" type="video/mp4">
+                        </video>
+                    </div>
+                    {% elif selected_lesson.content_type  ==  'PDF' %}
+                    <div class="media-stage overflow-auto p-5 d-flex flex-column align-items-center" id="pdf-view-stage"
+                        style="background: #1e293b;">
+                        <canvas id="pdf-viewer-canvas"></canvas>
+                    </div>
+                    {% elif selected_lesson.content_type  ==  'TEXT' %}
+                    <article class="reading-surface">
+                        <h1 class="text-navy">{{ selected_lesson.title }}</h1>
+                        <div class="reading-content text-slate" id="zen-content-body">
+                            {{ selected_lesson.content_text|safe }}
+                        </div>
+                    </article>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="d-flex flex-column align-items-center justify-content-center h-100 text-center p-5 bg-ivory">
+                <div class="icon-square bg-white border text-gold mb-4"
+                    style="width: 100px; height: 100px; border-radius: 30px;">
+                    <i class="fas fa-book-open-reader fs-1"></i>
+                </div>
+                <h4 class="fw-900 text-navy">Prêt pour l'Inspection Magistrale ?</h4>
+                <p class="text-muted extra-small fw-800 text-uppercase letter-spacing-1 mx-auto"
+                    style="max-width: 350px;">Sélectionnez une unité d'enseignement dans l'index pour auditer le rendu
+                    final.</p>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<div id="preview-config" data-is-pdf="{% if selected_lesson.content_type  ==  'PDF' %}true{% else %}false{% endif %}"
+    data-pdf-url="{% if selected_lesson.content_file %}{{ selected_lesson.content_file.url }}{% endif %}"
+    style="display: none;"></div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const config = document.getElementById('preview-config');
+        const isPdf = config.getAttribute('data-is-pdf') === 'true';
+        const pdfUrl = config.getAttribute('data-pdf-url');
+
+        if (isPdf && pdfUrl) {
+            (async () => {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                const loadingTask = pdfjsLib.getDocument(pdfUrl);
+                const pdf = await loadingTask.promise;
+                const container = document.getElementById('pdf-view-stage');
+                const canvas = document.getElementById('pdf-viewer-canvas');
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1.4 });
+                    let targetCanvas = (i === 1) ? canvas : document.createElement('canvas');
+                    if (i > 1) {
+                        targetCanvas.style.boxShadow = "var(--shadow-lg)";
+                        targetCanvas.style.marginBottom = "2rem";
+                        targetCanvas.style.background = "white";
+                        container.appendChild(targetCanvas);
+                    }
+                    const context = targetCanvas.getContext('2d');
+                    targetCanvas.height = viewport.height;
+                    targetCanvas.width = viewport.width;
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                }
+            })();
+        }
+
+        const contentBody = document.getElementById('zen-content-body');
+        if (contentBody) {
+            let cleanHtml = contentBody.innerHTML;
+            cleanHtml = cleanHtml.replace(/<v:[^>]*>[\s\S]*?<\/v:[^>]*>/gi, '')
+                .replace(/<o:[^>]*>[\s\S]*?<\/o:[^>]*>/gi, '')
+                .replace(/<w:[^>]*>[\s\S]*?<\/w:[^>]*>/gi, '')
+                .replace(/style="[^"]*mso-[^"]*"/gi, '');
+            contentBody.innerHTML = cleanHtml;
+        }
+    });
+</script>
+{% endblock %}

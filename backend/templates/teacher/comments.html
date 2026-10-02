@@ -1,0 +1,189 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block page_title %}Interactions & Commentaires{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-fade-in">
+    <div class="col-12 col-xl-9">
+        <div class="d-flex justify-content-end mb-4">
+            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 fw-bold"
+                style="border-radius: 12px;">{{ comments|length }} Fils de discussion</span>
+        </div>
+
+        <div class="glass-card border-0 shadow-xl overflow-hidden bg-white" style="border-radius: var(--radius-2xl);">
+            <div class="comment-feed">
+                {% for comment in comments %}
+                <div class="comment-thread-premium p-4 p-md-5 border-bottom transition-all"
+                    id="thread-{{ comment.id }}">
+                    <div class="d-flex gap-4">
+                        <!-- Avatar & Timing -->
+                        <div class="d-none d-md-flex flex-column align-items-center" style="width: 64px;">
+                            <div class="avatar-lg bg-indigo text-white fw-bold shadow-premium mb-3 d-flex align-items-center justify-content-center"
+                                style="width: 56px; height: 56px; border-radius: 18px; font-size: 1.2rem; background-color: #4f46e5;">
+                                {{ comment.user.username|slice:":1"|upper }}
+                            </div>
+                            <span class="text-muted fw-bold" style="font-size: 0.65rem;">
+                                {{ comment.created_at|date:"H:i" }}
+                            </span>
+                        </div>
+
+                        <!-- Main Content Area -->
+                        <div class="flex-grow-1">
+                            <div
+                                class="d-flex flex-column flex-md-row justify-content-between align-items-md-start mb-3 gap-2">
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-1">{{ comment.user.username }}</h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if comment.lesson %}
+                                        <span class="badge bg-light text-primary small px-2 py-1"
+                                            style="border-radius: 6px; font-size: 0.7rem;">LEÇON</span>
+                                        <span class="text-muted small fw-bold text-truncate"
+                                            style="max-width: 250px;">{{ comment.lesson.title }}</span>
+                                        {% else %}
+                                        <span class="badge bg-light text-indigo small px-2 py-1"
+                                            style="border-radius: 6px; font-size: 0.7rem;">COURS</span>
+                                        <span class="text-muted small fw-bold text-truncate"
+                                            style="max-width: 250px;">{{ comment.course.title }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <button class="btn btn-light btn-sm px-3 fw-bold border-0 reply-trigger"
+                                        data-id="{{ comment.id }}" style="border-radius: 8px; background: #f1f5f9;">
+                                        <i class="fas fa-reply me-1"></i> Répondre
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="comment-body p-4 bg-light bg-opacity-30 border border-light mb-4"
+                                style="border-radius: var(--radius-xl); color: #334155;">
+                                {{ comment.content }}
+                            </div>
+
+                            <!-- Nested Replies -->
+                            {% if comment.replies.all %}
+                            <div class="replies-section ms-2 ms-md-5 ps-4 border-start border-light"
+                                style="border-width: 2px !important;">
+                                {% for reply in comment.replies.all %}
+                                <div class="reply-card-premium mb-4 animate-fade-in">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="small fw-bold text-dark">{{ reply.user.username }}</span>
+                                        <span class="text-muted" style="font-size: 0.65rem;">
+                                            {{ reply.created_at|date:"d M, H:i" }}
+                                        </span>
+                                    </div>
+                                    <p class="small text-secondary mb-0 bg-white p-3 border border-light shadow-xs d-inline-block"
+                                        style="border-radius: 12px; max-width: 90%;">
+                                        {{ reply.content }}
+                                    </p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Interactive Reply Input -->
+                            <div id="reply-form-{{ comment.id }}" class="mt-4 animate-fade-in" style="display: none;">
+                                <div class="glass-card p-3 border-primary border-opacity-10 bg-light bg-opacity-20"
+                                    style="border-radius: var(--radius-xl);">
+                                    <textarea class="form-control border-0 bg-transparent mb-3 ps-0" rows="3"
+                                        placeholder="Partagez votre expertise avec l'étudiant..."
+                                        style="box-shadow: none; font-size: 0.95rem; font-weight: 500;"></textarea>
+                                    <div class="d-flex justify-content-end">
+                                        <button class="btn-premium px-4 py-2 small submit-reply-btn"
+                                            data-comment-id="{{ comment.id }}"
+                                            data-type="{% if comment.lesson %}lesson{% else %}course{% endif %}"
+                                            data-object-id="{% if comment.lesson %}{{ comment.lesson.id }}{% else %}{{ comment.course.id }}{% endif %}">
+                                            Publier la réponse <i class="fas fa-paper-plane ms-2"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5 my-5">
+                    <div class="icon-circle bg-light text-muted mx-auto mb-4 d-flex align-items-center justify-content-center"
+                        style="width: 80px; height: 80px; border-radius: 24px;">
+                        <i class="fas fa-comment-slash fs-2"></i>
+                    </div>
+                    <h5 class="fw-bold">Aucune interaction</h5>
+                    <p class="text-muted small">Les questions de vos étudiants s'afficheront ici en temps réel.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .comment-thread-premium:hover {
+        background-color: #fbfbfe;
+        box-shadow: inset 6px 0 0 var(--primary);
+    }
+
+    .ls-wide {
+        letter-spacing: 0.08em;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Handle reply toggle
+        document.querySelectorAll('.reply-trigger').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const id = this.getAttribute('data-id');
+                const form = document.getElementById(`reply-form-${id}`);
+                form.style.display = form.style.display === 'none' ? 'block' : 'none';
+                if (form.style.display === 'block') form.querySelector('textarea').focus();
+            });
+        });
+
+        // Handle reply submission
+        document.querySelectorAll('.submit-reply-btn').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const commentId = this.getAttribute('data-comment-id');
+                const type = this.getAttribute('data-type');
+                const objectId = this.getAttribute('data-object-id');
+                const textarea = this.closest('.glass-card').querySelector('textarea');
+                const content = textarea.value.trim();
+
+                if (!content) return;
+
+                this.disabled = true;
+                const originalHtml = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                const apiUrl = type === 'lesson'
+                    ? `/api/lessons/${objectId}/add_comment/`
+                    : `/api/courses/${objectId}/add_comment/`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({ content, parent_id: commentId })
+                    });
+
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert("Échec de l'envoi.");
+                        this.disabled = false;
+                        this.innerHTML = originalHtml;
+                    }
+                } catch (e) {
+                    this.disabled = false;
+                    this.innerHTML = originalHtml;
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Yekola Pro | Portail National{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'super_admin/css/able-pro.css' %}?v=9">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="able-body">
+    <div class="able-overlay" id="overlay"></div>
+    <div class="able-wrapper">
+        <aside class="able-sidebar" id="sidebar">
+            <div class="able-brand">
+                <div class="able-brand-mark">E</div>
+                <div class="able-brand-name">
+                    Yekola
+                    <span>{% if request.user.role == 'PROVINCIAL_ADMIN' %}Tutelle provinciale{% else %}Portail national{% endif %}</span>
+                </div>
+            </div>
+
+            <div class="able-profile">
+                <div class="able-avatar">{{ request.user.username|slice:":1"|upper }}</div>
+                <div class="min-width-0">
+                    <strong class="text-truncate d-block">{{ request.user.get_full_name|default:request.user.username }}</strong>
+                    <small>
+                        {% if request.user.role == 'PROVINCIAL_ADMIN' %}
+                        {{ request.user.assigned_province.name|default:"Province" }}
+                        {% else %}
+                        Super-Administrateur
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+
+            <nav class="able-nav">
+                {% if request.user.role == 'PROVINCIAL_ADMIN' %}
+                <div class="able-nav-label">Navigation</div>
+                <a href="{% url 'super_admin:territorial_dashboard' %}" class="able-nav-link {% if request.resolver_match.url_name == 'territorial_dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-gauge-high"></i><span>Tableau de bord</span>
+                </a>
+                <a href="{% url 'super_admin:territorial_universities' %}" class="able-nav-link {% if 'territorial_universit' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-building-columns"></i><span>Établissements</span>
+                </a>
+                <a href="{% url 'super_admin:territorial_reports' %}" class="able-nav-link {% if request.resolver_match.url_name == 'territorial_reports' or request.resolver_match.url_name == 'territorial_consolidate' %}active{% endif %}">
+                    <i class="fa-solid fa-file-lines"></i><span>Rapports</span>
+                </a>
+                <div class="able-nav-label">Analyse</div>
+                <a href="{% url 'super_admin:territorial_benchmark' %}" class="able-nav-link {% if request.resolver_match.url_name == 'territorial_benchmark' %}active{% endif %}">
+                    <i class="fa-solid fa-chart-column"></i><span>Benchmarking</span>
+                </a>
+                <a href="{% url 'super_admin:territorial_lmd' %}" class="able-nav-link {% if request.resolver_match.url_name == 'territorial_lmd' %}active{% endif %}">
+                    <i class="fa-solid fa-book"></i><span>Conformité LMD</span>
+                </a>
+                <a href="{% url 'super_admin:territorial_alerts' %}" class="able-nav-link {% if 'territorial_alert' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-bell"></i><span>Alertes</span>
+                </a>
+                {% else %}
+                <div class="able-nav-label">Navigation</div>
+                <a href="{% url 'super_admin:dashboard' %}" class="able-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-gauge-high"></i><span>Tableau de bord</span>
+                </a>
+                <a href="{% url 'super_admin:provincial_stats' %}" class="able-nav-link {% if request.resolver_match.url_name == 'provincial_stats' or request.resolver_match.url_name == 'province_detail' or 'manage_province' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-earth-africa"></i><span>Zones provinciales</span>
+                </a>
+                <a href="{% url 'super_admin:academic_reports' %}" class="able-nav-link {% if request.resolver_match.url_name == 'academic_reports' or request.resolver_match.url_name == 'validate_academic_report' %}active{% endif %}">
+                    <i class="fa-solid fa-file-contract"></i><span>Rapports provinciaux</span>
+                </a>
+                <div class="able-nav-label">Gouvernance</div>
+                <a href="{% url 'super_admin:manage_provincial_admins' %}" class="able-nav-link {% if 'provincial_admin' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-user-shield"></i><span>Admins provinciaux</span>
+                </a>
+                <a href="{% url 'super_admin:audit_logs' %}" class="able-nav-link {% if request.resolver_match.url_name == 'audit_logs' %}active{% endif %}">
+                    <i class="fa-solid fa-clipboard-list"></i><span>Journal d'audit</span>
+                </a>
+                {% endif %}
+            </nav>
+
+            <div class="able-sidebar-foot">
+                <a href="{% url 'unified_logout' %}" class="able-logout">
+                    <i class="fa-solid fa-power-off"></i> Déconnexion
+                </a>
+            </div>
+        </aside>
+
+        <div class="able-main">
+            <header class="able-topbar">
+                <div class="able-topbar-left">
+                    <button type="button" class="able-burger" id="mobile-burger" aria-label="Menu">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="fw-semibold">{% block page_title %}Tableau de bord{% endblock %}</div>
+                </div>
+                <div class="able-top-actions">
+                    <a class="able-icon-btn" href="{% if request.user.role == 'PROVINCIAL_ADMIN' %}{% url 'super_admin:territorial_alerts' %}{% else %}{% url 'super_admin:academic_reports' %}{% endif %}" title="Notifications">
+                        <i class="fa-regular fa-bell"></i>
+                    </a>
+                    <details class="able-user-menu">
+                        <summary class="able-icon-btn" title="{{ request.user.username }}">
+                            <i class="fa-regular fa-user"></i>
+                        </summary>
+                        <div class="able-user-dropdown">
+                            <div class="user-meta">
+                                <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                                <small>{{ request.user.username }}</small>
+                            </div>
+                            <a href="{% url 'super_admin:change_password' %}">
+                                <i class="fa-solid fa-key"></i> Changer le mot de passe
+                            </a>
+                        </div>
+                    </details>
+                </div>
+            </header>
+
+            <main class="able-content">
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} border-0 shadow-sm mb-3">
+                    {{ message }}
+                    <button type="button" class="btn-close float-end" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const burger = document.getElementById('mobile-burger');
+            const toggle = () => {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('active');
+            };
+            if (burger) burger.addEventListener('click', toggle);
+            if (overlay) overlay.addEventListener('click', toggle);
+
+            const originalFetch = window.fetch;
+            window.fetch = function () {
+                let [resource, config] = arguments;
+                if (!config) config = {};
+                if (!config.headers) config.headers = {};
+                const method = (config.method || 'GET').toUpperCase();
+                if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+                    if (!(config.headers instanceof Headers)) {
+                        config.headers['X-CSRFToken'] = '{{ csrf_token }}';
+                        config.headers['X-Requested-With'] = 'XMLHttpRequest';
+                    } else {
+                        config.headers.set('X-CSRFToken', '{{ csrf_token }}');
+                        config.headers.set('X-Requested-With', 'XMLHttpRequest');
+                    }
+                }
+                return originalFetch(resource, config);
+            };
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

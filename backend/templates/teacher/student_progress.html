@@ -1,0 +1,199 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block page_title %}Profil de l'Apprenant{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in mb-5">
+    <div class="d-flex flex-wrap justify-content-end gap-2 mb-3">
+        <a href="{% url 'teacher_students_dashboard' %}" class="able-btn able-btn-outline">Retour</a>
+    </div>
+
+    <div class="premium-card mb-4 p-4 border-0 shadow-sm bg-white">
+        <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+            <div class="d-flex align-items-center">
+                <div class="icon-square bg-navy text-gold fw-900 shadow-md me-3"
+                    style="width: 56px; height: 56px; border-radius: 14px; font-size: 1.4rem;">
+                    {{ student.username|slice:":1"|upper }}
+                </div>
+                <div>
+                    <div class="fw-900 text-navy">{{ student.username }}</div>
+                    <div class="text-muted small">{{ student.email }}</div>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                {% if student.class_group %}
+                <span class="badge-premium badge-navy" style="font-size: 0.65rem;">
+                    <i class="fas fa-university me-2 text-gold"></i> {{
+                    student.class_group.promotion.faculty.university.name }}
+                </span>
+                <span class="badge-premium badge-gold" style="font-size: 0.65rem;">
+                    <i class="fas fa-graduation-cap me-2 text-navy"></i> {{ student.class_group.promotion.display_label }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if courses_progress %}
+    <!-- Global Performance Analytics -->
+    <div class="row g-4 mb-5">
+        <div class="col-12 col-md-4">
+            <div class="stat-card h-100">
+                <div class="extra-small fw-800 text-muted text-uppercase mb-2">Curriculum Actif</div>
+                <div class="d-flex align-items-end justify-content-between">
+                    <h2 class="fw-900 text-navy mb-0">{{ courses_progress|length }} <span
+                            class="extra-small opacity-50">COURS</span></h2>
+                    <i class="fas fa-book-bookmark text-gold opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4 class="fw-900 text-navy mb-4 letter-spacing-1">AUDIT DES PERFORMANCES ACADÉMIQUES</h4>
+
+    {% for cp in courses_progress %}
+    <div class="premium-card p-4 p-md-5 mb-5 shadow-md border-0 bg-white">
+        <div class="row g-5">
+            <!-- Left: Strategic Overview -->
+            <div class="col-12 col-xl-5">
+                <div class="d-flex flex-column h-100">
+                    <div class="mb-5 pb-3 border-bottom">
+                        <span class="badge-premium badge-gold mb-3" style="font-size: 0.6rem;">UNITÉ
+                            D'ENSEIGNEMENT</span>
+                        <h3 class="fw-900 text-navy mb-2">{{ cp.course.title }}</h3>
+                        <p class="text-muted extra-small fw-800 text-uppercase letter-spacing-1">Certification en cours
+                            • Admis le {{ cp.enrollment.enrolled_at|date:"d M Y" }}</p>
+                    </div>
+
+                    <div class="progress-section mt-auto">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="extra-small fw-900 text-navy text-uppercase">Quiz des modules</span>
+                            {% if cp.is_complete %}
+                            <span class="badge-premium badge-gold" style="font-size: 0.7rem;">Terminé</span>
+                            {% elif cp.quiz_status.has_quizzes %}
+                            <span class="badge-premium badge-navy" style="font-size: 0.7rem;">
+                                {{ cp.quiz_status.done }}/{{ cp.quiz_status.total }}
+                            </span>
+                            {% else %}
+                            <span class="badge-premium badge-navy" style="font-size: 0.7rem;">{{ cp.progress }}%</span>
+                            {% endif %}
+                        </div>
+                        {% if cp.quiz_status.has_quizzes %}
+                        <div class="progress" style="height: 12px; background: var(--ivory); border-radius: 20px;">
+                            <div class="progress-bar {% if cp.is_complete %}bg-gold{% else %}bg-navy{% endif %} shadow-sm"
+                                role="progressbar"
+                                style="width: {% widthratio cp.quiz_status.done cp.quiz_status.total 100 %}%; border-radius: 20px;"></div>
+                        </div>
+                        {% else %}
+                        <div class="progress" style="height: 12px; background: var(--ivory); border-radius: 20px;">
+                            <div class="progress-bar {% if cp.progress >= 80 %}bg-gold{% else %}bg-navy{% endif %} shadow-sm"
+                                role="progressbar" style="width: {{ cp.progress }}%; border-radius: 20px;"></div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Tactical Metrics -->
+            <div class="col-12 col-xl-7">
+                <div class="row g-3 mb-4">
+                    <div class="col-4">
+                        <div class="stat-card py-3 text-center bg-ivory border-0 h-100">
+                            <div class="extra-small fw-800 text-muted text-uppercase mb-1">Moyenne</div>
+                            <div
+                                class="fw-900 {% if cp.avg_score >= 60 %}text-gold{% elif cp.avg_score >= 40 %}text-navy{% else %}text-danger{% endif %} h4 mb-0">
+                                {{ cp.avg_score }}%</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-card py-3 text-center bg-ivory border-0 h-100">
+                            <div class="extra-small fw-800 text-muted text-uppercase mb-1">Modules</div>
+                            <div class="fw-900 text-navy h4 mb-0">{{ cp.total_lessons }}</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-card py-3 text-center bg-ivory border-0 h-100">
+                            <div class="extra-small fw-800 text-muted text-uppercase mb-1">Quiz faits</div>
+                            <div class="fw-900 text-navy h4 mb-0">
+                                {% if cp.quiz_status.has_quizzes %}
+                                {{ cp.quiz_status.done }}/{{ cp.quiz_status.total }}
+                                {% else %}
+                                {{ cp.quiz_attempts.count }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if cp.modules %}
+                <div class="bg-white border rounded-4 p-3 mb-4">
+                    <h6 class="fw-900 text-navy text-uppercase extra-small letter-spacing-1 mb-3">
+                        <i class="fas fa-layer-group me-2 text-gold"></i> Modules &amp; quiz
+                    </h6>
+                    {% for mod in cp.modules %}
+                    <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                        <div class="pe-3">
+                            <div class="fw-800 text-navy small">{{ mod.lesson.title }}</div>
+                            {% if mod.quiz %}
+                            <div class="text-muted extra-small">{{ mod.quiz.title }}</div>
+                            {% else %}
+                            <div class="text-muted extra-small">Aucun quiz lié</div>
+                            {% endif %}
+                        </div>
+                        {% if mod.quiz %}
+                            {% if mod.is_complete %}
+                            <span class="able-badge medium">Terminé</span>
+                            {% else %}
+                            <span class="able-badge muted">En cours</span>
+                            {% endif %}
+                        {% else %}
+                        <span class="able-badge muted">—</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Evaluative History -->
+                {% if cp.quiz_attempts.count > 0 %}
+                <div class="bg-navy p-4 rounded-4" style="border-left: 5px solid var(--gold);">
+                    <h6
+                        class="fw-900 text-gold text-uppercase extra-small letter-spacing-1 mb-4 d-flex align-items-center">
+                        <i class="fas fa-clock-rotate-left me-3"></i> Chronologie des Évaluations (Top 3)
+                    </h6>
+                    <div class="space-y-3">
+                        {% for qa in cp.quiz_attempts|slice:":3" %}
+                        <div
+                            class="d-flex justify-content-between align-items-center p-3 bg-white bg-opacity-5 rounded-3 border border-white border-opacity-10">
+                            <div>
+                                <div class="extra-small fw-900 text-white text-uppercase mb-1">{{ qa.quiz.title }}</div>
+                                <div class="text-white extra-small opacity-50 fw-bold">{{ qa.started_at|date:"d M Y" }}
+                                </div>
+                            </div>
+                            <span
+                                class="badge-premium {% if qa.score >= 60 %}badge-gold text-navy{% else %}border text-white{% endif %}"
+                                style="font-size: 0.7rem;">{{ qa.score }}%</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="premium-card p-5 text-center border-0 shadow-lg bg-ivory">
+        <div class="icon-square bg-white border text-muted mx-auto mb-4"
+            style="width: 80px; height: 80px; border-radius: 24px;">
+            <i class="fas fa-chart-line fs-2"></i>
+        </div>
+        <h4 class="fw-900 text-navy">Registre de Données Incomplet</h4>
+        <p class="text-muted extra-small fw-800 text-uppercase letter-spacing-1 mx-auto" style="max-width: 400px;">Aucun
+            historique d'apprentissage n'est actuellement archivé pour ce matricule dans vos unités d'enseignement.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

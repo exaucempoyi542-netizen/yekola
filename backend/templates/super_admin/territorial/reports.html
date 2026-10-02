@@ -1,0 +1,197 @@
+{% extends "super_admin/territorial_base.html" %}
+{% block title %}Rapports académiques · Yekola{% endblock %}
+{% block page_title %}Rapports{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-end gap-2 mb-3">
+    {% if pending_count %}
+    <form method="POST" action="{% url 'super_admin:territorial_consolidate' %}" class="m-0">
+        {% csrf_token %}
+        <button type="submit" class="able-btn able-btn-primary"
+            onclick="return confirm('Consolider les rapports reçus et transmettre au Ministère ?');">
+            <i class="fa-solid fa-file-export"></i> Consolider vers le Ministère
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Rapports reçus</div>
+                    <div class="kpi-value">{{ received_count }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-inbox"></i></div>
+            </div>
+            <div class="kpi-foot">À consolider</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">En retard</div>
+                    <div class="kpi-value">{{ late_count }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-clock"></i></div>
+            </div>
+            <div class="kpi-foot">Sans dépôt récent</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Déjà consolidés</div>
+                    <div class="kpi-value">{{ ok_count }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="kpi-foot">Suivi à jour</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Historique provincial</div>
+                    <div class="kpi-value">{{ history|length }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-file-export"></i></div>
+            </div>
+            <div class="kpi-foot">Transmis au Ministère</div>
+        </div>
+    </div>
+</div>
+
+<div class="able-card mb-3">
+    <div class="able-card-head">
+        <h2>Boîte de réception — {{ province.name }}</h2>
+        <span class="able-badge {% if pending_count %}warn{% else %}muted{% endif %}">
+            {{ pending_count }} en attente
+        </span>
+    </div>
+    <div class="table-responsive">
+        <table class="able-table">
+            <thead>
+                <tr>
+                    <th>Établissement</th>
+                    <th>Statut dépôt</th>
+                    <th>Effectifs</th>
+                    <th>Réussite</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in reception %}
+                <tr>
+                    <td>
+                        <div class="able-person">
+                            <div class="av">{{ row.university.name|slice:":1" }}</div>
+                            <div>
+                                <strong>{{ row.university.name }}</strong>
+                                <small>{{ row.university.get_institution_type_display }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if row.status == 'received' %}
+                        <span class="able-badge warn">Reçu</span>
+                        {% elif row.status == 'ok' %}
+                        <span class="able-badge medium">Déjà consolidé</span>
+                        {% else %}
+                        <span class="able-badge low">En retard</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-weight:700;">
+                        {% if row.pending %}{{ row.pending.total_students }}{% else %}—{% endif %}
+                    </td>
+                    <td>
+                        {% if row.pending %}
+                        <span class="able-badge {% if row.pending.success_rate >= 50 %}medium{% else %}low{% endif %}">
+                            {{ row.pending.success_rate }}%
+                        </span>
+                        {% else %}
+                        <span class="able-badge muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="color:var(--able-muted);font-size:.85rem;">
+                        {% if row.pending %}{{ row.pending.submitted_at|date:"d/m/Y H:i" }}{% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-4">Aucun établissement.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="able-card">
+    <div class="able-card-head">
+        <h2>Historique des rapports provinciaux transmis</h2>
+        <span class="able-badge muted">{{ history|length }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="able-table">
+            <thead>
+                <tr>
+                    <th>Titre</th>
+                    <th>Année</th>
+                    <th>Établissements</th>
+                    <th>Étudiants</th>
+                    <th>Réussite</th>
+                    <th>Ministère</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in history %}
+                <tr>
+                    <td>
+                        <div class="able-person">
+                            <div class="av" style="background:rgba(21,42,69,.12);color:#152A45;">
+                                <i class="fa-solid fa-file-lines"></i>
+                            </div>
+                            <div>
+                                <strong>{{ r.title }}</strong>
+                                <small>{{ r.submitted_at|date:"d/m/Y" }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ r.academic_year }}</td>
+                    <td style="font-weight:700;">{{ r.universities_reported }} / {{ r.total_universities }}</td>
+                    <td>{{ r.total_students }}</td>
+                    <td>
+                        <span class="able-badge {% if r.success_rate >= 50 %}medium{% else %}low{% endif %}">
+                            {{ r.success_rate }}%
+                        </span>
+                    </td>
+                    <td>
+                        {% if r.is_validated %}
+                        <span class="able-badge medium">Validé</span>
+                        {% else %}
+                        <span class="able-badge warn">En examen</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <div class="able-avatar mx-auto mb-3" style="background:var(--able-blue-soft);color:var(--able-blue);">
+                            <i class="fa-solid fa-inbox"></i>
+                        </div>
+                        <div style="font-weight:700;color:#1d2630;">Aucun rapport provincial transmis</div>
+                        <div class="small mt-1" style="color:var(--able-muted);">
+                            Consolidez les rapports reçus pour les envoyer au Ministère.
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

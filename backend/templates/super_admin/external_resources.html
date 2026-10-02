@@ -1,0 +1,442 @@
+{% extends "super_admin/base.html" %}
+{% load static %}
+
+{% block title %}Ressources Externes | Yekola Pro{% endblock %}
+{% block page_title %}Ressources Externes{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <div class="d-flex justify-content-end flex-wrap gap-3 mb-4">
+        <button class="btn btn-gold d-flex align-items-center gap-2 px-4 py-2 shadow-sm" data-bs-toggle="modal"
+            data-bs-target="#addResourceModal">
+            <i class="fas fa-plus-circle"></i> Ajouter une ressource
+        </button>
+    </div>
+
+    <!-- Modal Ajout -->
+    <div class="modal fade" id="addResourceModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+                <div class="modal-header border-0 p-5" style="background: linear-gradient(135deg, #0F172A, #1e2d4a);">
+                    <h4 class="modal-title text-white fw-800">
+                        <i class="fas fa-link me-2" style="color: var(--gold);"></i>
+                        Nouvelle Ressource Externe
+                    </h4>
+                    <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{% url 'super_admin:add_external_resource' %}">
+                    {% csrf_token %}
+                    <div class="modal-body p-5 bg-white">
+                        <div class="row g-4">
+                            <div class="col-md-8">
+                                <label class="form-label er-label">Titre de la ressource <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" name="title" class="form-control er-input"
+                                    placeholder="Ex : Cours MIT OpenCourseWare — Algorithmique" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label er-label">Catégorie</label>
+                                <select name="category" class="form-select er-input">
+                                    <option value="Formation en ligne">Formation en ligne</option>
+                                    <option value="Documentation">Documentation</option>
+                                    <option value="Outil pédagogique">Outil pédagogique</option>
+                                    <option value="Bibliothèque numérique">Bibliothèque numérique</option>
+                                    <option value="Vidéo éducative">Vidéo éducative</option>
+                                    <option value="Revue scientifique">Revue scientifique</option>
+                                    <option value="Autre">Autre</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label er-label">URL <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-0 er-addon"><i
+                                            class="fas fa-globe text-muted"></i></span>
+                                    <input type="url" name="url" class="form-control er-input border-0"
+                                        placeholder="https://..." required>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label er-label">URL de miniature (optionnel)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-0 er-addon"><i
+                                            class="fas fa-image text-muted"></i></span>
+                                    <input type="url" name="thumbnail_url" class="form-control er-input border-0"
+                                        placeholder="https://image.example.com/thumbnail.jpg">
+                                </div>
+                                <div class="form-text mt-1">Lien vers une image qui illustre la ressource (affichée sur
+                                    la fiche).</div>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label er-label">Description (optionnel)</label>
+                                <textarea name="description" class="form-control er-input er-textarea"
+                                    placeholder="Décrivez brièvement le contenu de cette ressource..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 p-4 pt-0 bg-white justify-content-between">
+                        <button type="button" class="btn text-muted fw-bold px-4"
+                            data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-gold px-5 py-2 fw-bold shadow-sm">
+                            <i class="fas fa-check me-2"></i> Publier la ressource
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats pills -->
+    <div class="d-flex gap-3 flex-wrap mb-5">
+        <div class="er-stat-pill">
+            <div class="er-stat-icon" style="background: #EFF3FF;">
+                <i class="fas fa-layer-group" style="color: #243B5C;"></i>
+            </div>
+            <div>
+                <div class="fw-900 er-stat-number">
+                    <!-- prettier-ignore -->
+                    {{ resources|length }}
+                </div>
+                <div class="er-stat-label">Total ressources</div>
+            </div>
+        </div>
+        <div class="er-stat-pill">
+            <div class="er-stat-icon" style="background: #FFF8E1;">
+                <i class="fas fa-graduation-cap" style="color: #F57F17;"></i>
+            </div>
+            <div>
+                <div class="fw-900 er-stat-number">
+                    <!-- prettier-ignore -->
+                    {{ resources|length }}
+                </div>
+                <div class="er-stat-label">Accessibles aux étudiants</div>
+            </div>
+        </div>
+    </div>
+
+    {% if not resources %}
+    <!-- État vide -->
+    <div class="d-flex justify-content-center mt-5">
+        <div class="text-center er-empty-card">
+            <div class="er-empty-icon mx-auto mb-4">
+                <i class="fas fa-link" style="color: var(--gold); font-size: 2.5rem; opacity: 0.6;"></i>
+            </div>
+            <h4 class="fw-800 mb-3" style="color: var(--navy);">Aucune ressource publiée</h4>
+            <p class="text-muted mb-4" style="max-width: 400px; margin: auto; line-height: 1.7;">
+                Ajoutez des liens vers des MOOCs, bibliothèques numériques, outils pédagogiques ou tout contenu utile
+                pour les étudiants.
+            </p>
+            <button class="btn btn-gold px-5 py-3 fw-bold shadow-sm" data-bs-toggle="modal"
+                data-bs-target="#addResourceModal">
+                <i class="fas fa-magic me-2"></i> Ajouter la première ressource
+            </button>
+        </div>
+    </div>
+    {% else %}
+
+    <!-- Grille de ressources -->
+    <div class="row g-4">
+        {% for resource in resources %}
+        <div class="col-xl-4 col-lg-6 col-md-6">
+            <div class="er-card h-100">
+                <!-- Thumbnail / Icône de la ressource -->
+                <div class="er-card-thumb">
+                    {% if resource.thumbnail_url %}
+                    <!-- prettier-ignore -->
+                    <img src="{{ resource.thumbnail_url }}" alt="{{ resource.title }}" class="er-thumb-img"
+                        onerror="this.parentElement.innerHTML='<div class=\'er-thumb-placeholder\'><i class=\'fas fa-link\'></i></div>'">
+                    {% else %}
+                    <div class="er-thumb-placeholder">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    {% endif %}
+                    <div class="er-category-badge">
+                        <!-- prettier-ignore -->
+                        {{ resource.category }}
+                    </div>
+                </div>
+
+                <!-- Contenu -->
+                <div class="er-card-body">
+                    <h5 class="er-card-title">
+                        <!-- prettier-ignore -->
+                        {{ resource.title }}
+                    </h5>
+                    {% if resource.description %}
+                    <p class="er-card-desc">
+                        <!-- prettier-ignore -->
+                        {{ resource.description|truncatewords:20 }}
+                    </p>
+                    {% endif %}
+                    <!-- prettier-ignore -->
+                    <a href="{{ resource.url }}" target="_blank" rel="noopener" class="er-url-preview">
+                        <i class="fas fa-external-link-alt me-1"></i>
+                        <!-- prettier-ignore -->
+                        {{ resource.url|truncatechars:45 }}
+                    </a>
+                </div>
+
+                <!-- Pied de carte -->
+                <div class="er-card-footer">
+                    <div class="er-date">
+                        <i class="far fa-calendar-alt me-1"></i>
+                        <!-- prettier-ignore -->
+                        {{ resource.created_at|date:"d M Y" }}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ resource.url }}" target="_blank" class="er-btn-visit">
+                            <i class="fas fa-arrow-up-right-from-square"></i> Visiter
+                        </a>
+                        <!-- prettier-ignore -->
+                        <a href="{% url 'super_admin:delete_external_resource' resource.pk %}" class="er-btn-delete"
+                            onclick="return confirm('Supprimer la ressource « {{ resource.title }} » ?')">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% endif %}
+
+</div>
+
+<style>
+    .er-label {
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        color: #64748B;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .er-input {
+        border-radius: 12px;
+        padding: 0.8rem 1rem;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        transition: all 0.2s;
+    }
+
+    .er-input:focus {
+        background: white;
+        box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.15);
+        border-color: var(--gold);
+    }
+
+    .er-addon {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px 0 0 12px;
+    }
+
+    .er-textarea {
+        min-height: 100px;
+        resize: none;
+    }
+
+    .er-stat-pill {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: white;
+        border-radius: 16px;
+        padding: 1rem 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        border: 1px solid #E2E8F0;
+    }
+
+    .er-stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .er-stat-number {
+        font-size: 1.5rem;
+        line-height: 1;
+        color: var(--navy);
+    }
+
+    .er-stat-label {
+        font-size: 0.75rem;
+        color: #64748B;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .er-empty-card {
+        max-width: 480px;
+    }
+
+    .er-empty-icon {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, #FDF6E3, #F5E6C3);
+        border-radius: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform: rotate(-3deg);
+    }
+
+    .er-card {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid #E2E8F0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .er-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.07);
+        border-color: var(--gold);
+    }
+
+    .er-card-thumb {
+        position: relative;
+        height: 160px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #1e2d4a, #0F172A);
+    }
+
+    .er-thumb-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .er-thumb-placeholder {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        color: var(--gold);
+        opacity: 0.5;
+    }
+
+    .er-category-badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: rgba(197, 160, 89, 0.9);
+        color: #0F172A;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        backdrop-filter: blur(4px);
+    }
+
+    .er-card-body {
+        padding: 1.25rem 1.5rem;
+        flex: 1;
+    }
+
+    .er-card-title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--navy);
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .er-card-desc {
+        font-size: 0.85rem;
+        color: #64748B;
+        line-height: 1.6;
+        margin-bottom: 0.75rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .er-url-preview {
+        font-size: 0.78rem;
+        color: #243B5C;
+        font-weight: 600;
+        text-decoration: none;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        opacity: 0.8;
+    }
+
+    .er-url-preview:hover {
+        opacity: 1;
+        text-decoration: underline;
+    }
+
+    .er-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1.5rem 1.25rem;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .er-date {
+        font-size: 0.78rem;
+        color: #94A3B8;
+        font-weight: 600;
+    }
+
+    .er-btn-visit {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--gold);
+        color: var(--navy);
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .er-btn-visit:hover {
+        background: var(--gold-light);
+        color: var(--navy);
+        transform: translateY(-1px);
+    }
+
+    .er-btn-delete {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        background: #FEE2E2;
+        color: #DC2626;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s;
+        font-size: 0.8rem;
+    }
+
+    .er-btn-delete:hover {
+        background: #DC2626;
+        color: white;
+        transform: scale(1.08);
+    }
+</style>
+{% endblock %}

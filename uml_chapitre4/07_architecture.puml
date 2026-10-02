@@ -1,0 +1,64 @@
+@startuml Figure_4_7_Architecture_Technique_EduRDC
+!theme plain
+skinparam componentStyle rectangle
+title Figure 4.7 — Architecture technique globale MayeleNet
+
+actor "Étudiant\n(mobile)" as Student
+actor "Enseignant /\nDécanat /\nGestionnaire" as Staff
+actor "Administrateur provincial /\nSuper-Administrateur" as Admin
+
+node "Couche présentation" {
+  component "Application Flutter\n(Android / Web)" as Flutter
+  component "Portail web Bootstrap\n(templates Django)" as Web
+}
+
+node "Couche application" {
+  component "Django 4.x\n+ Django REST Framework\n(API JWT)" as Django
+  component "Module lms\n(modèles + API)" as LMS
+  component "Module teacher\n(workflows académiques)" as TeacherApp
+  component "Module super_admin\n(pilotage national)" as SA
+  component "Module core\n(configuration, URLs, middleware)" as Core
+}
+
+node "Services transverses" {
+  component "Authentification\n(session + JWT)" as Auth
+  component "Journal d'audit\n(journalisation)" as Audit
+  component "Notifications\n(Firebase optionnel)" as Notif
+}
+
+database "MySQL / MariaDB\n(XAMPP en développement)" as DB
+
+cloud "Services externes\n(Firebase Auth / FCM)" as Firebase
+
+Student --> Flutter
+Staff --> Web
+Admin --> Web
+
+Flutter --> Django : HTTPS / API REST JWT
+Web --> Django : HTTPS / sessions
+
+Django --> LMS
+Django --> TeacherApp
+Django --> SA
+Django --> Core
+
+Django --> Auth
+Django --> Audit
+Django --> Notif
+
+LMS --> DB
+TeacherApp --> DB
+SA --> DB
+Auth --> DB
+Audit --> DB
+
+Notif ..> Firebase : optionnel
+Flutter ..> Firebase : optionnel
+
+note bottom of Django
+  Architecture en couches :
+  Présentation ↔ Application ↔ Persistance
+  Un seul serveur pour le web et le mobile.
+end note
+
+@enduml

@@ -1,0 +1,559 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block page_title %}Atelier pédagogique{% endblock %}
+
+{% block extra_css %}
+<style>
+.atelier-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+@media (max-width: 991.98px) {
+  .atelier-layout { grid-template-columns: 1fr; }
+}
+
+.atelier-index {
+  background: #fff;
+  border: 1px solid var(--able-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 180px);
+  min-height: 420px;
+}
+
+.atelier-index-head {
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid var(--able-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+.atelier-index-head h2 {
+  margin: 0;
+  font-size: .95rem;
+  font-weight: 700;
+  color: #1d2630;
+}
+
+.atelier-index-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: .75rem;
+}
+
+.atelier-lesson {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .8rem .85rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: #fafbfd;
+  cursor: pointer;
+  margin-bottom: .5rem;
+  transition: .15s ease;
+}
+.atelier-lesson:hover {
+  background: #fff;
+  border-color: var(--able-border);
+}
+.atelier-lesson.active {
+  background: #eef5ff;
+  border-color: #c5d8ff;
+}
+.atelier-lesson .ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #eef3ff;
+  color: var(--able-blue);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.atelier-lesson .meta strong {
+  display: block;
+  font-size: .88rem;
+  color: #1d2630;
+  line-height: 1.25;
+}
+.atelier-lesson .meta small {
+  color: var(--able-muted);
+  font-size: .72rem;
+}
+
+.atelier-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--able-muted);
+}
+.atelier-empty i {
+  font-size: 1.75rem;
+  margin-bottom: .75rem;
+  color: #c5d0db;
+  display: block;
+}
+
+.atelier-editor {
+  background: #fff;
+  border: 1px solid var(--able-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.atelier-editor-head {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--able-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+.atelier-editor-head h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1d2630;
+}
+.atelier-editor-body { padding: 1.25rem; }
+
+.atelier-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  padding: .85rem 1rem;
+  background: #f8fafc;
+  border: 1px solid var(--able-border);
+  border-radius: 10px;
+  color: var(--able-muted);
+  font-size: .82rem;
+  line-height: 1.45;
+}
+.atelier-hint i { color: var(--able-blue); margin-top: .15rem; }
+
+.atelier-switch {
+  display: flex;
+  align-items: flex-start;
+  gap: .85rem;
+  padding: 1rem;
+  border: 1px solid var(--able-border);
+  border-radius: 10px;
+  background: #fafbfd;
+}
+.atelier-switch .form-check-input {
+  width: 2.4rem;
+  height: 1.25rem;
+  margin-top: .15rem;
+  flex-shrink: 0;
+}
+.atelier-switch strong {
+  display: block;
+  color: #1d2630;
+  font-size: .9rem;
+  margin-bottom: .2rem;
+}
+.atelier-switch span {
+  color: var(--able-muted);
+  font-size: .8rem;
+  line-height: 1.4;
+}
+
+.atelier-drop {
+  display: block;
+  border: 1.5px dashed #c9d4df;
+  border-radius: 12px;
+  padding: 2rem 1.25rem;
+  text-align: center;
+  background: #fafbfd;
+  cursor: pointer;
+  transition: .15s ease;
+}
+.atelier-drop:hover,
+.atelier-drop.is-drag {
+  border-color: var(--able-blue);
+  background: #f3f8ff;
+}
+.atelier-drop .drop-ico {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto .9rem;
+  border-radius: 14px;
+  background: #eef3ff;
+  color: var(--able-blue);
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+}
+.atelier-drop h3 {
+  margin: 0 0 .25rem;
+  font-size: .95rem;
+  font-weight: 700;
+  color: #1d2630;
+}
+.atelier-drop p {
+  margin: 0;
+  font-size: .78rem;
+  color: var(--able-muted);
+}
+
+.atelier-file-chip {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .75rem 1rem;
+  border-radius: 10px;
+  background: #f0f7f3;
+  border: 1px solid #cfe8d8;
+  color: #1d5c3b;
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+.atelier-progress {
+  padding: 1rem;
+  border-radius: 10px;
+  background: #fafbfd;
+  border: 1px solid var(--able-border);
+}
+.atelier-progress .bar {
+  height: 8px;
+  background: #e8eef4;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.atelier-progress .fill {
+  height: 100%;
+  width: 0%;
+  background: var(--able-blue);
+  border-radius: 99px;
+  transition: width .2s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-end gap-2 mb-3">
+    <a href="{% url 'teacher_dashboard' %}" class="able-btn able-btn-outline">Retour</a>
+    <button type="button" class="able-btn able-btn-primary" onclick="resetForm()">
+        <i class="fa-solid fa-plus"></i> Nouveau module
+    </button>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Modules</div>
+                    <div class="kpi-value">{{ lessons.count }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-layer-group"></i></div>
+            </div>
+            <div class="kpi-foot">Index du cours</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Promotion</div>
+                    <div class="kpi-value" style="font-size:1rem;">{{ course.promotion.display_label|default:"—" }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+            </div>
+            <div class="kpi-foot">Audience LMD</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Semestre</div>
+                    <div class="kpi-value">S{{ course.semester|default:"—" }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-calendar"></i></div>
+            </div>
+            <div class="kpi-foot">Période académique</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Crédits</div>
+                    <div class="kpi-value">{{ course.credits|default:course.effective_credits|default:"—" }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-certificate"></i></div>
+            </div>
+            <div class="kpi-foot">ECTS du cours</div>
+        </div>
+    </div>
+</div>
+
+<div class="atelier-layout">
+    <!-- Index -->
+    <aside class="atelier-index">
+        <div class="atelier-index-head">
+            <h2>Index du cours</h2>
+            <span class="able-badge muted">{{ lessons.count }} module{{ lessons.count|pluralize }}</span>
+        </div>
+        <div class="atelier-index-list" id="lessons-container">
+            {% for lesson in lessons %}
+            <div class="atelier-lesson lesson-edit-trigger"
+                 id="lesson-item-{{ lesson.id }}"
+                 data-id="{{ lesson.id }}"
+                 data-title="{{ lesson.title|escapejs }}"
+                 data-type="{{ lesson.content_type }}"
+                 data-content="{{ lesson.content_text|escapejs }}">
+                <div class="ico">
+                    {% if lesson.content_type == 'VIDEO' %}<i class="fa-solid fa-play"></i>
+                    {% elif lesson.content_type == 'PDF' %}<i class="fa-solid fa-file-pdf"></i>
+                    {% elif lesson.content_type == 'PPT' %}<i class="fa-solid fa-file-powerpoint"></i>
+                    {% else %}<i class="fa-solid fa-book-open"></i>{% endif %}
+                </div>
+                <div class="meta flex-grow-1 overflow-hidden">
+                    <strong class="text-truncate" title="{{ lesson.title }}">{{ lesson.title }}</strong>
+                    <small>{{ lesson.get_content_type_display }}</small>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:#c5d0db;font-size:.75rem;"></i>
+            </div>
+            {% empty %}
+            <div class="atelier-empty">
+                <i class="fa-solid fa-folder-open"></i>
+                <div style="font-weight:700;color:#1d2630;margin-bottom:.25rem;">Index vide</div>
+                <div style="font-size:.82rem;">Créez le premier module pédagogique.</div>
+            </div>
+            {% endfor %}
+        </div>
+    </aside>
+
+    <!-- Éditeur -->
+    <section class="atelier-editor">
+        <div class="atelier-editor-head">
+            <h2 id="form-title">Nouveau module pédagogique</h2>
+            <button type="button" id="delete-btn" class="able-btn able-btn-danger able-btn-sm d-none" onclick="deleteLesson()">
+                <i class="fa-solid fa-trash"></i> Supprimer
+            </button>
+        </div>
+        <div class="atelier-editor-body">
+            <form id="lesson-form" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="lesson_id" id="lesson_id">
+                <input type="hidden" name="action" id="form_action" value="create">
+
+                <div class="mb-3">
+                    <label class="able-label">Titre du chapitre</label>
+                    <input type="text" name="title" id="lesson_title" class="able-input"
+                           placeholder="Ex. Introduction à MERISE" required>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-7">
+                        <label class="able-label">Format de transmission</label>
+                        <select name="content_type" id="content_type" class="able-input" required>
+                            <option value="" disabled selected>Choisir un format…</option>
+                            <option value="VIDEO">Vidéo / Streaming HD</option>
+                            <option value="PDF">Document académique (PDF)</option>
+                            <option value="PPT">Présentation (PPT)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5 d-flex align-items-end">
+                        <div class="atelier-hint w-100" id="format-info">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span>Sélectionnez le format de la ressource à transmettre.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="atelier-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="attach_quiz" name="attach_quiz" value="true">
+                    <label class="m-0" for="attach_quiz">
+                        <strong>Associer un quiz obligatoire</strong>
+                        <span>L’étudiant devra réussir ce quiz (≥ 50 %) pour débloquer le module suivant.</span>
+                    </label>
+                </div>
+
+                <div id="file-info-preview" class="atelier-file-chip mb-3 d-none">
+                    <i class="fa-solid fa-paperclip"></i>
+                    Une ressource est déjà jointe à ce module.
+                </div>
+
+                <div id="file-input-wrapper" class="mb-3 d-none">
+                    <label class="atelier-drop w-100" id="drop-zone" for="content_file">
+                        <input type="file" name="content_file" id="content_file" class="d-none">
+                        <div class="drop-ico"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                        <h3>Téléverser la ressource</h3>
+                        <p id="file-name">Formats acceptés : MP4, PDF, PPT · Max 1 Go</p>
+                    </label>
+                </div>
+
+                <div id="upload-status" class="atelier-progress mb-3 d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small fw-semibold" id="status-text" style="color:#1d2630;">
+                            <i class="fa-solid fa-spinner fa-spin me-1"></i> Synchronisation…
+                        </span>
+                        <span class="able-badge muted" id="percent-text">0%</span>
+                    </div>
+                    <div class="bar"><div class="fill" id="progress-bar-fill"></div></div>
+                </div>
+
+                <button type="submit" class="able-btn able-btn-primary w-100" id="submit-btn" style="height:48px;">
+                    <span id="btn-text">Enregistrer le module</span>
+                </button>
+            </form>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function () {
+    toggleFields($('#content_type').val());
+    $('#content_type').on('change', function () { toggleFields($(this).val()); });
+
+    const dropZone = $('#drop-zone');
+    dropZone.on('dragover dragenter', function (e) {
+        e.preventDefault();
+        $(this).addClass('is-drag');
+    });
+    dropZone.on('dragleave drop', function (e) {
+        e.preventDefault();
+        $(this).removeClass('is-drag');
+    });
+    dropZone.on('drop', function (e) {
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length) {
+            $('#content_file')[0].files = files;
+            updateFileName(files[0].name);
+        }
+    });
+});
+
+function toggleFields(val) {
+    const infoMap = {
+        'VIDEO': 'Support vidéo haute définition (MP4).',
+        'PDF': 'Document académique structuré (PDF).',
+        'PPT': 'Support de présentation visuelle (PPT).'
+    };
+    if (val) {
+        $('#file-input-wrapper').removeClass('d-none');
+        $('#format-info span').text(infoMap[val] || 'Format sélectionné.');
+    } else {
+        $('#file-input-wrapper').addClass('d-none');
+        $('#format-info span').text('Sélectionnez le format de la ressource à transmettre.');
+    }
+}
+
+function updateFileName(name) {
+    $('#file-name').html('<strong style="color:#1d2630;">' + name + '</strong> prêt à être téléversé');
+}
+
+$('#content_file').on('change', function () {
+    if (this.files.length) updateFileName(this.files[0].name);
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    const container = document.getElementById('lessons-container');
+    if (container) {
+        container.addEventListener('click', function (e) {
+            const trigger = e.target.closest('.lesson-edit-trigger');
+            if (trigger) {
+                editLesson(
+                    trigger.getAttribute('data-id'),
+                    trigger.getAttribute('data-title'),
+                    trigger.getAttribute('data-type'),
+                    trigger.getAttribute('data-content')
+                );
+            }
+        });
+    }
+});
+
+function editLesson(id, title, type, content) {
+    $('.atelier-lesson').removeClass('active');
+    $('#lesson-item-' + id).addClass('active');
+    $('#form-title').text('Modifier le module');
+    $('#btn-text').text('Enregistrer les modifications');
+    $('#delete-btn').removeClass('d-none');
+    $('#form_action').val('edit');
+    $('#lesson_id').val(id);
+    $('#lesson_title').val(title);
+    $('#content_type').val(type).trigger('change');
+    $('#file-info-preview').removeClass('d-none');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetForm() {
+    $('.atelier-lesson').removeClass('active');
+    $('#form-title').text('Nouveau module pédagogique');
+    $('#btn-text').text('Enregistrer le module');
+    $('#delete-btn').addClass('d-none');
+    $('#form_action').val('create');
+    $('#lesson_id').val('');
+    $('#lesson-form')[0].reset();
+    $('#file-info-preview').addClass('d-none');
+    $('#content_type').val('').trigger('change');
+    $('#file-name').text('Formats acceptés : MP4, PDF, PPT · Max 1 Go');
+}
+
+$('#lesson-form').on('submit', function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const xhr = new XMLHttpRequest();
+    $('#upload-status').removeClass('d-none');
+    $('#submit-btn').prop('disabled', true);
+    xhr.open('POST', window.location.href, true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
+    xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+            const p = Math.round((e.loaded / e.total) * 100);
+            $('#progress-bar-fill').css('width', p + '%');
+            $('#percent-text').text(p + '%');
+        }
+    };
+    xhr.onload = () => {
+        if (xhr.status === 200) {
+            const res = JSON.parse(xhr.responseText);
+            if (res.redirect_url) {
+                window.location.href = res.redirect_url;
+            } else {
+                window.location.reload();
+            }
+        } else {
+            alert('Erreur lors de la synchronisation.');
+            $('#submit-btn').prop('disabled', false);
+            $('#upload-status').addClass('d-none');
+        }
+    };
+    xhr.onerror = () => {
+        alert('Erreur réseau.');
+        $('#submit-btn').prop('disabled', false);
+        $('#upload-status').addClass('d-none');
+    };
+    xhr.send(formData);
+});
+
+async function deleteLesson() {
+    if (!confirm('Confirmer la suppression irréversible de ce module ?')) return;
+    const formData = new FormData();
+    formData.append('action', 'delete');
+    formData.append('lesson_id', $('#lesson_id').val());
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    const res = await fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    if (res.ok) window.location.reload();
+}
+</script>
+{% endblock %}

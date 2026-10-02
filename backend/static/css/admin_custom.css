@@ -1,0 +1,184 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+
+/* ----- TYPOGRAPHIE GLOBALE ----- */
+body, .content-wrapper, .main-header, .main-sidebar, .card, .btn, .table {
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* ----- NAVBAR (HAUT) ----- */
+.main-header.navbar {
+    background: linear-gradient(135deg, #152A45 0%, #243B5C 100%) !important;
+    border-bottom: none !important;
+    box-shadow: 0 4px 20px rgba(13, 71, 161, 0.15) !important;
+}
+
+.main-header .nav-link, .main-header .navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.main-header .nav-link:hover {
+    color: white !important;
+    transform: translateY(-1px);
+}
+
+/* ----- SIDEBAR (GAUCHE) ----- */
+.main-sidebar {
+    background-color: #0B1120 !important; /* Très sombre, presque noir bleu */
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+.brand-link {
+    background: #060913 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    padding: 1.2rem 0.5rem !important;
+}
+
+.brand-text {
+    font-weight: 900 !important;
+    letter-spacing: 0.5px;
+    font-size: 1.3rem !important;
+    color: white !important;
+}
+
+.sidebar .nav-item .nav-link {
+    border-radius: 8px !important;
+    margin: 4px 8px !important;
+    color: #94A3B8 !important;
+    transition: all 0.2s ease;
+}
+
+.sidebar .nav-item .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: white !important;
+    transform: translateX(4px);
+}
+
+.sidebar .nav-item .nav-link.active {
+    background: linear-gradient(90deg, #1D4ED8 0%, #2563EB 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+}
+
+/* ----- CARDS (BOITES PRINCIPALES) ----- */
+.card {
+    border-radius: 16px !important;
+    border: none !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03) !important;
+    transition: all 0.3s ease;
+    background: white !important;
+    margin-bottom: 24px !important;
+}
+
+.card:hover {
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.06) !important;
+    transform: translateY(-3px);
+}
+
+.card-header {
+    background-color: transparent !important;
+    border-bottom: 1px solid #F1F5F9 !important;
+    padding: 1.5rem !important;
+    border-radius: 16px 16px 0 0 !important;
+}
+
+.card-title {
+    font-weight: 700 !important;
+    color: #0F172A !important;
+    font-size: 1.2rem !important;
+}
+
+/* ----- BOUTONS ----- */
+.btn {
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.3px;
+    padding: 0.5rem 1rem !important;
+    transition: all 0.3s ease !important;
+    border: none !important;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4) !important;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+
+.btn-success:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4) !important;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%) !important;
+    color: white !important;
+}
+
+/* ----- TABLES ----- */
+.table th {
+    background-color: #F8FAFC !important;
+    color: #64748B !important;
+    text-transform: uppercase;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #E2E8F0 !important;
+    padding: 1rem !important;
+}
+
+.table td {
+    vertical-align: middle !important;
+    color: #334155 !important;
+    font-size: 0.9rem;
+    padding: 1rem !important;
+    border-bottom: 1px solid #F1F5F9 !important;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #F8FAFC !important;
+}
+
+.table tbody tr:hover {
+    background-color: #F1F5F9 !important;
+}
+
+/* ----- BADGES & STATUS ----- */
+.badge {
+    border-radius: 20px !important;
+    padding: 0.5em 1em !important;
+    font-weight: 600 !important;
+    font-size: 0.75rem !important;
+}
+
+/* ----- BACKGROUND GÉNÉRAL ----- */
+.content-wrapper {
+    background-color: #F1F5F9 !important; /* Slate 100 - Très doux */
+}
+
+/* Add some spacing for the main content */
+.content {
+    padding: 2rem !important;
+}
+
+/* Input Forms */
+.form-control {
+    border-radius: 8px !important;
+    border: 1px solid #CBD5E1 !important;
+    padding: 0.6rem 1rem !important;
+    transition: all 0.3s;
+}
+
+.form-control:focus {
+    border-color: #3B82F6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}

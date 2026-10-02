@@ -1,0 +1,436 @@
+{% extends "super_admin/base.html" %}
+
+{% block title %}Administrateurs provinciaux | Yekola{% endblock %}
+{% block page_title %}Admins Provinciaux{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pa-wrap {
+        max-width: 1080px;
+    }
+
+    .pa-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .pa-header h1 {
+        font-family: 'Sora', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: var(--navy);
+        margin: 0 0 0.25rem;
+    }
+
+    .pa-header p {
+        margin: 0;
+        color: var(--slate);
+        font-size: 0.92rem;
+    }
+
+    .pa-count {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--navy);
+        background: #fff;
+        border: 1px solid var(--slate-light);
+        padding: 0.55rem 0.9rem;
+    }
+
+    .pa-count strong {
+        color: var(--gold);
+        font-size: 1.05rem;
+    }
+
+    .pa-block {
+        background: #fff;
+        border: 1px solid var(--slate-light);
+        margin-bottom: 1.75rem;
+    }
+
+    .pa-block-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.35rem;
+        border-bottom: 1px solid var(--slate-light);
+        background: linear-gradient(180deg, #F8FAFC 0%, #fff 100%);
+    }
+
+    .pa-block-head h2 {
+        margin: 0;
+        font-family: 'Sora', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--navy);
+    }
+
+    .pa-block-head span {
+        font-size: 0.78rem;
+        color: var(--slate);
+        font-weight: 500;
+    }
+
+    .pa-block-body {
+        padding: 1.35rem;
+    }
+
+    .pa-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem 1.25rem;
+    }
+
+    .pa-form .full {
+        grid-column: 1 / -1;
+    }
+
+    .pa-form label {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--navy);
+        margin-bottom: 0.4rem;
+    }
+
+    .pa-form .form-control,
+    .pa-form .form-select {
+        border: 1px solid var(--slate-light);
+        border-radius: 6px;
+        background: #fff;
+        padding: 0.65rem 0.85rem;
+        font-size: 0.92rem;
+        color: var(--navy);
+        box-shadow: none !important;
+        height: auto;
+    }
+
+    .pa-form .form-control:focus,
+    .pa-form .form-select:focus {
+        border-color: var(--navy);
+        background: #fff;
+    }
+
+    .pa-form .hint {
+        font-size: 0.75rem;
+        color: var(--slate);
+        margin-top: 0.35rem;
+    }
+
+    .pa-actions {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.85rem;
+        padding-top: 0.35rem;
+        border-top: 1px solid var(--slate-light);
+        margin-top: 0.25rem;
+    }
+
+    .pa-btn {
+        border: none;
+        background: var(--navy);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.88rem;
+        padding: 0.7rem 1.4rem;
+        border-radius: 6px;
+        transition: background 0.2s ease;
+    }
+
+    .pa-btn:hover {
+        background: #1E293B;
+        color: #fff;
+    }
+
+    .pa-login-note {
+        font-size: 0.8rem;
+        color: var(--slate);
+        margin: 0;
+    }
+
+    .pa-login-note code {
+        background: #F1F5F9;
+        color: var(--navy);
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .pa-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+
+    .pa-table thead th {
+        background: var(--navy);
+        color: rgba(255, 255, 255, 0.92);
+        font-size: 0.72rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        font-weight: 700;
+        padding: 0.85rem 1rem;
+        border: none;
+        white-space: nowrap;
+    }
+
+    .pa-table tbody td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--slate-light);
+        vertical-align: middle;
+        font-size: 0.9rem;
+        background: #fff;
+    }
+
+    .pa-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .pa-table tbody tr:hover td {
+        background: #F8FAFC;
+    }
+
+    .pa-user {
+        font-weight: 700;
+        color: var(--navy);
+        margin: 0 0 0.15rem;
+        font-size: 0.95rem;
+    }
+
+    .pa-meta {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--slate);
+    }
+
+    .pa-status {
+        display: inline-block;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 0.25rem 0;
+    }
+
+    .pa-status.on { color: #059669; }
+    .pa-status.off { color: #DC2626; }
+
+    .pa-link {
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-decoration: none;
+        color: var(--navy);
+        padding: 0.35rem 0.7rem;
+        border: 1px solid var(--slate-light);
+        border-radius: 6px;
+        display: inline-block;
+        transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .pa-link:hover {
+        background: #F8FAFC;
+        border-color: var(--navy);
+        color: var(--navy);
+    }
+
+    .pa-link.danger {
+        color: #B91C1C;
+        border-color: #FECACA;
+    }
+
+    .pa-link.danger:hover {
+        background: #FEF2F2;
+        border-color: #DC2626;
+        color: #B91C1C;
+    }
+
+    .pa-empty {
+        padding: 2.5rem 1.35rem;
+        text-align: center;
+        color: var(--slate);
+    }
+
+    .pa-empty strong {
+        display: block;
+        color: var(--navy);
+        font-size: 1rem;
+        margin-bottom: 0.35rem;
+    }
+
+    @media (max-width: 767.98px) {
+        .pa-form {
+            grid-template-columns: 1fr;
+        }
+
+        .pa-table thead { display: none; }
+
+        .pa-table tbody td {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.55rem 1rem;
+            border-bottom: none;
+        }
+
+        .pa-table tbody tr {
+            display: block;
+            border-bottom: 1px solid var(--slate-light);
+            padding: 0.75rem 0;
+        }
+
+        .pa-table tbody td::before {
+            content: attr(data-label);
+            font-size: 0.68rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--slate);
+            font-weight: 700;
+        }
+
+        .pa-table tbody td:first-child {
+            display: block;
+        }
+
+        .pa-table tbody td:first-child::before,
+        .pa-table tbody td:last-child::before {
+            display: none;
+        }
+
+        .pa-table tbody td:last-child {
+            justify-content: flex-end;
+            padding-top: 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in pa-wrap">
+
+    <div class="d-flex justify-content-end mb-3">
+        <div class="pa-count">
+            Comptes actifs : <strong>{{ admins|length }}</strong>
+        </div>
+    </div>
+
+    <!-- Formulaire en haut -->
+    <section class="pa-block" aria-labelledby="pa-create-title">
+        <div class="pa-block-head">
+            <h2 id="pa-create-title">Créer un administrateur provincial</h2>
+            <span>Tous les champs marqués sont obligatoires</span>
+        </div>
+        <div class="pa-block-body">
+            <form method="POST" action="{% url 'super_admin:create_provincial_admin' %}" class="pa-form">
+                {% csrf_token %}
+                <div>
+                    <label for="province_id">Province *</label>
+                    <select name="province_id" id="province_id" class="form-select" required>
+                        <option value="">Sélectionner une province</option>
+                        {% for p in provinces %}
+                        <option value="{{ p.id }}">{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="username">Identifiant *</label>
+                    <input type="text" name="username" id="username" class="form-control"
+                           required autocomplete="username" placeholder="ex. admin.goma">
+                </div>
+                <div>
+                    <label for="first_name">Prénom</label>
+                    <input type="text" name="first_name" id="first_name" class="form-control"
+                           autocomplete="given-name">
+                </div>
+                <div>
+                    <label for="last_name">Nom</label>
+                    <input type="text" name="last_name" id="last_name" class="form-control"
+                           autocomplete="family-name">
+                </div>
+                <div>
+                    <label for="email">Adresse e-mail</label>
+                    <input type="email" name="email" id="email" class="form-control"
+                           autocomplete="email" placeholder="exemple@province.cd">
+                </div>
+                <div>
+                    <label for="password">Mot de passe *</label>
+                    <input type="password" name="password" id="password" class="form-control"
+                           required minlength="8" autocomplete="new-password">
+                    <div class="hint">Minimum 8 caractères</div>
+                </div>
+                <div class="pa-actions">
+                    <button type="submit" class="pa-btn">Créer le compte</button>
+                    <p class="pa-login-note">
+                        Connexion : <code>/super-admin/login/</code>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Tableau en bas -->
+    <section class="pa-block" aria-labelledby="pa-list-title">
+        <div class="pa-block-head">
+            <h2 id="pa-list-title">Comptes créés</h2>
+            <span>{{ admins|length }} enregistrement{{ admins|length|pluralize }}</span>
+        </div>
+
+        {% if admins %}
+        <div class="table-responsive">
+            <table class="pa-table">
+                <thead>
+                    <tr>
+                        <th>Compte</th>
+                        <th>Province</th>
+                        <th>Statut</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in admins %}
+                    <tr>
+                        <td data-label="Compte">
+                            <p class="pa-user">{{ a.username }}</p>
+                            <p class="pa-meta">
+                                {% if a.get_full_name %}{{ a.get_full_name }}{% endif %}
+                                {% if a.get_full_name and a.email %} · {% endif %}
+                                {% if a.email %}{{ a.email }}{% endif %}
+                                {% if not a.get_full_name and not a.email %}—{% endif %}
+                            </p>
+                        </td>
+                        <td data-label="Province">{{ a.assigned_province.name|default:"—" }}</td>
+                        <td data-label="Statut">
+                            {% if a.is_active %}
+                            <span class="pa-status on">Actif</span>
+                            {% else %}
+                            <span class="pa-status off">Suspendu</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end" data-label="Action">
+                            <a href="{% url 'super_admin:toggle_provincial_admin' a.id %}"
+                               class="pa-link {% if a.is_active %}danger{% endif %}"
+                               onclick="return confirm('{% if a.is_active %}Suspendre{% else %}Réactiver{% endif %} ce compte ?')">
+                                {% if a.is_active %}Suspendre{% else %}Réactiver{% endif %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="pa-empty">
+            <strong>Aucun compte provincial</strong>
+            Utilisez le formulaire ci-dessus pour en créer un.
+        </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}

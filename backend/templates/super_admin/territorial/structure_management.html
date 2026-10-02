@@ -1,0 +1,379 @@
+{% extends "super_admin/territorial_base.html" %}
+{% block title %}Structure provinciale · Yekola{% endblock %}
+{% block page_title %}Structure & Admins (Université){% endblock %}
+
+{% block extra_css %}
+<style>
+.table-structure-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: .75rem;
+}
+
+table.table-structure {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  font-size: .95rem;
+  margin: 0;
+  border: 1px solid #C9C4D9;
+}
+
+table.table-structure th,
+table.table-structure td {
+  vertical-align: middle;
+  padding: .65rem .75rem;
+  border: 1px solid #C9C4D9;
+}
+
+table.table-structure thead th {
+  background: #152A45 !important;
+  color: #fff !important;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+table.table-structure tbody tr:nth-child(even) td {
+  background: #F8F7FF;
+}
+
+table.table-structure tbody tr:hover td {
+  background: #F1EFFF !important;
+}
+
+.able-uni-block {
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--able-border, #E8E4F3);
+}
+
+.able-uni-block:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Établissements</div>
+                    <div class="kpi-value">{{ universities|length }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-building-columns"></i></div>
+            </div>
+            <div class="kpi-foot"><i class="fa-solid fa-location-dot"></i> {{ province.name }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Admins (Université)</div>
+                    <div class="kpi-value">{{ managers|length }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-user-tie"></i></div>
+            </div>
+            <div class="kpi-foot">Comptes rectorat</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Facultés nationales</div>
+                    <div class="kpi-value">{{ national_faculties|length }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+            </div>
+            <div class="kpi-foot">Référentiel LMD</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="able-kpi soft">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Admins (Université) suspendus</div>
+                    <div class="kpi-value">{{ managers_suspended }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-user-slash"></i></div>
+            </div>
+            <div class="kpi-foot">À surveiller</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-xl-6">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2><i class="fa-solid fa-plus me-2 text-primary"></i>Nouvelle université</h2>
+            </div>
+            <div class="able-card-body">
+                <form method="POST" action="{% url 'super_admin:territorial_add_university' %}" class="d-grid gap-3">
+                    {% csrf_token %}
+                    <div>
+                        <label class="able-label">Nom de l'université</label>
+                        <input type="text" name="name" class="able-input" placeholder="Ex. Université de Kinshasa" required>
+                    </div>
+                    <div>
+                        <label class="able-label">Type</label>
+                        <select name="institution_type" class="able-input">
+                            <option value="PUBLIC">Public</option>
+                            <option value="PRIVATE">Privé</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="able-btn able-btn-primary">
+                        <i class="fa-solid fa-building-columns"></i> Créer l'université
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2><i class="fa-solid fa-user-plus me-2 text-primary"></i>Créer un admin (université)</h2>
+            </div>
+            <div class="able-card-body">
+                <form method="POST" action="{% url 'super_admin:territorial_create_manager' %}" class="row g-3">
+                    {% csrf_token %}
+                    <div class="col-md-6">
+                        <label class="able-label">Prénom</label>
+                        <input type="text" name="first_name" class="able-input" placeholder="Prénom">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="able-label">Nom</label>
+                        <input type="text" name="last_name" class="able-input" placeholder="Nom">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="able-label">Identifiant</label>
+                        <input type="text" name="username" class="able-input" placeholder="ex. mgr_unikin" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="able-label">Email</label>
+                        <input type="email" name="email" class="able-input" placeholder="admin@univ.cd">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="able-label">Mot de passe</label>
+                        <input type="password" name="password" class="able-input" placeholder="••••••••" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="able-label">Université</label>
+                        <select name="university_id" class="able-input" required>
+                            <option value="">Choisir une université</option>
+                            {% for university in universities %}
+                            <option value="{{ university.id }}">{{ university.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="able-btn able-btn-outline w-100">
+                            <i class="fa-solid fa-user-tie"></i> Créer l'admin (université)
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-xl-8">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2><i class="fa-solid fa-layer-group me-2 text-primary"></i>Activer le cycle LMD</h2>
+            </div>
+            <div class="able-card-body">
+                <p class="small mb-3" style="color:var(--able-muted);">
+                    Crée la faculté si nécessaire, puis active Licence (L1–L3) et Master (M1–M2) en une seule étape.
+                </p>
+                {% if not national_faculties %}
+                <div class="alert alert-warning mb-3" role="alert">
+                    Aucune faculté nationale disponible. Contactez le Super Admin.
+                </div>
+                {% endif %}
+                <form method="POST" action="{% url 'super_admin:territorial_add_promotion' %}" class="d-grid gap-3">
+                    {% csrf_token %}
+                    <div>
+                        <label class="able-label">Université</label>
+                        <select name="university_id" class="able-input" required {% if not universities %}disabled{% endif %}>
+                            <option value="">Choisir une université</option>
+                            {% for university in universities %}
+                            <option value="{{ university.id }}">{{ university.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="able-label">Faculté nationale</label>
+                        <select name="national_faculty_id" class="able-input" required {% if not national_faculties %}disabled{% endif %}>
+                            <option value="">Choisir une faculté</option>
+                            {% for fac in national_faculties %}
+                            <option value="{{ fac.id }}">{{ fac.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="able-btn able-btn-primary" {% if not universities or not national_faculties %}disabled{% endif %}>
+                        <i class="fa-solid fa-check"></i> Activer LMD
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="able-card h-100">
+            <div class="able-card-head">
+                <h2><i class="fa-solid fa-circle-info me-2 text-primary"></i>Étapes</h2>
+            </div>
+            <div class="able-card-body">
+                <ol class="small mb-0 ps-3" style="color:var(--able-muted); line-height:1.7;">
+                    <li>Créer l’université (ci-dessus)</li>
+                    <li>Choisir université + faculté nationale</li>
+                    <li>Cliquer <strong>Activer LMD</strong></li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="able-card mb-3">
+    <div class="able-card-head">
+        <h2>Structure existante</h2>
+        <span class="able-badge muted">{{ universities|length }} établissement{{ universities|length|pluralize:"s" }}</span>
+    </div>
+    <div class="able-card-body">
+        {% for university in universities %}
+        <div class="able-uni-block">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div class="able-person">
+                    <div class="av">{{ university.name|slice:":1" }}</div>
+                    <div>
+                        <strong>{{ university.name }}</strong>
+                        <small>
+                            {% if university.institution_type == 'PRIVATE' %}Privé{% else %}Public{% endif %}
+                            · {{ province.name }}
+                        </small>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{% url 'super_admin:territorial_university_detail' university.id %}" class="able-btn able-btn-outline able-btn-sm">
+                        <i class="fa-solid fa-eye"></i> Voir
+                    </a>
+                    <a href="{% url 'super_admin:territorial_delete_university' university.id %}"
+                       class="able-btn able-btn-danger able-btn-sm"
+                       onclick="return confirm('Supprimer cette université ?')">
+                        <i class="fa-solid fa-trash"></i> Supprimer
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-structure-wrap">
+                <table class="table-structure">
+                    <thead>
+                        <tr>
+                            <th>Faculté</th>
+                            <th>Statut LMD</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for faculty in university.faculties.all %}
+                        <tr>
+                            <td><strong>{{ faculty.name }}</strong></td>
+                            <td>
+                                {% if faculty.promotions.exists %}
+                                LMD actif
+                                {% else %}
+                                LMD non activé
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    {% if faculty.promotions.exists %}
+                                    <a href="{% url 'super_admin:territorial_delete_promotion' faculty.id %}"
+                                       class="able-btn able-btn-outline able-btn-sm"
+                                       onclick="return confirm('Désactiver le cycle LMD pour cette faculté ?')">
+                                        Désactiver
+                                    </a>
+                                    {% else %}
+                                    —
+                                    {% endif %}
+                                    <a href="{% url 'super_admin:territorial_delete_faculty' faculty.id %}"
+                                       class="able-btn able-btn-danger able-btn-sm"
+                                       onclick="return confirm('Supprimer cette faculté ?')">
+                                        Supprimer
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-3">Aucune faculté enregistrée.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-center text-muted py-4 mb-0">Aucune structure enregistrée pour cette province.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="able-card">
+    <div class="able-card-head">
+        <h2>Admins (Université) des établissements</h2>
+        <span class="able-badge muted">{{ managers|length }}</span>
+    </div>
+    <div class="table-responsive table-structure-wrap" style="margin-top:0;">
+        <table class="table-structure">
+            <thead>
+                <tr>
+                    <th>Admin (Université)</th>
+                    <th>Université</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for manager in managers %}
+                <tr>
+                    <td>
+                        <div class="able-person">
+                            <div class="av" style="background:rgba(244,194,43,.2);color:#b8860b;">
+                                {{ manager.username|slice:":1"|upper }}
+                            </div>
+                            <div>
+                                <strong>{{ manager.get_full_name|default:manager.username }}</strong>
+                                <small>{{ manager.username }} · {{ manager.email }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ manager.assigned_university.name }}</td>
+                    <td>
+                        {% if manager.is_active %}Actif{% else %}Suspendu{% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'super_admin:territorial_toggle_manager' manager.id %}"
+                           class="able-btn able-btn-outline able-btn-sm">
+                            {% if manager.is_active %}Suspendre{% else %}Réactiver{% endif %}
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center text-muted py-4">Aucun admin (université) créé.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

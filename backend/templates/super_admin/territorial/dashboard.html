@@ -1,0 +1,248 @@
+{% extends "super_admin/territorial_base.html" %}
+{% block title %}Tableau de bord provincial · Yekola{% endblock %}
+{% block page_title %}Analyse provinciale{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-4">
+        <div class="able-stat-wide">
+            <div class="value">{{ total_unis }}</div>
+            <div class="label">Établissements de la province</div>
+            <div class="spark"><canvas id="sparkProvUnis"></canvas></div>
+            <div class="able-stat-foot">
+                <div>
+                    <strong>{{ submitted_count }}</strong>
+                    <span>Rapports reçus</span>
+                </div>
+                <div>
+                    <strong>{{ pending_unis }}</strong>
+                    <span>En retard</span>
+                </div>
+                <div>
+                    <strong>{{ alerts_count }}</strong>
+                    <span>Alertes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="able-stat-wide">
+            <div class="value">{{ total_students }}</div>
+            <div class="label">Étudiants suivis</div>
+            <div class="spark"><canvas id="sparkProvStudents"></canvas></div>
+            <div class="able-stat-foot">
+                <div>
+                    <strong>{{ pending_reports|length }}</strong>
+                    <span>À consolider</span>
+                </div>
+                <div>
+                    <strong>{{ submitted_count }}</strong>
+                    <span>Soumis</span>
+                </div>
+                <div>
+                    <strong>{{ total_unis }}</strong>
+                    <span>Total univ.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="row g-3">
+            <div class="col-6">
+                <div class="able-kpi yellow">
+                    <div class="kpi-top">
+                        <div>
+                            <div class="kpi-label">Étudiants</div>
+                            <div class="kpi-value">{{ total_students }}</div>
+                        </div>
+                        <div class="kpi-icon"><i class="fa-solid fa-user-graduate"></i></div>
+                    </div>
+                    <div class="kpi-foot"><i class="fa-solid fa-location-dot"></i> {{ province.name }}</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="able-kpi green">
+                    <div class="kpi-top">
+                        <div>
+                            <div class="kpi-label">Rapports reçus</div>
+                            <div class="kpi-value">{{ submitted_count }}</div>
+                        </div>
+                        <div class="kpi-icon"><i class="fa-solid fa-file-circle-check"></i></div>
+                    </div>
+                    <div class="kpi-foot"><i class="fa-solid fa-arrow-up"></i> Boîte de réception</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="able-kpi red">
+                    <div class="kpi-top">
+                        <div>
+                            <div class="kpi-label">En retard</div>
+                            <div class="kpi-value">{{ pending_unis }}</div>
+                        </div>
+                        <div class="kpi-icon"><i class="fa-solid fa-clock"></i></div>
+                    </div>
+                    <div class="kpi-foot"><i class="fa-solid fa-triangle-exclamation"></i> Sans rapport</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="able-kpi blue">
+                    <div class="kpi-top">
+                        <div>
+                            <div class="kpi-label">Alertes</div>
+                            <div class="kpi-value">{{ alerts_count }}</div>
+                        </div>
+                        <div class="kpi-icon"><i class="fa-solid fa-bell"></i></div>
+                    </div>
+                    <div class="kpi-foot"><i class="fa-solid fa-bolt"></i> Ouvertes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-8">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2>Parc universitaire</h2>
+                <a href="{% url 'super_admin:territorial_universities' %}" class="btn btn-sm btn-outline-primary">Voir tout</a>
+            </div>
+            <div class="table-responsive">
+                <table class="able-table">
+                    <thead>
+                        <tr>
+                            <th>Établissement</th>
+                            <th>Étudiants</th>
+                            <th>Enseignants</th>
+                            <th>Réussite</th>
+                            <th>Priorité</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in uni_stats %}
+                        <tr>
+                            <td>
+                                <div class="able-person">
+                                    <div class="av">{{ row.university.name|slice:":1" }}</div>
+                                    <div>
+                                        <strong>
+                                            <a href="{% url 'super_admin:territorial_university_detail' row.university.id %}" class="text-decoration-none" style="color:#1d2630;">
+                                                {{ row.university.name }}
+                                            </a>
+                                        </strong>
+                                        <small>{{ row.university.get_institution_type_display }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ row.students }}</td>
+                            <td>{{ row.teachers }}</td>
+                            <td>
+                                {% if row.success_rate != None %}{{ row.success_rate }}%{% else %}—{% endif %}
+                            </td>
+                            <td>
+                                {% if row.has_pending_report %}
+                                <span class="able-badge high">Rapport reçu</span>
+                                {% elif row.success_rate != None and row.success_rate < 50 %}
+                                <span class="able-badge low">Faible réussite</span>
+                                {% elif row.success_rate != None %}
+                                <span class="able-badge medium">Suivi OK</span>
+                                {% else %}
+                                <span class="able-badge muted">En attente</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">Aucun établissement enregistré.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="able-card mb-3">
+            <div class="able-card-head">
+                <h2>Dernières mises à jour</h2>
+            </div>
+            <div class="able-card-body">
+                <ul class="able-timeline">
+                    {% for alert in open_alerts %}
+                    <li>
+                        <div class="when">Alerte</div>
+                        <div class="dot red"><i class="fa-solid fa-bell"></i></div>
+                        <div class="txt"><strong>{{ alert.title }}</strong><br>{{ alert.get_alert_type_display }}</div>
+                    </li>
+                    {% empty %}
+                    <li>
+                        <div class="when">—</div>
+                        <div class="dot green"><i class="fa-solid fa-check"></i></div>
+                        <div class="txt">Aucune alerte active pour le moment.</div>
+                    </li>
+                    {% endfor %}
+                    <li>
+                        <div class="when">Rapports</div>
+                        <div class="dot yellow"><i class="fa-solid fa-inbox"></i></div>
+                        <div class="txt">{{ pending_reports|length }} rapport(s) d'établissement à consolider.</div>
+                    </li>
+                    <li>
+                        <div class="when">Actions</div>
+                        <div class="dot blue"><i class="fa-solid fa-bolt"></i></div>
+                        <div class="txt">
+                            <a href="{% url 'super_admin:territorial_reports' %}">Boîte de réception</a> ·
+                            <a href="{% url 'super_admin:territorial_alerts' %}">Gérer les alertes</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const sparkOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } },
+        elements: { point: { radius: 0 }, line: { tension: 0.4, borderWidth: 2 } }
+    };
+    const a = document.getElementById('sparkProvUnis');
+    if (a) {
+        new Chart(a, {
+            type: 'line',
+            data: {
+                labels: [1,2,3,4,5,6],
+                datasets: [{
+                    data: [1, 2, 3, 4, 5, {{ total_unis|default:6 }}],
+                    borderColor: '#1E3A5F',
+                    backgroundColor: 'rgba(21,42,69,.15)',
+                    fill: true
+                }]
+            },
+            options: sparkOpts
+        });
+    }
+    const b = document.getElementById('sparkProvStudents');
+    if (b) {
+        new Chart(b, {
+            type: 'line',
+            data: {
+                labels: [1,2,3,4,5,6],
+                datasets: [{
+                    data: [120, 280, 450, 700, 1100, {{ total_students|default:1500 }}],
+                    borderColor: '#1de9b6',
+                    backgroundColor: 'rgba(29,233,182,.15)',
+                    fill: true
+                }]
+            },
+            options: sparkOpts
+        });
+    }
+});
+</script>
+{% endblock %}

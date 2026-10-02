@@ -1,0 +1,182 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .chat-messenger-surface {
+        background: white;
+        border-radius: var(--radius-2xl);
+        box-shadow: var(--shadow-xl);
+        height: calc(100vh - 200px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .chat-header-premium {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--border-light);
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .chat-messages-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 2.5rem;
+        background: #fbfbfe;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .bubble {
+        max-width: 75%;
+        padding: 12px 18px;
+        border-radius: 18px;
+        font-size: 0.938rem;
+        line-height: 1.5;
+        position: relative;
+    }
+
+    .bubble-out {
+        align-self: flex-end;
+        background: var(--primary);
+        color: white;
+        border-bottom-right-radius: 4px;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+
+    .bubble-in {
+        align-self: flex-start;
+        background: #f1f5f9;
+        color: var(--secondary);
+        border-bottom-left-radius: 4px;
+    }
+
+    .chat-input-area {
+        padding: 1.5rem 2rem;
+        background: white;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .input-pill-group {
+        background: #f8fafc;
+        border-radius: 30px;
+        padding: 6px 6px 6px 20px;
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--border);
+    }
+
+    .input-pill-group input {
+        border: none;
+        background: transparent;
+        flex: 1;
+        outline: none;
+        padding: 10px 0;
+        font-weight: 500;
+        color: var(--secondary);
+    }
+
+    .btn-send-pill {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: white;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+    }
+
+    .btn-send-pill:hover {
+        background: var(--primary-dark);
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Discussion{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-fade-in">
+    <div class="col-12 col-xl-9">
+        <div class="chat-messenger-surface">
+            <!-- Header -->
+            <div class="chat-header-premium">
+                <div class="d-flex align-items-center">
+                    <a href="{% url 'teacher_chat_inbox' %}" class="btn btn-light me-3 d-md-none"
+                        style="border-radius: 10px;">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <div class="avatar-sm bg-indigo bg-opacity-10 text-indigo d-flex align-items-center justify-content-center fw-bold rounded-circle me-3"
+                        style="width: 44px; height: 44px; font-size: 0.9rem;">
+                        {% if room.is_group %}G{% else %}{{ other_user.username|slice:":1"|upper }}{% endif %}
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark">
+                            {% if room.is_group %}
+                            {{ room.name|default:"Salon de discussion" }}
+                            {% else %}
+                            {{ other_user.username }}
+                            {% endif %}
+                        </h6>
+                        <div class="text-accent small fw-bold"><i class="fas fa-circle me-1"
+                                style="font-size: 0.5rem;"></i> En ligne</div>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-light" style="border-radius: 12px;"><i
+                            class="fas fa-ellipsis-v"></i></button>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div class="chat-messages-scroll" id="chat-messages">
+                {% for message in chat_messages %}
+                <div
+                    class="bubble {% if message.sender  ==  request.user %}bubble-out animate-fade-in{% else %}bubble-in{% endif %}">
+                    {% if room.is_group and message.sender != request.user %}
+                    <div class="small fw-bold mb-1" style="font-size: 0.7rem; opacity: 0.7;">
+                        {{ message.sender.username }}
+                    </div>
+                    {% endif %}
+                    {{ message.content }}
+                    <div class="text-end" style="font-size: 0.6rem; opacity: 0.6; margin-top: 4px;">
+                        {{ message.created_at|date:"H:i" }}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5 opacity-40">
+                    <p class="small fw-bold">Commencez la conversation dès maintenant.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Input Area -->
+            <div class="chat-input-area">
+                <form method="POST" class="input-pill-group">
+                    {% csrf_token %}
+                    <input type="text" name="content" placeholder="Rédigez votre message ici..." required
+                        autocomplete="off">
+                    <button type="submit" class="btn-send-pill">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const container = document.getElementById('chat-messages');
+        container.scrollTop = container.scrollHeight;
+    });
+</script>
+{% endblock %}

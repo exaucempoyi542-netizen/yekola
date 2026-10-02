@@ -1,0 +1,196 @@
+@startuml Diagramme_Activite_EduRDC_Complet
+!theme plain
+skinparam activityFontSize 12
+skinparam swimlaneBorderColor #666666
+skinparam activityBackgroundColor #F8F9FA
+skinparam activityBorderColor #2196F3
+title Diagramme d'activité — Cycle complet de cotation MayeleNet
+
+' ============================================================
+' SWIMLANES
+' ============================================================
+
+|Etudiant|
+start
+
+' ============================================================
+' AUTHENTIFICATION
+' ============================================================
+
+:Saisir matricule / email\net mot de passe;
+if (Identifiants valides ?) then (non)
+  :Afficher erreur\n"Identifiants incorrects";
+  stop
+else (oui)
+endif
+
+if (Profil complet ?) then (non)
+  :Saisir adresse Gmail (@gmail.com);
+  :Profil marqué "complet";
+else (oui)
+endif
+
+' ============================================================
+' INSCRIPTION AU COURS
+' ============================================================
+
+:Parcourir le catalogue\ndes cours de sa promotion;
+:Choisir un cours publié;
+
+fork
+  :S'inscrire au cours;
+  :Consulter les leçons;
+  if (Leçon verrouillee ?) then (oui)
+    :Afficher "Quiz prerequis\nnon réussi (< 50%)";
+  else (non)
+    :Acceder au contenu\n(vidéo / PDF / texte);
+  endif
+fork again
+  :Passer un quiz associe;
+  if (Score >= 50% ?) then (oui)
+    :Leçon suivante debloquée;
+  else (non)
+    :Retenter le quiz;
+  endif
+end fork
+
+:Mettre a jour la progression (%);
+
+' ============================================================
+' SOUMISSION DE TP
+' ============================================================
+
+if (Devoir disponible ?) then (oui)
+  :Telecharger l'enonce du TP;
+  :Soumettre le fichier de rendu;
+  :En attente de correction;
+else (non)
+endif
+
+' ============================================================
+' NOTATION PAR L'ENSEIGNANT
+' ============================================================
+
+|Enseignant|
+
+:Acceder au portail web\n(interface décanat / prof);
+:Ouvrir le carnet de cotes\ndu cours affecté;
+
+if (Notes verouillees OU\nsemestre clôturé ?) then (oui)
+  :Afficher "Saisie bloquée";
+  stop
+else (non)
+endif
+
+fork
+  :Saisir les cotes:\nTP / Interro / Examen;
+  :Calculer le total /20\net les crédits ECTS;
+  :Enregistrer en etat\n**DRAFT** (brouillon);
+fork again
+  :Corriger les soumissions\nde TP des étudiants;
+  :Attribuer une note /20\navec commentaire;
+end fork
+
+if (Pret a soumettre\nau Décanat ?) then (non)
+  :Rester en brouillon;
+  stop
+else (oui)
+endif
+
+:Passer l'etat a\n**SUBMITTED_TO_DEAN**;
+:Synchroniser la NoteCours;
+:Journaliser dans AuditLog;
+
+' ============================================================
+' VALIDATION DECANAT
+' ============================================================
+
+|Decanat|
+
+:Consulter les cotes\nsoumises par les enseignants;
+
+if (Correction encore\npossible et verrou\ninactif ?) then (oui)
+  |Enseignant|
+  :Corriger les composantes\n(TP / Interro / Examen);
+  :Re-soumettre au Décanat;
+  |Decanat|
+else (non)
+endif
+
+:Lancer la deliberation\nannuelle (promotion LMD);
+:Calculer les credits S1 + S2\npour chaque etudiant;
+
+if (Total credits >= 60 ?) then (oui)
+  :Marquer etudiant comme **ADMIS**;
+else (non)
+  :Marquer etudiant comme **ECHOUE**;
+endif
+
+:Creer RapportResultatsSemestre\net lignes Reussite / Echec;
+:Passer l'etat NoteCours\na **VALIDATED_BY_DEAN**;
+:Produire le rapport facultaire;
+
+' ============================================================
+' CONSOLIDATION UNIVERSITAIRE
+' ============================================================
+
+|Gestionnaire|
+
+:Consulter les resultats\nconsolides par faculte;
+:Verifier la coherence LMD;
+
+if (Notes verouillees\ncote universite ?) then (non)
+  :Verrouiller les notes\n(is_grading_locked = True);
+else (oui)
+endif
+
+:Passer les cotes a **APPROVED**;
+:Creer le rapport universitaire\n(agregation des facultes);
+:Transmettre a la province;
+
+' ============================================================
+' VALIDATION PROVINCIALE
+' ============================================================
+
+|Administrateur Provincial|
+
+:Recevoir les rapports\ndes universites de la province;
+:Consolider le rapport provincial;
+
+if (Rapport valide ?) then (non)
+  :Signaler des anomalies\nau Gestionnaire;
+  :En attente de correction;
+  stop
+else (oui)
+endif
+
+:Transmettre au Ministere;
+
+' ============================================================
+' APPROBATION MINISTERIELLE
+' ============================================================
+
+|Super-Administrateur|
+
+:Recevoir le rapport provincial;
+:Valider le rapport provincial;
+:Passer les cotes a\n**SUBMITTED_TO_MINISTRY** (verrou definitif);
+:Mettre a jour les indicateurs\nnationaux (geo-analytique);
+:Envoyer notifications\nauto aux etudiants;
+
+|Etudiant|
+:Recevoir notification :\n"Vos resultats sont disponibles";
+:Consulter ses notes\net credits ECTS;
+
+stop
+
+legend right
+  |= Etat Cote          |= Acteur            |
+  | DRAFT               | Enseignant          |
+  | SUBMITTED_TO_DEAN   | Enseignant          |
+  | VALIDATED_BY_DEAN   | Decanat             |
+  | APPROVED            | Gestionnaire        |
+  | SUBMITTED_TO_MINISTRY | Super-Admin (verrou)|
+endlegend
+
+@enduml

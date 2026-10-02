@@ -1,0 +1,132 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block page_title %}Rapport de Performance{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in mb-5">
+    <div class="d-flex flex-wrap justify-content-end align-items-center gap-3 mb-4">
+        <a href="{% url 'teacher_lesson_management' quiz.course.id %}" class="able-btn able-btn-outline">Retour</a>
+        <div class="stat-card py-2 px-4 shadow-sm border-0 d-flex align-items-center bg-white"
+            style="border-radius: 18px;">
+            <div class="pe-3 border-end me-3">
+                <div class="extra-small fw-800 text-muted text-uppercase mb-0">Audience Évaluée</div>
+                <div class="fw-900 text-navy h4 mb-0">{{ attempts.count }} <span
+                        class="extra-small opacity-50">UNITÉS</span></div>
+            </div>
+            <div class="icon-square bg-gold text-navy" style="width:40px; height:40px; font-size:1rem;">
+                <i class="fas fa-user-check"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Breakdown -->
+    <div class="row g-4 mb-5">
+        <div class="col-6 col-md-3">
+            <div class="stat-card h-100">
+                <div class="extra-small fw-800 text-muted text-uppercase mb-2">Participations</div>
+                <h2 class="fw-900 text-navy mb-0">{{ attempts.count }}</h2>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card h-100 gold">
+                <div class="extra-small fw-800 text-navy text-uppercase mb-2">Score Max</div>
+                <h2 class="fw-900 text-navy mb-0">{{ total_points|default:"100" }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Registry -->
+    <div class="premium-card p-0 shadow-lg border-0 overflow-hidden">
+        <div class="p-4 p-md-5 border-bottom bg-ivory">
+            <h4 class="fw-900 text-navy mb-1">Détail des Tentatives Certifiées</h4>
+            <p class="text-muted extra-small fw-800 text-uppercase letter-spacing-1 mb-0">Journal de performance
+                individuelle</p>
+        </div>
+
+        <div class="table-responsive">
+            {% if attempts %}
+            <table class="premium-table table-hover align-middle mb-0">
+                <thead>
+                    <tr class="bg-navy text-white text-uppercase extra-small fw-800 letter-spacing-1">
+                        <th class="ps-5 py-4">Apprenant</th>
+                        <th>Session</th>
+                        <th>Rendement (%)</th>
+                        <th>Horodatage</th>
+                        <th class="text-center pe-5">Mention Pédagogique</th>
+                    </tr>
+                </thead>
+                <tbody class="border-0">
+                    {% for attempt in attempts %}
+                    <tr class="animate-fade-in">
+                        <td class="ps-5 py-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="icon-square bg-ivory text-navy border"
+                                    style="width:44px; height:44px; border-radius:12px; font-size:0.9rem; font-weight:900;">
+                                    {{ attempt.student.username|slice:":1"|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-900 text-navy mb-0">{{ attempt.student.username }}</div>
+                                    <div class="text-muted extra-small fw-bold opacity-75">{{
+                                        attempt.student.email|default:"Étudiant Yekola" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div
+                                class="extra-small fw-900 {% if attempt.session  ==  '1ere' %}text-navy{% else %}text-gold{% endif %} text-uppercase">
+                                <i
+                                    class="fas {% if attempt.session  ==  '1ere' %}fa-1{% else %}fa-2{% endif %} me-2"></i>
+                                {{ attempt.session|default:"1ère" }} Session
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <span
+                                    class="fw-900 {% if attempt.score >= 70 %}text-gold{% elif attempt.score >= 50 %}text-navy{% else %}text-danger{% endif %}"
+                                    style="font-size: 1.1rem;">
+                                    {{ attempt.score|floatformat:0 }}%
+                                </span>
+                                <div class="progress d-none d-md-flex"
+                                    style="width: 80px; height: 6px; background-color: var(--ivory); border-radius: 10px;">
+                                    <div class="progress-bar {% if attempt.score >= 70 %}bg-gold{% elif attempt.score >= 50 %}bg-navy{% else %}bg-danger{% endif %}"
+                                        role="progressbar" style="width: {{ attempt.score }}%; border-radius: 10px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="extra-small fw-800 text-muted">
+                            {% if attempt.completed_at %}
+                            <i class="far fa-calendar-check me-2 opacity-50 text-gold"></i>{{
+                            attempt.completed_at|date:"d M Y" }}<br /><span class="text-navy opacity-50">{{
+                                attempt.completed_at|date:"H:i" }}</span>
+                            {% else %}
+                            <span class="badge-premium border text-muted">EN COURS</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center pe-5">
+                            {% if attempt.score >= 70 %}
+                            <span class="badge-premium badge-gold" style="font-size: 0.6rem;">EXCELLENCE</span>
+                            {% elif attempt.score >= 50 %}
+                            <span class="badge-premium badge-navy" style="font-size: 0.6rem;">VALIDE</span>
+                            {% else %}
+                            <span class="badge-premium bg-danger text-white" style="font-size: 0.6rem;">ÉCHEC</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="text-center py-5 my-5 opacity-50">
+                <div class="icon-square bg-ivory text-muted mx-auto mb-3" style="width:70px; height:70px;"><i
+                        class="fas fa-clipboard-list-check fs-2"></i></div>
+                <h5 class="fw-900 text-navy">Aucun Rendement Détecté</h5>
+                <p class="extra-small fw-800 text-uppercase">Les résultats apparaîtront après synchronisation mobile.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

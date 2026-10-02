@@ -1,0 +1,52 @@
+@startuml Figure_4_3_Sequence_Cotes_Enseignant_Decanat
+!theme plain
+skinparam sequenceMessageAlign center
+title Figure 4.3 — Diagramme de séquence : Transmission des cotes Enseignant → Décanat
+
+actor "Enseignant" as T
+participant "Portail web\n(Django)" as UI
+participant "Contrôleur\ndes cotes" as CTRL
+database "Base de données\nMySQL" as DB
+actor "Décanat" as D
+
+T -> UI : S'authentifier (rôle Enseignant)
+UI --> T : Session ouverte
+
+T -> UI : Ouvrir le carnet de cotes du cours affecté
+UI -> CTRL : Charger les étudiants et les cotes du cours
+CTRL -> DB : Lire les cotes du cours
+DB --> CTRL : Liste des cotes (statut Brouillon)
+CTRL --> UI : Afficher le tableau TP / Interro / Examen
+UI --> T : Carnet prêt
+
+T -> UI : Saisir / modifier TP, Interro, Examen
+UI -> CTRL : Enregistrer les composantes
+CTRL -> CTRL : Calculer le total /20\net les crédits (≥ 10 → ECTS, sinon 0)
+CTRL -> DB : Mettre à jour la cote (statut = Brouillon)
+DB --> CTRL : Confirmation
+CTRL --> UI : Afficher totaux et crédits
+UI --> T : Confirmation de la saisie
+
+T -> UI : Valider « Envoyer au Décanat »
+UI -> CTRL : Soumettre les cotes au Décanat
+CTRL -> DB : Mettre le statut à « Soumis au Décanat »
+CTRL -> DB : Synchroniser la note de cours
+DB --> CTRL : Confirmation
+CTRL --> UI : Succès + écriture dans le journal d'audit
+UI --> T : Cotes transmises
+
+... Délibération ...
+
+D -> UI : Consulter les cotes soumises
+UI -> CTRL : Lister les cotes soumises au Décanat
+CTRL -> DB : Lire les cotes
+DB --> CTRL : Cotes du cours
+CTRL --> UI : Afficher pour délibération
+UI --> D : Espace de délibération
+
+note over T, D
+  Le Gestionnaire ne reçoit pas les cotes brutes.
+  Il reçoit le rapport annuel après délibération (figure 4.4).
+end note
+
+@enduml

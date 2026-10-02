@@ -1,0 +1,136 @@
+classDiagram
+    direction TB
+
+    class Province {
+        +id : Entier
+        +code : Texte
+        +cree_le : DateHeure
+    }
+    class Universite {
+        +id : Entier
+        +nom : Texte
+        +type_etablissement : Texte
+        +adresse : Texte
+        +telephone : Texte
+        +email : Email
+        +capacite : Entier+
+    }
+    class Faculte {
+        +id : Entier
+        +nom : Texte
+    }
+    class Promotion {
+        +id : Entier
+        +nom : Texte
+    }
+    class GroupeClasse {
+        +id : Entier
+        +nom : Texte
+    }
+    class Utilisateur {
+        +id : Entier
+        +identifiant : Texte
+        +prenom : Texte
+        +nom : Texte
+        +email : Email
+        +role : Texte
+        +matricule : Texte
+        +sexe : Texte
+    }
+    class FaculteNationale {
+        +id : Entier
+        +code : Texte
+        +nom : Texte
+    }
+    class CoursNational {
+        +id : Entier
+        +code : Texte
+        +titre : Texte
+        +credits : Entier+
+        +semestre : Entier
+    }
+    class Cours {
+        +id : Entier
+        +titre : Texte
+        +credits : Entier+
+        +semestre : Entier
+    }
+    class CotationEtudiant {
+        +id : Entier
+        +nom_complet : Texte
+        +note_tp : Decimal
+        +note_interro : Decimal
+        +note_examen : Decimal
+        +statut : Texte
+    }
+    class NoteCours {
+        +id : Entier
+        +note_finale : Decimal
+        +statut : Texte
+    }
+    class RapportFaculte {
+        +id : Entier
+        +titre : Texte
+        +annee_academique : Texte
+        +total_etudiants : Entier
+        +etudiants_reussis : Entier
+        +etudiants_echecs : Entier
+    }
+    class RapportResultatsSemestre {
+        +id : Entier
+        +titre : Texte
+        +annee_academique : Texte
+        +total_etudiants : Entier
+        +etudiants_reussis : Entier
+        +etudiants_echecs : Entier
+    }
+    class LigneResultatSemestre {
+        +id : Entier
+        +nom_complet : Texte
+        +credits_obtenus : Entier
+        +resultat : Texte
+    }
+    class RapportUniversite {
+        +id : Entier
+        +titre : Texte
+        +total_etudiants : Entier
+        +etudiants_reussis : Entier
+        +etudiants_echecs : Entier
+    }
+    class RapportProvincial {
+        +id : Entier
+        +titre : Texte
+        +total_universites : Entier
+        +total_etudiants : Entier
+        +etudiants_reussis : Entier
+    }
+    class AlerteTerritoriale {
+        +id : Entier
+        +type_alerte : Texte
+        +message : Texte
+        +est_resolue : Booleen
+    }
+
+    Province "1" <-- "*" Universite : province
+    Universite "1" <-- "*" Faculte : universite
+    Faculte "1" <-- "*" Promotion : faculte
+    Promotion "1" <-- "*" GroupeClasse : promotion
+    FaculteNationale "1" <-- "*" CoursNational : faculte_nationale
+    Universite "1" <-- "*" Utilisateur : universite_assignee
+    Faculte "1" <-- "*" Utilisateur : faculte_assignee
+    Province "1" <-- "*" Utilisateur : province_assignee
+    GroupeClasse "1" <-- "*" Utilisateur : groupe_classe
+    Promotion "1" <-- "*" Cours : promotion
+    Utilisateur "1" <-- "*" Cours : enseignant
+    CoursNational "1" <-- "*" Cours : cours_national
+    Cours "1" <-- "*" CotationEtudiant : cours
+    Utilisateur "1" <-- "*" CotationEtudiant : etudiant
+    Cours "1" <-- "*" NoteCours : cours
+    Utilisateur "1" <-- "*" NoteCours : etudiant
+    Universite "1" <-- "*" RapportFaculte : universite
+    Faculte "1" <-- "*" RapportFaculte : faculte
+    Universite "1" <-- "*" RapportResultatsSemestre : universite
+    RapportResultatsSemestre "1" <-- "*" LigneResultatSemestre : rapport
+    Universite "1" <-- "*" RapportUniversite : universite
+    Province "1" <-- "*" RapportProvincial : province
+    Province "1" <-- "*" AlerteTerritoriale : province

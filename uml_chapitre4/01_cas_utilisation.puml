@@ -1,0 +1,90 @@
+@startuml Figure_4_1_Cas_Utilisation_EduRDC
+!theme plain
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+left to right direction
+title Figure 4.1 — Diagramme de cas d'utilisation global MayeleNet
+
+actor "Étudiant" as Student
+actor "Enseignant" as Teacher
+actor "Décanat" as Dean
+actor "Gestionnaire\n(Manager)" as Manager
+actor "Administrateur\nprovincial" as ProvAdmin
+actor "Super-Administrateur" as SuperAdmin
+
+rectangle "MayeleNet — Plateforme académique" {
+
+  package "Espace pédagogique" {
+    usecase "UC01\nS'authentifier" as UC01
+    usecase "UC02\nConsulter les cours\npubliés de sa promotion" as UC02
+    usecase "UC03\nTélécharger / consulter\nune leçon" as UC03
+    usecase "UC04\nPasser un quiz et\nconsulter le score" as UC04
+    usecase "UC05\nPublier / dépublier\nun module de cours" as UC05
+    usecase "UC06\nGérer le contenu\npédagogique d'un cours" as UC06
+    usecase "UC07\nSaisir les cotes\nTP / Interro / Examen" as UC07
+    usecase "UC08\nTransmettre les cotes\nau Décanat" as UC08
+  }
+
+  package "Gouvernance académique" {
+    usecase "UC09\nCréer un compte\nDécanat pour une faculté" as UC09
+    usecase "UC10\nCréer un cours\n(faculté, LMD, semestre, crédits)" as UC10
+    usecase "UC11\nAttribuer un cours\nau Décanat" as UC11
+    usecase "UC12\nRecruter un enseignant\net lui affecter des cours" as UC12
+    usecase "UC13\nDélibérer et générer\nle rapport annuel S1+S2" as UC13
+    usecase "UC14\nConsulter les résultats\nconsolidés" as UC14
+    usecase "UC15\nTransmettre le rapport\nuniversitaire à la province" as UC15
+    usecase "UC16\nConsolider et transmettre\nun rapport provincial" as UC16
+    usecase "UC17\nValider un rapport provincial\net consulter les indicateurs" as UC17
+  }
+}
+
+' --- Authentification (tous) ---
+Student --> UC01
+Teacher --> UC01
+Dean --> UC01
+Manager --> UC01
+ProvAdmin --> UC01
+SuperAdmin --> UC01
+
+' --- Étudiant ---
+Student --> UC02
+Student --> UC03
+Student --> UC04
+
+' --- Enseignant ---
+Teacher --> UC05
+Teacher --> UC06
+Teacher --> UC07
+Teacher --> UC08
+
+' --- Décanat ---
+Dean --> UC12
+Dean --> UC13
+
+' --- Gestionnaire ---
+Manager --> UC09
+Manager --> UC10
+Manager --> UC11
+Manager --> UC14
+Manager --> UC15
+
+' --- Administrateur provincial ---
+ProvAdmin --> UC16
+
+' --- Super-Administrateur ---
+SuperAdmin --> UC17
+
+' Relations d'inclusion / extension
+UC08 ..> UC07 : <<inclut>>
+UC13 ..> UC08 : <<étend>>
+UC15 ..> UC13 : <<inclut>>
+UC16 ..> UC15 : <<inclut>>
+UC17 ..> UC16 : <<inclut>>
+
+note right of UC17
+  Chaîne de reporting :
+  Décanat → Gestionnaire → Province → Ministère
+  (pas d'envoi direct Gestionnaire → Ministère)
+end note
+
+@enduml

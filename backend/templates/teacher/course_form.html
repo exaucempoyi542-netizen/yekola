@@ -1,0 +1,97 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block page_title %}Initialisation de Formation{% endblock %}
+
+{% block content %}
+<div class="campus-page-intro">
+    <div class="eyebrow">Espace enseignant</div>
+    <h1>Initialisation de formation</h1>
+    <p>Rattachement à la maquette nationale et identité du cours.</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="able-card">
+            <div class="able-card-head d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">Fiche du cours</h2>
+                <a href="{% url 'teacher_dashboard' %}" class="able-btn able-btn-outline able-btn-sm">Retour</a>
+            </div>
+            <div class="able-card-body">
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <!-- Cover Image Strategy -->
+                <div class="mb-5">
+                    <label class="able-label">Identité visuelle du cours</label>
+                    <div class="upload-zone p-5 border rounded-3 text-center"
+                        style="border-style: dashed !important; border-color: var(--campus-border, #D0D7E2); background: var(--campus-elevated, #F5F8FB); cursor: pointer;"
+                        onclick="document.getElementById('thumbnail').click()">
+                        <div class="able-avatar mx-auto mb-3" style="width:64px;height:64px;font-size:1.4rem;">
+                            <i class="fas fa-image"></i>
+                        </div>
+                        <h6 class="fw-bold text-navy mb-1">Sélectionner l'iconographie</h6>
+                        <p class="text-muted small mb-0">Haute résolution (16:9 recommandé)</p>
+                        <input type="file" name="thumbnail" id="thumbnail" class="d-none" accept="image/*">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="national_course_id" class="able-label">Référentiel national (maquette LMD)</label>
+                    <select name="national_course_id" id="national_course_id"
+                        class="able-input w-100 form-select" required>
+                        <option value="">-- Sélectionner l'élément de la maquette --</option>
+                        {% for item in maquette %}
+                        <option value="{{ item.id }}">[{{ item.code }}] {{ item.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-5">
+                    <label for="description" class="able-label">Synopsis pédagogique</label>
+                    <textarea name="description" id="description" rows="4" class="able-input w-100"
+                        placeholder="Objectifs et compétences visées"
+                        required></textarea>
+                </div>
+
+                <div class="p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3"
+                     style="background:var(--campus-elevated,#F5F8FB);border:1px solid var(--campus-border,#D0D7E2);border-radius:12px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="able-avatar" style="width:44px;height:44px;">
+                            <i class="fas fa-tower-broadcast"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold small text-uppercase" style="color:var(--campus-ink,#0A1628);">Statut opérationnel</div>
+                            <div class="small" style="color:var(--campus-muted,#5B6B7F);">Rendre le contenu accessible immédiatement.</div>
+                        </div>
+                    </div>
+                    <div class="form-check form-switch fs-4 m-0">
+                        <input class="form-check-input custom-switch" type="checkbox" name="is_published"
+                            id="is_published" checked>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 justify-content-end">
+                    <a href="{% url 'teacher_dashboard' %}" class="able-btn able-btn-outline">Annuler</a>
+                    <button type="submit" class="able-btn able-btn-primary">
+                        Valider le cours <i class="fas fa-check ms-1"></i>
+                    </button>
+                </div>
+            </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .upload-zone:hover {
+        border-color: var(--campus-accent, #1E3A5F) !important;
+        background: white !important;
+    }
+
+    .custom-switch:checked {
+        background-color: var(--campus-accent, #1E3A5F);
+        border-color: var(--campus-accent, #1E3A5F);
+    }
+</style>
+{% endblock %}

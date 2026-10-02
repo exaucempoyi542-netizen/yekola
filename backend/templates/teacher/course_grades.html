@@ -1,0 +1,421 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block page_title %}Saisie des notes{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+  --grille-meta: #111827;
+  --grille-accent: #111827;
+  --grille-focus: #2563eb;
+  --grille-meta-bg: #eef1f5;
+  --grille-alt: #f3f4f6;
+  --grille-line: #9ca3af;
+  --grille-input-border: #cbd5e1;
+}
+
+.grille-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.grille-wrap {
+  background: #fff;
+  border: 1px solid var(--grille-line);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, .06);
+}
+
+.grille-wrap .table-responsive {
+  margin: 0;
+}
+
+table.grille-cotes {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: .88rem;
+  margin: 0;
+}
+
+table.grille-cotes th,
+table.grille-cotes td {
+  border: 1px solid var(--grille-line);
+  padding: .55rem .4rem;
+  vertical-align: middle;
+  text-align: center;
+}
+
+/* En-têtes : colonnes identité = gris ardoise, notes = rose */
+table.grille-cotes thead th {
+  color: #fff;
+  font-weight: 700;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+table.grille-cotes thead th.col-meta {
+  background: var(--grille-meta);
+}
+
+table.grille-cotes thead th.col-note {
+  background: var(--grille-accent);
+}
+
+table.grille-cotes thead th small {
+  display: block;
+  font-weight: 600;
+  opacity: .85;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: .68rem;
+  margin-top: 2px;
+}
+
+/* Corps : bandes verticales alternées */
+table.grille-cotes tbody td.col-meta {
+  background: var(--grille-meta-bg);
+  text-align: left;
+  padding-left: .75rem;
+}
+
+table.grille-cotes tbody td.col-a { background: #fff; }
+table.grille-cotes tbody td.col-b { background: var(--grille-alt); }
+
+table.grille-cotes tbody tr:hover td.col-a,
+table.grille-cotes tbody tr:hover td.col-b {
+  filter: brightness(0.97);
+}
+
+table.grille-cotes tbody tr:hover td.col-meta {
+  background: #e4e9ef;
+}
+
+.grille-student {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  min-width: 0;
+}
+
+.grille-student .av {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid var(--grille-line);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: .75rem;
+  color: var(--grille-meta);
+  flex-shrink: 0;
+}
+
+.grille-student .info {
+  min-width: 0;
+}
+
+.grille-student .name {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: .85rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grille-student .mail {
+  font-size: .7rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grille-input {
+  width: 100%;
+  max-width: 72px;
+  margin: 0 auto;
+  display: block;
+  border: 1px solid var(--grille-input-border);
+  border-radius: 4px;
+  background: #fff;
+  text-align: center;
+  font-weight: 700;
+  font-size: .9rem;
+  padding: .35rem .25rem;
+  color: #0f172a;
+}
+
+.grille-input.name-input {
+  max-width: 100%;
+  text-align: left;
+  padding-left: .5rem;
+  font-weight: 600;
+}
+
+.grille-input:focus {
+  outline: 2px solid var(--grille-focus);
+  outline-offset: 1px;
+  border-color: var(--grille-focus);
+}
+
+.grille-input:disabled {
+  background: transparent;
+  border-color: transparent;
+  color: #334155;
+}
+
+.grille-total {
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.grille-total.is-pass { color: #059669; }
+.grille-total.is-fail { color: #dc2626; }
+
+.grille-credits {
+  display: inline-block;
+  font-size: .72rem;
+  font-weight: 800;
+  padding: .2rem .45rem;
+  border-radius: 4px;
+  border: 1px solid var(--grille-line);
+  background: #fff;
+}
+
+.grille-credits.ok {
+  background: #d1fae5;
+  color: #047857;
+  border-color: #6ee7b7;
+}
+
+.grille-credits.ko {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+.grille-status {
+  font-size: .68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: #475569;
+}
+
+.grille-empty {
+  padding: 2.5rem 1rem !important;
+  background: #fff !important;
+  text-align: center;
+  color: #64748b;
+}
+
+@media (max-width: 991.98px) {
+  table.grille-cotes { table-layout: auto; font-size: .8rem; }
+  .grille-input { max-width: 64px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in mb-4">
+    <div class="grille-toolbar">
+        <div>
+            <div class="fw-bold" style="color:#1e293b;">{{ course.title }}</div>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <div class="position-relative">
+                <input type="text" id="studentSearch" class="able-input ps-5"
+                    placeholder="Rechercher…" style="min-width: 200px;">
+                <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+            </div>
+            <a href="{% url 'teacher_dashboard' %}" class="able-btn able-btn-outline">Retour</a>
+            {% if semester_mismatch %}
+            <span class="able-badge warn">Hors semestre (S{{ request.user.assigned_semester }})</span>
+            {% elif not is_locked %}
+            <form action="{% url 'teacher_submit_audit' %}" method="POST" class="m-0">
+                {% csrf_token %}
+                <input type="hidden" name="course_id" value="{{ course.id }}">
+                <button type="submit" class="able-btn able-btn-primary"
+                    onclick="return confirm('Transmettre toutes les cotes de ce cours (semestre {{ course.semester }}) au Décanat ?');">
+                    <i class="fa-solid fa-paper-plane"></i> Envoyer au Décanat
+                </button>
+            </form>
+            {% else %}
+            <span class="able-badge low"><i class="fa-solid fa-lock"></i> Saisie verrouillée</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grille-wrap">
+        <div class="table-responsive">
+            <table class="grille-cotes" id="gradesTable">
+                <thead>
+                    <tr>
+                        <th class="col-meta" style="width:22%;">Matricule / Gmail</th>
+                        <th class="col-meta" style="width:16%;">Nom complet</th>
+                        <th class="col-note" style="width:9%;">TP<small>/5</small></th>
+                        <th class="col-note" style="width:9%;">Interro<small>/5</small></th>
+                        <th class="col-note" style="width:10%;">Examen<small>/10</small></th>
+                        <th class="col-note" style="width:10%;">Total<small>/20</small></th>
+                        <th class="col-note" style="width:12%;">Crédits</th>
+                        <th class="col-note" style="width:12%;">Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in grades_list %}
+                    <tr>
+                        <td class="col-meta">
+                            <div class="grille-student">
+                                <div class="av">{{ item.enrollment.student.username|slice:":1"|upper }}</div>
+                                <div class="info">
+                                    <div class="name student-name">{{ item.enrollment.student.matricule|default:item.enrollment.student.username }}</div>
+                                    <div class="mail">{{ item.enrollment.student.email|default:"—" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="col-meta">
+                            <div class="grille-readonly">{{ item.enrollment.student.get_full_name|default:"—" }}</div>
+                        </td>
+                        <td class="col-a">
+                            <input type="number" class="grille-input grade-input" data-field="tp"
+                                data-student="{{ item.enrollment.student.id }}"
+                                value="{{ item.audit.tp|stringformat:'g'|default:'0' }}" min="0" max="5" step="0.5"
+                                {% if is_locked or item.is_submitted %}disabled{% endif %}>
+                        </td>
+                        <td class="col-b">
+                            <input type="number" class="grille-input grade-input" data-field="interro"
+                                data-student="{{ item.enrollment.student.id }}"
+                                value="{{ item.audit.interro|stringformat:'g'|default:'0' }}" min="0" max="5" step="0.5"
+                                {% if is_locked or item.is_submitted %}disabled{% endif %}>
+                        </td>
+                        <td class="col-a">
+                            <input type="number" class="grille-input grade-input" data-field="examen"
+                                data-student="{{ item.enrollment.student.id }}"
+                                value="{{ item.audit.examen|stringformat:'g'|default:'0' }}" min="0" max="10" step="0.5"
+                                {% if is_locked or item.is_submitted %}disabled{% endif %}>
+                        </td>
+                        <td class="col-b">
+                            <div class="grille-total total-cell {% if item.audit.total >= 10 %}is-pass{% else %}is-fail{% endif %}"
+                                id="total-{{ item.enrollment.student.id }}">
+                                {{ item.audit.total|stringformat:"g"|default:"0" }}
+                            </div>
+                        </td>
+                        <td class="col-a">
+                            <span class="grille-credits credits-cell {% if item.audit.total >= 10 %}ok{% else %}ko{% endif %}"
+                                id="credits-{{ item.enrollment.student.id }}">
+                                {% if item.audit.total >= 10 %}{{ course_credits }}{% else %}0{% endif %} / {{ course_credits }}
+                            </span>
+                        </td>
+                        <td class="col-b">
+                            {% if item.audit.status == 'DRAFT' %}
+                            <span class="grille-status">Brouillon</span>
+                            {% elif item.audit.status == 'VALIDATED_BY_DEAN' %}
+                            <span class="grille-status" style="color:#059669;">Validé</span>
+                            {% elif item.is_submitted %}
+                            <span class="grille-status" style="color:#be185d;">Au décanat</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="grille-empty">
+                            Aucun étudiant dans cette promotion.<br>
+                            Affiliez des étudiants depuis « Mes étudiants ».
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const COURSE_ID = {{ course.id }};
+    const COURSE_CREDITS = {{ course_credits }};
+    const UPDATE_URL = "{% url 'teacher_update_audit' %}";
+    const CSRF_TOKEN = "{{ csrf_token }}";
+
+    document.getElementById('studentSearch').addEventListener('keyup', function () {
+        const q = this.value.toLowerCase();
+        document.querySelectorAll('#gradesTable tbody tr').forEach(row => {
+            const name = row.querySelector('.student-name')?.textContent.toLowerCase() || '';
+            const full = row.querySelector('.name-input')?.value.toLowerCase() || '';
+            row.style.display = (name.includes(q) || full.includes(q)) ? '' : 'none';
+        });
+    });
+
+    function refreshCredits(sid, total) {
+        const passed = total >= 10;
+        const totalEl = document.getElementById(`total-${sid}`);
+        const creditsEl = document.getElementById(`credits-${sid}`);
+        if (totalEl) {
+            totalEl.textContent = Number(total).toFixed(1);
+            totalEl.classList.toggle('is-pass', passed);
+            totalEl.classList.toggle('is-fail', !passed);
+        }
+        if (creditsEl) {
+            creditsEl.textContent = `${passed ? COURSE_CREDITS : 0} / ${COURSE_CREDITS}`;
+            creditsEl.classList.toggle('ok', passed);
+            creditsEl.classList.toggle('ko', !passed);
+        }
+    }
+
+    function updateLocalTotal(sid) {
+        const tp = parseFloat(document.querySelector(`[data-field="tp"][data-student="${sid}"]`)?.value) || 0;
+        const interro = parseFloat(document.querySelector(`[data-field="interro"][data-student="${sid}"]`)?.value) || 0;
+        const examen = parseFloat(document.querySelector(`[data-field="examen"][data-student="${sid}"]`)?.value) || 0;
+        refreshCredits(sid, tp + interro + examen);
+    }
+
+    let saveTimers = {};
+    function scheduleAuditSave(sid) {
+        clearTimeout(saveTimers[sid]);
+        saveTimers[sid] = setTimeout(() => saveAudit(sid), 700);
+    }
+
+    function saveAudit(sid) {
+        fetch(UPDATE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+            body: JSON.stringify({
+                student_id: sid,
+                course_id: COURSE_ID,
+                tp: document.querySelector(`[data-field="tp"][data-student="${sid}"]`)?.value ?? 0,
+                interro: document.querySelector(`[data-field="interro"][data-student="${sid}"]`)?.value ?? 0,
+                examen: document.querySelector(`[data-field="examen"][data-student="${sid}"]`)?.value ?? 0,
+            })
+        }).then(async r => {
+            const d = await r.json().catch(() => ({}));
+            if (r.ok && d.status === 'success') {
+                refreshCredits(sid, parseFloat(d.total));
+            }
+        }).catch(() => {});
+    }
+
+    document.querySelectorAll('.grade-input').forEach(input => {
+        input.addEventListener('input', function () {
+            updateLocalTotal(this.dataset.student);
+            scheduleAuditSave(this.dataset.student);
+        });
+        input.addEventListener('change', function () {
+            saveAudit(this.dataset.student);
+        });
+    });
+</script>
+{% endblock %}

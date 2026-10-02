@@ -1,0 +1,91 @@
+@startuml Architecture_Systeme_EduRDC
+!theme plain
+skinparam componentStyle rectangle
+skinparam componentFontSize 11
+skinparam componentFontStyle bold
+skinparam nodeFontSize 12
+skinparam nodeFontStyle bold
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1.2
+skinparam linetype ortho
+
+title Architecture Systeme Globale — Plateforme MayeleNet
+
+' ============================================================
+' COUCHE PRESENTATION (CLIENTS)
+' ============================================================
+package "1. Couche Presentation (Frontends)" #E3F2FD {
+  component "Application Mobile Flutter\n(Android / iOS)\n[Portail Etudiant]" as MobileApp
+  component "Portail Web Enseignant & Decanat\n(HTML5 / CSS3 / JavaScript)\n[Gestion Pédagogique & Cotes]" as WebPortal
+  component "Tableau de Bord Ministeriel\n(Geo-Analytique)\n[Super-Admin & Province]" as AdminDashboard
+}
+
+' ============================================================
+' COUCHE SECURITE & ROUTAGE
+' ============================================================
+package "2. Couche Securite & Passerelle API" #FFF8E1 {
+  component "Reverse Proxy Nginx\n(HTTPS / SSL / Load Balancer)" as NginxGateway
+  component "Gestionnaire d'Auth JWT\n(SimpleJWT / Sessions Django)" as AuthGateway
+}
+
+' ============================================================
+' COUCHE METIER / APPLICATION (BACKEND)
+' ============================================================
+package "3. Couche Application & Logique Metier (Backend Django)" #FFF3E0 {
+  component "Core API Framework\n(Django REST Framework)" as CoreDjango
+
+  package "Modules Metier" {
+    component "Module LMS\n(Cours, Leçons, Quiz)" as LMSModule
+    component "Module Carnet de Cotes\n(Saisie TP/Interro/Examen)" as GradeModule
+    component "Moteur de Deliberation LMD\n(Calcul 60 ECTS S1+S2)" as LMDEngine
+    component "Module Pilotage National\n(Rapports & Audit Logs)" as NationalModule
+    component "Service de Chat & Notifications\n(Messagerie Interne)" as ChatNotifModule
+  }
+}
+
+' ============================================================
+' COUCHE PERSISTANCE & STOCKAGE
+' ============================================================
+package "4. Couche Persistance & Donnees" #E8F5E9 {
+  database "Base de Donnees Relationnelle\n(Base de Donnees MySQL)" as RelationalDB
+  database "Stockage Fichiers Medias\n(PDF, Videos, PPT, Exercices)" as FileStorage
+  database "Cache Local Offline\n(Hive Storage sur Mobile)" as OfflineStorage
+}
+
+' ============================================================
+' COUCHE SERVICES EXTERNES
+' ============================================================
+package "5. Services Cloud & Communication" #F3E5F5 {
+  component "Serveur de Visio-Conference\n(Jitsi Meet - Live Sessions)" as JitsiService
+}
+
+' ============================================================
+' FLUX & RELATIONS
+' ============================================================
+MobileApp --> NginxGateway : HTTPS / REST API
+WebPortal --> NginxGateway : HTTPS / REST API
+AdminDashboard --> NginxGateway : HTTPS / REST API
+
+MobileApp ..> OfflineStorage : Persistance Hors-Ligne
+
+NginxGateway --> AuthGateway : Validation Requete
+AuthGateway --> CoreDjango : Requete Authentifiee
+
+CoreDjango --> LMSModule
+CoreDjango --> GradeModule
+CoreDjango --> LMDEngine
+CoreDjango --> NationalModule
+CoreDjango --> ChatNotifModule
+
+LMSModule --> RelationalDB
+GradeModule --> RelationalDB
+LMDEngine --> RelationalDB
+NationalModule --> RelationalDB
+ChatNotifModule --> RelationalDB
+
+LMSModule --> FileStorage
+
+MobileApp ..> JitsiService : Sessions Live WebRTC
+WebPortal ..> JitsiService : Sessions Live WebRTC
+
+@enduml

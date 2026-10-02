@@ -1,0 +1,155 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block title %}Tableau de bord · Enseignant{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Scroll horizontal dans la carte ; overflow hidden pour respecter les coins arrondis */
+.able-card {
+  overflow: hidden;
+  max-width: 100%;
+}
+.able-card-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+.able-card-table .able-table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: auto;
+}
+.able-card-table .able-badge {
+  white-space: nowrap;
+}
+.able-card-table .dropdown-menu {
+  z-index: 1055;
+  min-width: 11rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-4">
+        <div class="able-kpi soft blue">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Mes cours</div>
+                    <div class="kpi-value">{{ courses.count }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-book-open"></i></div>
+            </div>
+            <div class="kpi-foot">Affectés par le Décanat</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="able-kpi soft green">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Étudiants</div>
+                    <div class="kpi-value">{{ active_students_count }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-user-graduate"></i></div>
+            </div>
+            <div class="kpi-foot">Audience active</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="able-kpi soft yellow">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Cours publiés</div>
+                    <div class="kpi-value">{{ published_count }}</div>
+                </div>
+                <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="kpi-foot">Visibles aux étudiants</div>
+        </div>
+    </div>
+</div>
+
+<div class="able-card">
+    <div class="able-card-head">
+        <h2>Cours qui m'ont été affectés</h2>
+        <span class="able-badge muted">{{ courses.count }}</span>
+    </div>
+    <div class="able-card-table">
+        <table class="able-table">
+            <thead>
+                <tr>
+                    <th>Cours</th>
+                    <th>Statut</th>
+                    <th>Leçons</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in courses %}
+                <tr>
+                    <td>
+                        <div class="able-person">
+                            <div class="av">{{ course.title|slice:":1" }}</div>
+                            <div>
+                                <strong>{{ course.title }}</strong>
+                                <small>
+                                    {% if course.promotion %}{{ course.promotion.display_label }} · {% endif %}
+                                    {{ course.effective_credits }} ECTS · S{{ course.semester }}
+                                </small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if course.is_published %}
+                        <span class="able-badge medium">Publié</span>
+                        {% else %}
+                        <span class="able-badge muted">Brouillon</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-weight:700;">{{ course.lessons.count }}</td>
+                    <td class="text-end" style="width:3.5rem;">
+                        <div class="dropdown d-inline-block">
+                            <button class="able-btn able-btn-outline able-btn-sm able-btn-icon" type="button"
+                                data-bs-toggle="dropdown"
+                                data-bs-popper-config='{"strategy":"fixed"}'
+                                aria-expanded="false" aria-label="Options du cours" title="Options">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li><a class="dropdown-item" href="{% url 'teacher_lesson_management' course.id %}"><i class="fa-solid fa-pen me-2 text-primary"></i>Contenu</a></li>
+                                <li><a class="dropdown-item" href="{% url 'teacher_course_grades' course.id %}"><i class="fa-solid fa-file-lines me-2 text-success"></i>Notes LMD</a></li>
+                                {% if not course.is_published %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'teacher_course_toggle_publish' course.id %}"><i class="fa-solid fa-globe me-2 text-warning"></i>Publier</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="POST" action="{% url 'teacher_course_delete' course.id %}" class="m-0"
+                                        onsubmit="return confirm('Supprimer le module « {{ course.title|escapejs }} » ?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item text-danger"><i class="fa-solid fa-trash me-2"></i>Supprimer</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center py-5">
+                        <div class="able-avatar mx-auto mb-3" style="background:var(--able-blue-soft);color:var(--able-blue);">
+                            <i class="fa-solid fa-book"></i>
+                        </div>
+                        <div style="font-weight:700;color:#1d2630;">Aucun cours affecté</div>
+                        <div class="small mt-1" style="color:var(--able-muted);">Le Décanat doit vous attribuer un cours.</div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

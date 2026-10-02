@@ -1,0 +1,216 @@
+@startuml Diagramme_Classes_Yekola_15_tables
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam classFontStyle bold
+skinparam classBorderColor #0D47A1
+skinparam classBackgroundColor #FFFFFF
+skinparam classHeaderBackgroundColor #0D47A1
+skinparam classFontColor #FFFFFF
+skinparam classAttributeFontColor #111111
+skinparam classAttributeFontSize 10
+skinparam ArrowColor #37474F
+skinparam ArrowThickness 1.2
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 45
+hide circle
+hide empty methods
+
+title Diagramme de classes — Plateforme Yekola\n(15 tables principales)
+
+class Province {
+  + id : Entier
+  + code : Texte
+  + nom : Texte
+  + cree_le : DateHeure
+}
+
+class Universite {
+  + id : Entier
+  + nom : Texte
+  + type : Texte
+  + adresse : Texte
+  + telephone : Texte
+  + email : Texte
+  + capacite : Entier
+  + saisie_notes_verrouillee : Booleen
+  + semestre1_cloture : Booleen
+  + semestre2_cloture : Booleen
+  + cree_le : DateHeure
+}
+
+class Faculte {
+  + id : Entier
+  + nom : Texte
+}
+
+class Promotion {
+  + id : Entier
+  + niveau : Texte
+  + libelle : Texte
+}
+
+class GroupeClasse {
+  + id : Entier
+  + nom : Texte
+}
+
+class Utilisateur {
+  + id : Entier
+  + identifiant : Texte
+  + email : Texte
+  + telephone : Texte
+  + matricule : Texte
+  + role : Texte
+  + sexe : Texte
+  + est_actif : Booleen
+  + profil_complete : Booleen
+  + date_inscription : DateHeure
+}
+
+class Cours {
+  + id : Entier
+  + titre : Texte
+  + description : Texte
+  + credits : Entier
+  + semestre : Entier
+  + est_publie : Booleen
+  + est_gratuit : Booleen
+  + prix : Decimal
+  + cree_le : DateHeure
+}
+
+class Lecon {
+  + id : Entier
+  + titre : Texte
+  + type_contenu : Texte
+  + fichier : Texte
+  + contenu_texte : Texte
+  + ordre : Entier
+}
+
+class Quiz {
+  + id : Entier
+  + code : UUID
+  + titre : Texte
+  + description : Texte
+  + duree_min : Entier
+  + type_quiz : Texte
+  + est_publie : Booleen
+  + ordre : Entier
+  + cree_le : DateHeure
+}
+
+class TentativeQuiz {
+  + id : Entier
+  + score : Decimal
+  + session : Texte
+  + score_pourcentage : Decimal
+  + est_reussi : Booleen
+  + commence_le : DateHeure
+  + termine_le : DateHeure
+}
+
+class Inscription {
+  + id : Entier
+  + progression : Decimal
+  + inscrit_le : DateHeure
+}
+
+class CoteEtudiant {
+  + id : Entier
+  + tp : Decimal
+  + interro : Decimal
+  + examen : Decimal
+  + total : Decimal
+  + credits_obtenus : Entier
+  + statut : Texte
+  + mis_a_jour_le : DateHeure
+}
+
+class NoteCours {
+  + id : Entier
+  + moyenne_quiz : Decimal
+  + note_interro : Decimal
+  + note_examen : Decimal
+  + note_finale : Decimal
+  + statut : Texte
+  + cree_le : DateHeure
+  + mis_a_jour_le : DateHeure
+}
+
+class Notification {
+  + id : Entier
+  + titre : Texte
+  + message : Texte
+  + type : Texte
+  + cree_le : DateHeure
+}
+
+class JournalAudit {
+  + id : Entier
+  + action : Texte
+  + details : Texte
+  + adresse_ip : Texte
+  + horodatage : DateHeure
+}
+
+' ===== Relations =====
+Province     "1"    -- "0..*" Universite     : tutelle >
+Universite   "1"    -- "0..*" Faculte        : contient >
+Faculte      "1"    -- "0..*" Promotion      : organise >
+Promotion    "1"    -- "0..*" GroupeClasse   : regroupe >
+
+Province     "1"    -- "0..*" Utilisateur    : admin_provincial >
+Universite   "1"    -- "0..*" Utilisateur    : affecte >
+Faculte      "1"    -- "0..*" Utilisateur    : decanat >
+GroupeClasse "1"    -- "0..*" Utilisateur    : etudiants >
+Promotion    "0..*" -- "0..*" Utilisateur    : enseignants >
+
+Universite   "1"    -- "0..*" Cours          : offre >
+Faculte      "1"    -- "0..*" Cours          : rattache >
+Promotion    "1"    -- "0..*" Cours          : niveau >
+Utilisateur  "0..1" -- "0..*" Cours          : enseigne >
+
+Cours        "1"    -- "0..*" Lecon          : contient >
+Cours        "1"    -- "0..*" Quiz           : evalue >
+
+Inscription  "0..*" -- "1"    Utilisateur    : etudiant >
+Inscription  "0..*" -- "1"    Cours          : cours >
+
+TentativeQuiz "0..*" -- "1"   Quiz           : passage >
+TentativeQuiz "0..*" -- "1"   Utilisateur    : etudiant >
+
+CoteEtudiant "0..*" -- "1"    Utilisateur    : etudiant >
+CoteEtudiant "0..*" -- "1"    Utilisateur    : enseignant >
+CoteEtudiant "0..*" -- "1"    Cours          : cours >
+
+NoteCours    "0..*" -- "1"    Utilisateur    : etudiant >
+NoteCours    "0..*" -- "1"    Cours          : cours >
+
+Notification "0..*" -- "0..1" Utilisateur    : destinataire >
+JournalAudit "0..*" -- "0..1" Utilisateur    : auteur >
+
+legend right
+  |= N° |= Table |= Rôle |
+  | 1 | Province | Découpage territorial |
+  | 2 | Universite | Établissement |
+  | 3 | Faculte | Structure académique |
+  | 4 | Promotion | Niveau LMD |
+  | 5 | GroupeClasse | Classe d'étudiants |
+  | 6 | Utilisateur | Acteurs (rôles) |
+  | 7 | Cours | Unité d'enseignement |
+  | 8 | Lecon | Contenu pédagogique |
+  | 9 | Quiz | Évaluation formative |
+  | 10 | TentativeQuiz | Passage quiz |
+  | 11 | Inscription | Suivi étudiant/cours |
+  | 12 | CoteEtudiant | Saisie des cotes |
+  | 13 | NoteCours | Note consolidée |
+  | 14 | Notification | Alertes système |
+  | 15 | JournalAudit | Traçabilité |
+endlegend
+
+@enduml

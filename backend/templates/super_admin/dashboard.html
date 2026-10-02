@@ -1,0 +1,339 @@
+{% extends "super_admin/base.html" %}
+{% load static %}
+
+{% block title %}Tableau de bord · Yekola{% endblock %}
+{% block page_title %}Analyse nationale{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-4">
+        <div class="able-stat-wide">
+            <div class="value">{% if national_success != None %}{{ national_success }}%{% else %}—{% endif %}</div>
+            <div class="label">Taux de réussite national</div>
+            <div class="spark"><canvas id="sparkSuccess"></canvas></div>
+            <div class="able-stat-foot">
+                <div>
+                    <strong>{{ zone_counts.green }}</strong>
+                    <span>Performantes</span>
+                </div>
+                <div>
+                    <strong>{{ zone_counts.orange }}</strong>
+                    <span>Vigilance</span>
+                </div>
+                <div>
+                    <strong>{{ zone_counts.red }}</strong>
+                    <span>Alerte</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="able-stat-wide">
+            <div class="value">{{ total_universities }}</div>
+            <div class="label">Établissements suivis</div>
+            <div class="spark"><canvas id="sparkUnis"></canvas></div>
+            <div class="able-stat-foot">
+                <div>
+                    <strong>{{ total_managers }}</strong>
+                    <span>Admins (Université)</span>
+                </div>
+                <div>
+                    <strong>{{ total_deans }}</strong>
+                    <span>Décanats</span>
+                </div>
+                <div>
+                    <strong>{{ total_teachers }}</strong>
+                    <span>Enseignants</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="row g-3">
+            <div class="col-6">
+                <div class="able-kpi yellow">
+                    <div class="kpi-top">
+                        <div>
+                            <div class="kpi-label">Étudiants</div>
+                            <div class="kpi-value">{{ total_students }}</div>
+                        </div>
+                        <div class="kpi-icon"><i class="fa-solid fa-user-graduate"></i></div>
+                    </div>
+                    <div class="kpi-foot"><i class="fa-solid fa-arrow-up"></i> Parc national</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="able-kpi green">
+                    <div class="kpi-top">
+                        <div>
+                            <div class="kpi-label">Réussite</div>
+                            <div class="kpi-value">{% if national_success != None %}{{ national_success }}%{% else %}—{% endif %}</div>
+                        </div>
+                        <div class="kpi-icon"><i class="fa-solid fa-chart-line"></i></div>
+                    </div>
+                    <div class="kpi-foot"><i class="fa-solid fa-arrow-up"></i> Indicateur consolidé</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="able-kpi red">
+                    <div class="kpi-top">
+                        <div>
+                            <div class="kpi-label">Alertes</div>
+                            <div class="kpi-value">{{ open_alerts }}</div>
+                        </div>
+                        <div class="kpi-icon"><i class="fa-solid fa-bell"></i></div>
+                    </div>
+                    <div class="kpi-foot"><i class="fa-solid fa-triangle-exclamation"></i> {{ anomalies_count }} facultés sans rapport</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="able-kpi blue">
+                    <div class="kpi-top">
+                        <div>
+                            <div class="kpi-label">Échec</div>
+                            <div class="kpi-value">{% if national_failure != None %}{{ national_failure }}%{% else %}—{% endif %}</div>
+                        </div>
+                        <div class="kpi-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                    </div>
+                    <div class="kpi-foot"><i class="fa-solid fa-arrow-down"></i> Complément réussite</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-xl-8">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2>Performance provinciale</h2>
+                <a href="{% url 'super_admin:provincial_stats' %}" class="btn btn-sm btn-outline-primary">Voir détail</a>
+            </div>
+            <div class="table-responsive">
+                <table class="able-table">
+                    <thead>
+                        <tr>
+                            <th>Province</th>
+                            <th>Établissements</th>
+                            <th>Étudiants</th>
+                            <th>Réussite</th>
+                            <th>Priorité</th>
+                            <th>Rapport</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in province_rows %}
+                        <tr>
+                            <td>
+                                <div class="able-person">
+                                    <div class="av">{{ row.name|slice:":1" }}</div>
+                                    <div>
+                                        <strong>{{ row.name }}</strong>
+                                        <small>{{ row.code }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ row.university_count }}</td>
+                            <td>{{ row.student_count }}</td>
+                            <td>{% if row.success_rate != None %}{{ row.success_rate }}%{% else %}—{% endif %}</td>
+                            <td>
+                                {% if row.zone == 'green' %}<span class="able-badge medium">Performante</span>
+                                {% elif row.zone == 'orange' %}<span class="able-badge warn">Vigilance</span>
+                                {% elif row.zone == 'red' %}<span class="able-badge low">Alerte</span>
+                                {% else %}<span class="able-badge muted">Sans données</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if row.report_validated %}<span class="able-badge medium">Validé</span>
+                                {% elif row.report_title %}<span class="able-badge high">En attente</span>
+                                {% else %}<span class="able-badge muted">Aucun</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center text-muted py-4">Aucune province à afficher.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2>Dernières mises à jour</h2>
+            </div>
+            <div class="able-card-body">
+                <ul class="able-timeline">
+                    {% for report in recent_reports %}
+                    <li>
+                        <div class="when">{{ report.submitted_at }}</div>
+                        <div class="dot {% if report.is_validated %}green{% else %}yellow{% endif %}">
+                            <i class="fa-solid fa-file-lines"></i>
+                        </div>
+                        <div class="txt">
+                            <strong>{{ report.province }}</strong> — {{ report.title|truncatechars:48 }}
+                            ({% if report.is_validated %}validé{% else %}à valider{% endif %}, {{ report.success_rate }}%)
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li>
+                        <div class="when">—</div>
+                        <div class="dot blue"><i class="fa-solid fa-inbox"></i></div>
+                        <div class="txt">Aucun rapport provincial reçu pour le moment.</div>
+                    </li>
+                    {% endfor %}
+                    <li>
+                        <div class="when">Actions</div>
+                        <div class="dot blue"><i class="fa-solid fa-bolt"></i></div>
+                        <div class="txt">
+                            <a href="{% url 'super_admin:academic_reports' %}">Valider les rapports</a> ·
+                            <a href="{% url 'super_admin:provincial_stats' %}">Comparer les provinces</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-8">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2>Comparaison des provinces · réussite</h2>
+            </div>
+            <div class="able-card-body">
+                <div class="able-chart-box"><canvas id="provinceBarChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2>Répartition des zones</h2>
+            </div>
+            <div class="able-card-body">
+                <div class="able-chart-box"><canvas id="zonePieChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{{ province_rows|json_script:"province-rows" }}
+{{ evolution_data|json_script:"evolution-data" }}
+{{ zone_counts|json_script:"zone-counts" }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const provinces = JSON.parse(document.getElementById('province-rows').textContent || '[]');
+    const evolution = JSON.parse(document.getElementById('evolution-data').textContent || '[]');
+    const zones = JSON.parse(document.getElementById('zone-counts').textContent || '{}');
+
+    Chart.defaults.font.family = "'Public Sans', 'DM Sans', sans-serif";
+    Chart.defaults.color = '#8897a8';
+
+    const sparkOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } },
+        elements: { point: { radius: 0 }, line: { tension: 0.4, borderWidth: 2 } }
+    };
+
+    const evo = evolution.length ? evolution.map(e => e.success_rate) : [10, 18, 14, 22, 19, 28, 24];
+    const sparkSuccess = document.getElementById('sparkSuccess');
+    if (sparkSuccess) {
+        new Chart(sparkSuccess, {
+            type: 'line',
+            data: {
+                labels: evo.map((_, i) => i),
+                datasets: [{
+                    data: evo,
+                    borderColor: '#448aff',
+                    backgroundColor: 'rgba(68,138,255,.15)',
+                    fill: true
+                }]
+            },
+            options: sparkOpts
+        });
+    }
+
+    const sparkUnis = document.getElementById('sparkUnis');
+    if (sparkUnis) {
+        new Chart(sparkUnis, {
+            type: 'line',
+            data: {
+                labels: [1,2,3,4,5,6,7],
+                datasets: [{
+                    data: [4, 6, 8, 10, 12, 14, {{ total_universities|default:16 }}],
+                    borderColor: '#1de9b6',
+                    backgroundColor: 'rgba(29,233,182,.15)',
+                    fill: true
+                }]
+            },
+            options: sparkOpts
+        });
+    }
+
+    const withRate = provinces.filter(p => p.success_rate !== null);
+    const barCtx = document.getElementById('provinceBarChart');
+    if (barCtx) {
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: withRate.length ? withRate.map(p => p.name) : ['Aucune donnée'],
+                datasets: [
+                    {
+                        label: 'Réussite (%)',
+                        data: withRate.length ? withRate.map(p => p.success_rate) : [0],
+                        backgroundColor: '#448aff',
+                        borderRadius: 6,
+                        maxBarThickness: 36
+                    },
+                    {
+                        label: 'Échec (%)',
+                        data: withRate.length ? withRate.map(p => p.failure_rate) : [0],
+                        backgroundColor: '#ff5370',
+                        borderRadius: 6,
+                        maxBarThickness: 36
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { weight: '600', size: 11 } } } },
+                scales: {
+                    y: { beginAtZero: true, max: 100, grid: { color: '#e3eaf2' } },
+                    x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' } } }
+                }
+            }
+        });
+    }
+
+    const pieCtx = document.getElementById('zonePieChart');
+    if (pieCtx) {
+        new Chart(pieCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Performantes', 'Vigilance', 'Alerte', 'Sans données'],
+                datasets: [{
+                    data: [zones.green || 0, zones.orange || 0, zones.red || 0, zones.nodata || 0],
+                    backgroundColor: ['#1de9b6', '#f4c22b', '#ff5370', '#94a3b8'],
+                    borderWidth: 0,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '62%',
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { weight: '600', size: 11 } } } }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

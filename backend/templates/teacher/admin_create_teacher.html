@@ -1,0 +1,103 @@
+{% extends "teacher/base.html" %}
+{% load static %}
+
+{% block title %}Recruter un enseignant · Yekola{% endblock %}
+{% block page_title %}Recruter un enseignant{% endblock %}
+
+{% block content %}
+
+<div class="campus-page-intro">
+    <div class="eyebrow">Décanat</div>
+    <h1>Recruter un enseignant</h1>
+    <p>Création du compte et rattachement aux promotions de la faculté.</p>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-4"><div class="able-kpi soft"><div class="kpi-top"><div><div class="kpi-label">Université</div><div class="kpi-value" style="font-size:1rem;">{{ fixed_university.name|default:'Sélection'|truncatechars:18 }}</div></div><div class="kpi-icon"><i class="fa-solid fa-building-columns"></i></div></div><div class="kpi-foot">Cadre d'affectation</div></div></div>
+    <div class="col-md-4"><div class="able-kpi soft"><div class="kpi-top"><div><div class="kpi-label">Faculté</div><div class="kpi-value" style="font-size:1rem;">{{ fixed_faculty.name|default:'À choisir'|truncatechars:18 }}</div></div><div class="kpi-icon"><i class="fa-solid fa-landmark"></i></div></div><div class="kpi-foot">Rattachement</div></div></div>
+    <div class="col-md-4"><div class="able-kpi soft"><div class="kpi-top"><div><div class="kpi-label">Promotions</div><div class="kpi-value">{{ faculty_promotions|length }}</div></div><div class="kpi-icon"><i class="fa-solid fa-layer-group"></i></div></div><div class="kpi-foot">Disponibles</div></div></div>
+</div>
+
+<div class="able-card">
+    <div class="able-card-head">
+        <h2>Formulaire de recrutement</h2>
+        <a href="{% url 'dean_teachers' %}" class="able-btn able-btn-outline able-btn-sm">Retour</a>
+    </div>
+    <div class="able-card-body">
+        {% if error %}<div class="alert alert-danger border-0 mb-4">{{ error }}</div>{% endif %}
+        <form method="POST" id="createTeacherForm">
+            {% csrf_token %}
+            {% if is_dean and fixed_university and fixed_faculty %}
+            <input type="hidden" name="university_id" value="{{ fixed_university.id }}">
+            <input type="hidden" name="faculty_id" value="{{ fixed_faculty.id }}">
+            {% endif %}
+            <div class="row g-3">
+                <div class="col-md-6"><label class="able-label">Identifiant</label><input type="text" name="username" class="able-input" placeholder="ex: m.kabange" required></div>
+                <div class="col-md-6"><label class="able-label">E-mail</label><input type="email" name="email" class="able-input" placeholder="kabange@univ.cd" required></div>
+                <div class="col-12"><label class="able-label">Mot de passe provisoire</label><input type="password" name="password" class="able-input" placeholder="Minimum 6 caractères" required></div>
+            </div>
+
+            <div class="row g-3 mt-1">
+                {% if is_dean and fixed_university and fixed_faculty %}
+                <div class="col-md-6"><label class="able-label">Université</label><div class="able-input" style="background:#f8fafc;">{{ fixed_university.name }}</div></div>
+                <div class="col-md-6"><label class="able-label">Faculté</label><div class="able-input" style="background:#f8fafc;">{{ fixed_faculty.name }}</div></div>
+                <div class="col-md-6"><label class="able-label">Promotions attribuées</label><select name="promotion_ids" id="promotionSelect" class="able-input" multiple size="5">{% for promo in faculty_promotions %}<option value="{{ promo.id }}">{{ promo.display_label }}</option>{% empty %}<option value="" disabled>Aucune promotion disponible</option>{% endfor %}</select><div class="small mt-2" style="color:var(--able-muted);">Maintenez Ctrl ou Cmd pour une sélection multiple.</div></div>
+                <div class="col-md-6"><label class="able-label">Semestre d'assignation</label><select name="semester" class="able-input" required><option value="">Choisir…</option><option value="1">1er semestre</option><option value="2">2e semestre</option></select></div>
+                {% else %}
+                <div class="col-md-4"><label class="able-label">Université</label><select name="university_id" id="universitySelect" class="able-input"><option value="">Sélectionner…</option>{% for uni in universities %}<option value="{{ uni.id }}">{{ uni.name }}</option>{% endfor %}</select></div>
+                <div class="col-md-4"><label class="able-label">Faculté</label><select name="faculty_id" id="facultySelect" class="able-input" disabled><option value="">Choisir d'abord l'université…</option></select></div>
+                <div class="col-md-4"><label class="able-label">Semestre d'assignation</label><select name="semester" class="able-input" required><option value="">Choisir…</option><option value="1">1er semestre</option><option value="2">2e semestre</option></select></div>
+                <div class="col-12"><label class="able-label">Promotions attribuées</label><select name="promotion_ids" id="promotionSelect" class="able-input" multiple size="5" disabled></select></div>
+                {% endif %}
+            </div>
+            <div class="d-flex justify-content-between gap-2 mt-4">
+                <a href="{% url 'dean_teachers' %}" class="able-btn able-btn-outline">Annuler</a>
+                <button type="submit" class="able-btn able-btn-primary"><i class="fa-solid fa-user-check"></i> Créer l'enseignant</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if not is_dean %}
+<script>
+const data = {{ structure_json|safe }};
+const uniSelect = document.getElementById('universitySelect');
+const facSelect = document.getElementById('facultySelect');
+const promoSelect = document.getElementById('promotionSelect');
+if (uniSelect) {
+  uniSelect.addEventListener('change', function () {
+    const uniId = this.value;
+    facSelect.innerHTML = '<option value="">Sélectionner une faculté…</option>';
+    promoSelect.innerHTML = '';
+    promoSelect.disabled = true;
+    if (uniId && data[uniId]) {
+      for (const facId in data[uniId]) {
+        const opt = document.createElement('option');
+        opt.value = facId;
+        opt.textContent = data[uniId][facId].name;
+        facSelect.appendChild(opt);
+      }
+      facSelect.disabled = false;
+    } else {
+      facSelect.disabled = true;
+    }
+  });
+  facSelect.addEventListener('change', function () {
+    const uniId = uniSelect.value, facId = this.value;
+    promoSelect.innerHTML = '';
+    if (uniId && facId && data[uniId] && data[uniId][facId]) {
+      data[uniId][facId].promotions.forEach(function (promo) {
+        const opt = document.createElement('option');
+        opt.value = promo.id;
+        opt.textContent = promo.name;
+        promoSelect.appendChild(opt);
+      });
+      promoSelect.disabled = false;
+    } else {
+      promoSelect.disabled = true;
+    }
+  });
+}
+</script>
+{% endif %}
+{% endblock %}

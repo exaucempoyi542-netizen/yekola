@@ -1,0 +1,196 @@
+@startuml Figure_4_2_Diagramme_Classes_EduRDC
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam classFontSize 11
+hide circle
+title Figure 4.2 — Diagramme de classes simplifié MayeleNet
+
+' ========== Structure territoriale ==========
+class Province {
+  +id : entier
+  +nom : texte
+  +code : texte
+}
+
+class Universite {
+  +id : entier
+  +nom : texte
+  +sigle : texte
+  +verrouillage_notes : booléen
+  +s1_cloture : booléen
+  +s2_cloture : booléen
+}
+
+class Faculte {
+  +id : entier
+  +nom : texte
+}
+
+class Promotion {
+  +id : entier
+  +niveau : texte
+  ' L1, L2, L3, M1, M2
+}
+
+class GroupeClasse {
+  +id : entier
+  +nom : texte
+}
+
+class Utilisateur {
+  +id : entier
+  +identifiant : texte
+  +role : Role
+  +email : texte
+}
+
+enum Role {
+  ETUDIANT
+  ENSEIGNANT
+  DECANAT
+  GESTIONNAIRE
+  ADMIN_PROVINCIAL
+  SUPER_ADMINISTRATEUR
+}
+
+' ========== Contenu pédagogique ==========
+class Cours {
+  +id : entier
+  +titre : texte
+  +semestre : entier
+  +credits : entier
+  +est_publie : booléen
+}
+
+class Lecon {
+  +id : entier
+  +titre : texte
+  +ordre : entier
+  +type_contenu : texte
+}
+
+class Quiz {
+  +id : entier
+  +titre : texte
+}
+
+class Devoir {
+  +id : entier
+  +titre : texte
+  +date_limite : date
+}
+
+' ========== Évaluation et reporting ==========
+class CoteEtudiant {
+  +id : entier
+  +tp : décimal
+  +interro : décimal
+  +examen : décimal
+  +total : décimal
+  +credits_obtenus : entier
+  +statut : StatutCote
+}
+
+enum StatutCote {
+  BROUILLON
+  SOUMIS_AU_DECANAT
+  VALIDE_PAR_DECANAT
+}
+
+class NoteCours {
+  +id : entier
+  +score : décimal
+  +credits : entier
+}
+
+class RapportResultatsSemestre {
+  +id : entier
+  +annee_academique : texte
+  +date_soumission : dateheure
+}
+
+class LigneResultatSemestre {
+  +id : entier
+  +credits_s1 : entier
+  +credits_s2 : entier
+  +total_credits : entier
+  +verdict : texte
+  ' Réussite / Échec
+}
+
+class RapportFacultaire {
+  +id : entier
+  +est_valide : booléen
+  +date_soumission : dateheure
+}
+
+class RapportUniversitaire {
+  +id : entier
+  +date_soumission : dateheure
+}
+
+class RapportProvincial {
+  +id : entier
+  +est_valide : booléen
+  +date_soumission : dateheure
+}
+
+class JournalAudit {
+  +id : entier
+  +action : texte
+  +details : texte
+  +adresse_ip : texte
+  +horodatage : dateheure
+}
+
+' ========== Associations structure ==========
+Province "1" -- "0..*" Universite : tutelle >
+Universite "1" -- "0..*" Faculte : contient >
+Faculte "1" -- "0..*" Promotion : organise >
+Promotion "1" -- "0..*" GroupeClasse : regroupe >
+Utilisateur --> Role
+Universite "1" -- "0..1" Utilisateur : gestionnaire >
+Faculte "0..1" -- "0..1" Utilisateur : décanat >
+Province "0..1" -- "0..1" Utilisateur : admin_provincial >
+
+' ========== Associations pédagogiques ==========
+Faculte "1" -- "0..*" Cours : offre >
+Promotion "1" -- "0..*" Cours : niveau >
+Utilisateur "0..1" -- "0..*" Cours : enseignant >
+Cours "1" -- "0..*" Lecon : contient >
+Cours "1" -- "0..*" Quiz : évalue >
+Cours "1" -- "0..*" Devoir : travaux_pratiques >
+
+' ========== Associations évaluation ==========
+Cours "1" -- "0..*" CoteEtudiant : cotes >
+Utilisateur "1" -- "0..*" CoteEtudiant : étudiant >
+CoteEtudiant --> StatutCote
+Cours "1" -- "0..*" NoteCours
+Utilisateur "1" -- "0..*" NoteCours : étudiant >
+
+Faculte "1" -- "0..*" RapportResultatsSemestre
+Promotion "1" -- "0..*" RapportResultatsSemestre
+RapportResultatsSemestre "1" -- "0..*" LigneResultatSemestre
+Utilisateur "1" -- "0..*" LigneResultatSemestre : étudiant >
+
+Faculte "1" -- "0..*" RapportFacultaire
+Universite "1" -- "0..*" RapportUniversitaire
+Province "1" -- "0..*" RapportProvincial
+RapportUniversitaire "0..*" -- "0..*" RapportFacultaire : agrège >
+RapportProvincial "0..*" -- "0..*" RapportUniversitaire : consolide >
+
+Utilisateur "0..1" -- "0..*" JournalAudit : auteur >
+
+note bottom of CoteEtudiant
+  Règle métier :
+  total = TP/5 + Interro/5 + Examen/10 → /20
+  si total ≥ 10 → crédits du cours
+  sinon → 0 crédit
+end note
+
+note bottom of LigneResultatSemestre
+  Réussite si crédits S1 + S2 = 60/60
+  (30 + 30)
+end note
+
+@enduml

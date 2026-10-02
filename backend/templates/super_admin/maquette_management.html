@@ -1,0 +1,272 @@
+{% extends "super_admin/base.html" %}
+{% load static %}
+
+{% block title %}Maquette Nationale | Yekola Pro{% endblock %}
+
+{% block extra_css %}
+<style>
+    .maquette-table-container {
+        background: white;
+        border-radius: 28px;
+        border: 1px solid var(--slate-light);
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    }
+
+    .maquette-table th {
+        background: var(--navy);
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 1.25rem 1.5rem;
+        border: none;
+    }
+
+    .maquette-table td {
+        padding: 1.25rem 1.5rem;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--ivory);
+        font-size: 0.95rem;
+        color: var(--navy);
+        font-weight: 500;
+    }
+
+    .maquette-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .course-code {
+        font-weight: 800;
+        color: var(--gold);
+        background: var(--navy);
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+    }
+
+    .credit-badge {
+        background: var(--ivory);
+        color: var(--navy);
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 100px;
+        border: 1px solid var(--slate-light);
+        font-size: 0.8rem;
+    }
+
+    .faculty-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: rgba(197, 160, 89, 0.12);
+        color: var(--navy);
+        font-weight: 800;
+        font-size: 0.75rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid rgba(197, 160, 89, 0.35);
+    }
+
+    .modal-content {
+        border-radius: 32px;
+        border: 1px solid var(--gold);
+        overflow: hidden;
+    }
+
+    .modal-header {
+        background: var(--navy);
+        color: white;
+        padding: 1.5rem 2rem;
+        border-bottom: none;
+    }
+
+    .modal-body {
+        padding: 2rem;
+        background: var(--ivory);
+    }
+
+    .modal-footer {
+        padding: 1.5rem 2rem;
+        background: var(--ivory);
+        border-top: none;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Maquette Nationale LMD{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+
+    <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
+        <button class="btn btn-outline-dark rounded-pill fw-700" data-bs-toggle="modal" data-bs-target="#addFacultyModal">
+            <i class="fa-solid fa-building-columns me-2"></i>Nouvelle faculté
+        </button>
+        <button class="btn btn-gold shadow-sm" data-bs-toggle="modal" data-bs-target="#addCourseModal"
+            {% if not national_faculties %}disabled title="Créez d'abord une faculté nationale"{% endif %}>
+            <i class="fa-solid fa-plus me-2"></i>Inscrire un Cours Officiel
+        </button>
+    </div>
+
+    <form method="GET" class="mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="nav-label ps-0 small mb-2 d-block">Filtrer par faculté</label>
+                <select name="faculty" class="form-select ministerial-input" onchange="this.form.submit()">
+                    <option value="">Toutes les facultés</option>
+                    {% for fac in national_faculties %}
+                    <option value="{{ fac.id }}" {% if selected_faculty_id == fac.id|stringformat:"s" %}selected{% endif %}>
+                        {{ fac.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </form>
+
+    {% if not national_faculties %}
+    <div class="alert alert-warning border-0 rounded-4 mb-4">
+        Aucune faculté nationale n’est définie. Créez d’abord une faculté, puis ajoutez ses cours.
+    </div>
+    {% endif %}
+
+    <div class="maquette-table-container">
+        <div class="table-responsive">
+            <table class="premium-table maquette-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Faculté</th>
+                        <th>Code</th>
+                        <th>Intitulé du Cours</th>
+                        <th class="text-center">Semestre</th>
+                        <th class="text-center">Crédits</th>
+                        <th>Date d'homologation</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                    <tr>
+                        <td>
+                            <span class="faculty-chip">
+                                <i class="fa-solid fa-building-columns"></i>
+                                {{ course.national_faculty.name|default:"—" }}
+                            </span>
+                        </td>
+                        <td><span class="course-code">{{ course.code }}</span></td>
+                        <td class="fw-800">{{ course.title }}</td>
+                        <td class="text-center">
+                            <span class="credit-badge">{{ course.get_semester_display }}</span>
+                        </td>
+                        <td class="text-center"><span class="credit-badge">{{ course.credits }} ECTS</span></td>
+                        <td class="text-muted small">{{ course.created_at|date:"d M Y" }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'super_admin:admin_delete_national_course' course.pk %}"
+                                class="btn-delete-subtle"
+                                onclick="return confirm('Retirer ce cours de la maquette nationale ?')">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="text-muted extra-small fw-bold text-uppercase">
+                                <i class="fa-solid fa-scroll-torah d-block fs-3 mb-3 opacity-25"></i>
+                                Aucun cours homologué pour le moment
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal faculté nationale -->
+<div class="modal fade" id="addFacultyModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form action="{% url 'super_admin:admin_add_national_faculty' %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title fw-800 letter-spacing-1 small text-uppercase">Nouvelle faculté nationale</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <label class="nav-label ps-0 small mb-2 d-block">Nom de la faculté</label>
+                        <input type="text" name="name" class="ministerial-input" placeholder="ex: Sciences" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="nav-label ps-0 small mb-2 d-block">Code (optionnel)</label>
+                        <input type="text" name="code" class="ministerial-input" placeholder="ex: SCIENCES">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light rounded-3 fw-bold" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-gold px-4 py-2">Créer la faculté</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajout cours -->
+<div class="modal fade" id="addCourseModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form action="{% url 'super_admin:admin_add_national_course' %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title fw-800 letter-spacing-1 small text-uppercase">Nouvel Enseignement Officiel
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <label class="nav-label ps-0 small mb-2 d-block">Faculté nationale</label>
+                        <select name="national_faculty_id" class="ministerial-input form-select" required>
+                            <option value="">Sélectionner une faculté…</option>
+                            {% for fac in national_faculties %}
+                            <option value="{{ fac.id }}" {% if selected_faculty_id == fac.id|stringformat:"s" %}selected{% endif %}>
+                                {{ fac.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="nav-label ps-0 small mb-2 d-block">Identifiant du Cours (Code)</label>
+                        <input type="text" name="code" class="ministerial-input" placeholder="ex: INFO101" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="nav-label ps-0 small mb-2 d-block">Désignation Officielle</label>
+                        <input type="text" name="title" class="ministerial-input"
+                            placeholder="ex: Introduction à l'informatique" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="nav-label ps-0 small mb-2 d-block">Volume de Crédits (ECTS)</label>
+                        <input type="number" name="credits" class="ministerial-input" value="6" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="nav-label ps-0 small mb-2 d-block">Semestre</label>
+                        <select name="semester" class="ministerial-input" required>
+                            <option value="1">1er Semestre</option>
+                            <option value="2">2ème Semestre</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light rounded-3 fw-bold"
+                        data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-gold px-4 py-2">Enregistrer dans la Maquette</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

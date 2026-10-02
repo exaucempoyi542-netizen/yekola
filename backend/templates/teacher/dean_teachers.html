@@ -1,0 +1,142 @@
+{% extends "teacher/base.html" %}
+{% load static %}
+
+{% block title %}Registre des enseignants · Décanat{% endblock %}
+{% block page_title %}Registre des enseignants{% endblock %}
+
+{% block content %}
+
+<div class="able-card mb-3">
+    <div class="able-card-head d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h2 class="mb-0">Registre des enseignants</h2>
+        <a href="{% url 'teacher_admin_create_teacher' %}" class="able-btn able-btn-primary able-btn-sm">
+            <i class="fa-solid fa-user-plus"></i> Recruter
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="able-table">
+            <thead>
+                <tr>
+                    <th>Enseignant</th>
+                    <th>Identifiant</th>
+                    <th>Cours affectés</th>
+                    <th>Statut</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for teacher in teachers %}
+                <tr>
+                    <td>
+                        <div class="able-person">
+                            <div class="av">{{ teacher.username|slice:":1"|upper }}</div>
+                            <div>
+                                <strong>{{ teacher.get_full_name|default:teacher.username }}</strong>
+                                <small>{{ teacher.email|default:"Sans e-mail" }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ teacher.username }}</td>
+                    <td>
+                        {% if teacher.assigned_courses %}
+                            {% for course in teacher.assigned_courses %}
+                            <div style="font-size:.85rem;{% if not forloop.first %}margin-top:.25rem;{% endif %}">
+                                {{ course.title }}
+                                <span style="color:var(--able-muted);">
+                                    · {{ course.promotion.display_label|default:"" }} · S{{ course.semester }}
+                                </span>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                        <span style="color:var(--able-muted);">Aucun cours</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if teacher.is_active %}
+                        <span class="able-badge medium">Actif</span>
+                        {% else %}
+                        <span class="able-badge low">Inactif</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex flex-wrap gap-1 justify-content-end">
+                            <button type="button" class="able-btn able-btn-outline able-btn-sm"
+                                data-bs-toggle="modal" data-bs-target="#assignCourseModal"
+                                data-teacher-id="{{ teacher.id }}">Affecter</button>
+                            <a href="{% url 'teacher_admin_toggle_teacher' teacher.pk %}" class="able-btn able-btn-outline able-btn-sm"
+                               onclick="return confirm('Modifier le statut de cet enseignant ?')">
+                                {% if teacher.is_active %}Révoquer{% else %}Réactiver{% endif %}
+                            </a>
+                            <form method="POST" action="{% url 'teacher_admin_delete_teacher' teacher.pk %}" class="d-inline m-0"
+                                onsubmit="return confirm('Supprimer « {{ teacher.username|escapejs }} » ?');">
+                                {% csrf_token %}
+                                <button type="submit" class="able-btn able-btn-danger able-btn-sm" title="Supprimer">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">Aucun enseignant. Recrutez le premier.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="assignCourseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Affecter un cours</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'admin_assign_course' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <label class="able-label">Enseignant</label>
+                    <select name="teacher_id" id="assignTeacherSelect" class="able-input mb-3" required>
+                        <option value="">Sélectionner…</option>
+                        {% for teacher in teachers %}
+                        <option value="{{ teacher.id }}">{{ teacher.username }} ({{ teacher.get_full_name }})</option>
+                        {% endfor %}
+                    </select>
+                    <label class="able-label">Cours disponible</label>
+                    <select name="course_id" class="able-input" required>
+                        <option value="">Sélectionner…</option>
+                        {% for course in pending_courses %}
+                        <option value="{{ course.id }}">{{ course.title }} · {{ course.promotion.display_label }} · S{{ course.semester }}</option>
+                        {% empty %}
+                        <option value="" disabled>Aucun cours en attente</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="able-btn able-btn-outline" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="able-btn able-btn-primary">Affecter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('assignCourseModal');
+    if (modal) {
+        modal.addEventListener('show.bs.modal', function (event) {
+            const btn = event.relatedTarget;
+            const teacherId = btn && btn.getAttribute('data-teacher-id');
+            const select = document.getElementById('assignTeacherSelect');
+            if (select && teacherId) select.value = teacherId;
+        });
+    }
+});
+</script>
+{% endblock %}

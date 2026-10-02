@@ -1,0 +1,40 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5 text-center">
+    <div class="premium-card p-5 mx-auto" style="max-width: 600px;">
+        <div class="mb-4">
+            <i class="fa-solid fa-graduation-cap text-primary fs-1"></i>
+        </div>
+        <h2 class="fw-bold mb-3">{{ quiz.title }}</h2>
+        <p class="text-muted mb-4">{{ quiz.description|default:"Prêt pour une évaluation ?" }}</p>
+        
+        <div class="alert alert-info border-0 rounded-4 mb-4">
+            <i class="fa-solid fa-circle-info me-2"></i>
+            Ce quiz est accessible uniquement via l'application mobile Yekola.
+        </div>
+
+        <a href="edurdc://quiz/{{ quiz.id_code }}" class="btn-premium w-100 text-decoration-none mb-3 py-3 fs-5">
+            <i class="fa-solid fa-mobile-screen-button me-2"></i> Ouvrir dans l'Application
+        </a>
+        
+        <div class="mt-4 pt-4 border-top">
+            <p class="small text-muted">Vous n'avez pas encore l'application ?</p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="#" class="btn btn-dark rounded-pill px-4">
+                    <i class="fa-brands fa-google-play me-2"></i> Play Store
+                </a>
+                <a href="#" class="btn btn-dark rounded-pill px-4">
+                    <i class="fa-brands fa-apple me-2"></i> App Store
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tentative d'ouverture automatique
+    window.location.href = "edurdc://quiz/{{ quiz.id_code }}";
+</script>
+{% endblock %}

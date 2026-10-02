@@ -1,0 +1,2 @@
+-dontwarn com.facebook.imagepipeline.nativecode.WebpTranscoder
+-dontwarn com.facebook.imagepipeline.nativecode.WebpTranscoderImpl

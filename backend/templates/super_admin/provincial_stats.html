@@ -1,0 +1,439 @@
+{% extends "super_admin/base.html" %}
+{% load static %}
+
+{% block title %}Analyse Provinciale | Yekola{% endblock %}
+{% block page_title %}Pilotage Géographique{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ps-wrap { max-width: 1200px; }
+
+    .ps-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .ps-header h1 {
+        font-family: 'Sora', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: var(--navy);
+        margin: 0 0 0.25rem;
+    }
+
+    .ps-header p {
+        margin: 0;
+        color: var(--slate);
+        font-size: 0.92rem;
+    }
+
+    .ps-fresh {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #059669;
+        background: #ECFDF5;
+        border: 1px solid #A7F3D0;
+        padding: 0.4rem 0.75rem;
+        border-radius: 6px;
+    }
+
+    .ps-fresh.cached {
+        color: var(--slate);
+        background: #F8FAFC;
+        border-color: var(--slate-light);
+    }
+
+    .ps-kpi {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0;
+        border: 1px solid var(--slate-light);
+        background: #fff;
+        margin-bottom: 1.5rem;
+    }
+
+    .ps-kpi-item {
+        padding: 1.15rem 1.35rem;
+        border-right: 1px solid var(--slate-light);
+    }
+
+    .ps-kpi-item:last-child { border-right: none; }
+
+    .ps-kpi-item .label {
+        font-size: 0.7rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--slate);
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+    }
+
+    .ps-kpi-item .value {
+        font-family: 'Sora', sans-serif;
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: var(--navy);
+        line-height: 1.1;
+    }
+
+    .ps-kpi-item .value span {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--slate);
+    }
+
+    .ps-kpi-item.alert .value { color: #DC2626; }
+    .ps-kpi-item.ok .value { color: #059669; }
+
+    .ps-block {
+        background: #fff;
+        border: 1px solid var(--slate-light);
+        margin-bottom: 1.5rem;
+    }
+
+    .ps-block-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem 1.25rem;
+        padding: 0.95rem 1.25rem;
+        border-bottom: 1px solid var(--slate-light);
+        background: linear-gradient(180deg, #F8FAFC 0%, #fff 100%);
+    }
+
+    .ps-block-head h2 {
+        margin: 0;
+        font-family: 'Sora', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--navy);
+    }
+
+    .ps-block-body { padding: 1.25rem; }
+
+    .ps-filter {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem 1rem;
+    }
+
+    .ps-filter label {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--navy);
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    .ps-filter .form-select {
+        min-width: 240px;
+        border: 1px solid var(--slate-light);
+        border-radius: 6px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.9rem;
+        box-shadow: none !important;
+    }
+
+    .ps-filter .form-select:focus {
+        border-color: var(--navy);
+    }
+
+    .ps-clear {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--slate);
+        text-decoration: none;
+    }
+
+    .ps-clear:hover { color: var(--navy); }
+
+    .ps-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+
+    .ps-table thead th {
+        background: var(--navy);
+        color: rgba(255,255,255,0.92);
+        font-size: 0.7rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        font-weight: 700;
+        padding: 0.85rem 1rem;
+        border: none;
+        white-space: nowrap;
+    }
+
+    .ps-table tbody td {
+        padding: 0.95rem 1rem;
+        border-bottom: 1px solid var(--slate-light);
+        vertical-align: middle;
+        font-size: 0.9rem;
+        background: #fff;
+    }
+
+    .ps-table tbody tr:last-child td { border-bottom: none; }
+    .ps-table tbody tr:hover td { background: #F8FAFC; }
+
+    .ps-prov-name {
+        font-weight: 700;
+        color: var(--navy);
+        margin: 0 0 0.1rem;
+    }
+
+    .ps-prov-code {
+        margin: 0;
+        font-size: 0.75rem;
+        color: var(--slate);
+        letter-spacing: 0.03em;
+    }
+
+    .ps-rate {
+        font-weight: 800;
+        font-family: 'Sora', sans-serif;
+    }
+
+    .ps-rate.ok { color: #059669; }
+    .ps-rate.mid { color: #D97706; }
+    .ps-rate.bad { color: #DC2626; }
+    .ps-rate.na { color: var(--slate); font-weight: 600; font-size: 0.85rem; }
+
+    .ps-zone {
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .ps-zone.ok { color: #059669; }
+    .ps-zone.mid { color: #D97706; }
+    .ps-zone.bad { color: #DC2626; }
+    .ps-zone.na { color: var(--slate); }
+
+    .ps-link {
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-decoration: none;
+        color: var(--navy);
+        border: 1px solid var(--slate-light);
+        border-radius: 6px;
+        padding: 0.35rem 0.75rem;
+        display: inline-block;
+    }
+
+    .ps-link:hover {
+        border-color: var(--navy);
+        background: #F8FAFC;
+        color: var(--navy);
+    }
+
+    .skeleton-cell {
+        height: 12px;
+        border-radius: 4px;
+        background: var(--slate-light);
+        display: inline-block;
+        animation: ps-pulse 1.4s ease infinite;
+    }
+
+    @keyframes ps-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.45; }
+    }
+
+    @media (max-width: 991.98px) {
+        .ps-kpi { grid-template-columns: 1fr; }
+        .ps-kpi-item {
+            border-right: none;
+            border-bottom: 1px solid var(--slate-light);
+        }
+        .ps-kpi-item:last-child { border-bottom: none; }
+    }
+
+    @media (max-width: 767.98px) {
+        .ps-table thead { display: none; }
+        .ps-table tbody tr {
+            display: block;
+            border-bottom: 1px solid var(--slate-light);
+            padding: 0.85rem 0;
+        }
+        .ps-table tbody td {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            border: none;
+            padding: 0.3rem 1rem;
+        }
+        .ps-table tbody td::before {
+            content: attr(data-label);
+            font-size: 0.68rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--slate);
+            font-weight: 700;
+        }
+        .ps-table tbody td:first-child { display: block; }
+        .ps-table tbody td:first-child::before,
+        .ps-table tbody td:last-child::before { display: none; }
+        .ps-table tbody td:last-child {
+            justify-content: flex-end;
+            padding-top: 0.65rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in ps-wrap">
+
+    <div class="d-flex justify-content-end mb-3">
+        {% if from_cache %}
+        <span class="ps-fresh cached">Données en cache</span>
+        {% else %}
+        <span class="ps-fresh">Données à jour</span>
+        {% endif %}
+    </div>
+
+    <div class="ps-kpi">
+        <div class="ps-kpi-item">
+            <div class="label">Réseau actif</div>
+            <div class="value">{{ total_provinces }} <span>provinces</span></div>
+        </div>
+        <div class="ps-kpi-item ok">
+            <div class="label">Zones performantes</div>
+            <div class="value">{{ green_count }} <span>provinces</span></div>
+        </div>
+        <div class="ps-kpi-item alert">
+            <div class="label">Zones d'alerte</div>
+            <div class="value">{{ alert_count }} <span>provinces</span></div>
+        </div>
+    </div>
+
+    <section class="ps-block">
+        <div class="ps-block-head">
+            <h2>Filtrer les indicateurs</h2>
+        </div>
+        <div class="ps-block-body">
+            <form method="GET" class="ps-filter">
+                <label for="faculty">Faculté</label>
+                <select name="faculty" id="faculty" class="form-select" onchange="this.form.submit()">
+                    <option value="">Toutes les facultés</option>
+                    {% for f in all_faculties %}
+                    <option value="{{ f.id }}" {% if f.selected %}selected{% endif %}>{{ f.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if selected_faculty %}
+                <a href="{% url 'super_admin:provincial_stats' %}" class="ps-clear">Réinitialiser</a>
+                {% endif %}
+            </form>
+        </div>
+    </section>
+
+    <section class="ps-block">
+        <div class="ps-block-head">
+            <h2>Tableau des provinces</h2>
+            <span style="font-size:0.78rem;color:var(--slate);">{{ total_provinces }} / 26 zones</span>
+        </div>
+        <div class="table-responsive">
+            <table class="ps-table">
+                <thead>
+                    <tr>
+                        <th>Province</th>
+                        <th class="text-end">Univ.</th>
+                        <th class="text-end">Étudiants</th>
+                        <th class="text-end">Évalués</th>
+                        <th class="text-end">Réussite</th>
+                        <th class="text-end">Statut</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="province-table-body">
+                    {% for p in province_stats %}
+                    <tr>
+                        <td data-label="Province">
+                            <p class="ps-prov-name">{{ p.name }}</p>
+                            <p class="ps-prov-code">{{ p.province.code }}</p>
+                        </td>
+                        <td class="text-end" data-label="Univ.">{{ p.university_count }}</td>
+                        <td class="text-end" data-label="Étudiants">{{ p.student_count }}</td>
+                        <td class="text-end" data-label="Évalués">{{ p.total_evaluated }}</td>
+                        <td class="text-end" data-label="Réussite">
+                            {% if p.success_rate != None %}
+                            <span class="ps-rate {% if p.zone == 'green' %}ok{% elif p.zone == 'orange' %}mid{% elif p.zone == 'red' %}bad{% else %}na{% endif %}">{{ p.success_rate }}%</span>
+                            {% else %}
+                            <span class="ps-rate na">Indisponible</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end" data-label="Statut">
+                            <span class="ps-zone {% if p.zone == 'green' %}ok{% elif p.zone == 'orange' %}mid{% elif p.zone == 'red' %}bad{% else %}na{% endif %}">{{ p.zone_label }}</span>
+                        </td>
+                        <td class="text-end" data-label="Action">
+                            <a href="{% url 'super_admin:province_detail' p.province.id %}" class="ps-link">Détail</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center py-5 text-muted">Aucune province disponible.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* Tableau déjà rendu côté serveur (26 provinces). L'API peut rafraîchir en arrière-plan. */
+document.addEventListener('DOMContentLoaded', () => {
+    const API_URL = "{% url 'super_admin:provincial_stats_api' %}{% if selected_faculty %}?faculty={{ selected_faculty }}{% endif %}";
+
+    function rateClass(zone) {
+        if (zone === 'green') return 'ok';
+        if (zone === 'orange') return 'mid';
+        if (zone === 'red') return 'bad';
+        return 'na';
+    }
+
+    function renderTable(provinces) {
+        const tbody = document.getElementById('province-table-body');
+        if (!provinces || !provinces.length) return;
+        tbody.innerHTML = provinces.map(p => {
+            const zc = rateClass(p.zone);
+            const rateHtml = p.success_rate !== null
+                ? `<span class="ps-rate ${zc}">${p.success_rate}%</span>`
+                : `<span class="ps-rate na">Indisponible</span>`;
+            return `
+            <tr>
+                <td data-label="Province">
+                    <p class="ps-prov-name">${p.name}</p>
+                    <p class="ps-prov-code">${p.code}</p>
+                </td>
+                <td class="text-end" data-label="Univ.">${p.university_count}</td>
+                <td class="text-end" data-label="Étudiants">${p.student_count}</td>
+                <td class="text-end" data-label="Évalués">${p.total_attempts}</td>
+                <td class="text-end" data-label="Réussite">${rateHtml}</td>
+                <td class="text-end" data-label="Statut">
+                    <span class="ps-zone ${zc}">${p.zone_label}</span>
+                </td>
+                <td class="text-end" data-label="Action">
+                    <a href="/super-admin/provinces/${p.id}/" class="ps-link">Détail</a>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    fetch(API_URL)
+        .then(r => r.json())
+        .then(data => {
+            if (data.provinces && data.provinces.length) renderTable(data.provinces);
+        })
+        .catch(() => {});
+});
+</script>
+{% endblock %}

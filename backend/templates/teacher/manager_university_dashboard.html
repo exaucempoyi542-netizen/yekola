@@ -1,0 +1,399 @@
+{% extends "teacher/base.html" %}
+{% load static %}
+
+{% block page_title %}Tableau de Bord - Université{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+{% endif %}
+
+<div class="row g-3 mb-3">
+    <div class="col-xl-8">
+        <div class="able-card h-100">
+            <div class="able-card-head">
+                <h2 class="mb-0"><i class="fa-solid fa-chart-column me-2"></i>Comparaison des facultés · réussite</h2>
+            </div>
+            <div class="able-card-body">
+                <div class="able-chart-box" style="height:300px;">
+                    <canvas id="facultySuccessBarChart" aria-label="Histogramme taux de réussite par faculté"></canvas>
+                </div>
+                {% if not faculty_success_rows %}
+                <p class="text-muted small mb-0 mt-2 text-center">Aucune faculté enregistrée.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="able-card h-100">
+            <div class="able-card-head">
+                <h2 class="mb-0">Classement</h2>
+            </div>
+            <div class="able-card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for row in faculty_success_rows %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center py-3 px-3">
+                        <div class="min-width-0">
+                            <div class="fw-bold text-truncate" title="{{ row.full_name }}">{{ row.name }}</div>
+                            <div class="small text-muted">
+                                {% if row.has_report %}{{ row.passed }} / {{ row.total }} réussites{% else %}Sans rapport{% endif %}
+                            </div>
+                        </div>
+                        {% if row.success_rate != None %}
+                        <span class="able-badge {% if row.success_rate >= 70 %}medium{% elif row.success_rate >= 50 %}warn{% else %}low{% endif %}">
+                            {{ row.success_rate }}%
+                        </span>
+                        {% else %}
+                        <span class="able-badge muted">—</span>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4 text-muted small">Aucune donnée</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-12">
+        <div class="able-card">
+            <div class="able-card-head">
+                <h2 class="mb-0"><i class="fa-solid fa-chart-bar me-2"></i>Barres horizontales · comparaison des facultés</h2>
+            </div>
+            <div class="able-card-body">
+                <p class="small text-muted mb-3">Lecture rapide du taux de réussite : plus la barre est longue, meilleure est la performance.</p>
+                <div class="able-chart-box" id="facultyHBarBox" style="height:360px;">
+                    <canvas id="facultySuccessHBarChart" aria-label="Barres horizontales taux de réussite par faculté"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12 mb-4">
+        <div class="able-card">
+            <div class="able-card-head d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h2 class="mb-0">Comptes Décanat</h2>
+                <button type="button" class="able-btn able-btn-primary able-btn-sm" data-bs-toggle="modal"
+                    data-bs-target="#createDeanModal">
+                    <i class="fas fa-plus me-1"></i> Nouveau décanat
+                </button>
+            </div>
+            <div class="able-card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Faculté assignée</th>
+                            <th>Statut</th>
+                            <th class="text-end">Login</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dean in deans %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="able-avatar me-3" style="width:40px;height:40px;font-size:.85rem;">
+                                        {{ dean.first_name|first }}{{ dean.last_name|first }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ dean.first_name }} {{ dean.last_name }}</div>
+                                        <div class="small text-muted">{{ dean.email }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="able-badge muted">
+                                    {{ dean.assigned_faculty.name|default:"Non assignée" }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if dean.is_active %}
+                                <span class="able-badge medium">Actif</span>
+                                {% else %}
+                                <span class="able-badge low">Bloqué</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end small text-muted">{{ dean.username }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <i class="fas fa-user-shield fa-2x mb-2 d-block opacity-50"></i>
+                                <p class="mb-0">Aucun décanat n'a encore été créé pour vos facultés.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-lg-12">
+        <div class="able-card">
+            <div class="able-card-head d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h2 class="mb-1">Rapports des facultés</h2>
+                    <span class="text-muted small">Transmis par les décanats de votre université</span>
+                </div>
+                <form method="POST" action="{% url 'manager_generate_uni_report' %}" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="able-btn able-btn-primary able-btn-sm"
+                        onclick="return confirm('Ceci va agréger tous les rapports de Faculté en un Rapport Universitaire. Continuer ?')">
+                        <i class="fas fa-file-export me-1"></i> Générer rapport annuel
+                    </button>
+                </form>
+            </div>
+            <div class="able-card-body p-0">
+            <div class="list-group list-group-flush">
+                {% for report in faculty_reports %}
+                <div class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3" style="color:var(--campus-accent,#1E3A5F);font-size:1.25rem;"><i class="fas fa-file-alt"></i></div>
+                        <div>
+                            <div class="fw-bold">{{ report.title }}</div>
+                            <div class="small text-muted">{{ report.faculty.name }} — {{ report.submitted_at|date:"d M Y à H:i" }}</div>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold" style="color:var(--campus-ink,#0A1628);">{{ report.passed_students }}
+                            <span class="text-muted small fw-normal">/ {{ report.total_students }} réussites</span>
+                        </div>
+                        {% if report.is_validated %}
+                        <span class="able-badge medium"><i class="fas fa-check-circle"></i> Validé</span>
+                        {% else %}
+                        <span class="able-badge warn"><i class="fas fa-clock"></i> En attente</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-folder-open fa-2x mb-2 d-block"></i>
+                    <p class="mb-0">Vos facultés n'ont pas encore généré de rapport de fin d'année.</p>
+                </div>
+                {% endfor %}
+            </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal : Créer un Décanat -->
+<div class="modal fade" id="createDeanModal" tabindex="-1" aria-labelledby="createDeanModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'manager_create_dean' %}">
+                {% csrf_token %}
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-800 text-navy" id="createDeanModalLabel">
+                        <i class="fas fa-user-tie me-2"></i>Créer un compte Décanat
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small">Prénom <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" name="first_name" class="form-control" placeholder="Jean" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small">Nom de famille <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" name="last_name" class="form-control" placeholder="Mukeba" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small">Email <span
+                                    class="text-danger">*</span></label>
+                            <input type="email" name="email" class="form-control" placeholder="doyen@universite.cd"
+                                required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small">Nom d'utilisateur <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" name="username" class="form-control" placeholder="dean_mukeba" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small">Mot de passe <span
+                                    class="text-danger">*</span></label>
+                            <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small">Faculté à gérer <span
+                                    class="text-danger">*</span></label>
+                            <select name="faculty_id" class="form-select" required>
+                                <option value="">— Sélectionner une faculté —</option>
+                                {% for faculty in faculties %}
+                                <option value="{{ faculty.id }}">{{ faculty.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-navy text-white px-4">
+                        <i class="fas fa-check me-2"></i>Créer le compte
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{{ faculty_success_rows|json_script:"faculty-success-rows" }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const rows = JSON.parse(document.getElementById('faculty-success-rows').textContent || '[]');
+    const withRate = rows.filter(r => r.success_rate !== null);
+
+    Chart.defaults.font.family = "'Public Sans', 'DM Sans', sans-serif";
+    Chart.defaults.color = '#5B6B7F';
+
+    const labels = withRate.length ? withRate.map(r => r.name) : ['Aucune donnée'];
+    const success = withRate.length ? withRate.map(r => r.success_rate) : [0];
+    const failure = withRate.length ? withRate.map(r => r.failure_rate) : [0];
+
+    const tooltipTitle = (items) => {
+        const i = items[0]?.dataIndex;
+        return (withRate[i] && withRate[i].full_name) || items[0]?.label || '';
+    };
+
+    const barColor = (rate) => {
+        if (rate >= 70) return '#0F766E';
+        if (rate >= 50) return '#B45309';
+        return '#B91C1C';
+    };
+
+    const vCtx = document.getElementById('facultySuccessBarChart');
+    if (vCtx && typeof Chart !== 'undefined') {
+        new Chart(vCtx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Réussite (%)',
+                        data: success,
+                        backgroundColor: '#1E3A5F',
+                        borderRadius: 6,
+                        maxBarThickness: 36
+                    },
+                    {
+                        label: 'Échec (%)',
+                        data: failure,
+                        backgroundColor: '#ff5370',
+                        borderRadius: 6,
+                        maxBarThickness: 36
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { boxWidth: 12, font: { weight: '600', size: 11 } }
+                    },
+                    tooltip: { callbacks: { title: tooltipTitle } }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { callback: v => v + '%' },
+                        grid: { color: '#e3eaf2' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10, weight: '600' }, maxRotation: 45, minRotation: 0 }
+                    }
+                }
+            }
+        });
+    }
+
+    // Classement croissant pour lecture horizontale (meilleures en haut)
+    const ranked = [...withRate].sort((a, b) => b.success_rate - a.success_rate);
+    const hLabels = ranked.length ? ranked.map(r => r.name) : ['Aucune donnée'];
+    const hSuccess = ranked.length ? ranked.map(r => r.success_rate) : [0];
+    const hColors = ranked.length ? ranked.map(r => barColor(r.success_rate)) : ['#94a3b8'];
+
+    const hBox = document.getElementById('facultyHBarBox');
+    if (hBox && ranked.length) {
+        hBox.style.height = Math.max(280, ranked.length * 42 + 80) + 'px';
+    }
+
+    const hCtx = document.getElementById('facultySuccessHBarChart');
+    if (hCtx && typeof Chart !== 'undefined') {
+        new Chart(hCtx, {
+            type: 'bar',
+            data: {
+                labels: hLabels,
+                datasets: [{
+                    label: 'Taux de réussite (%)',
+                    data: hSuccess,
+                    backgroundColor: hColors,
+                    borderRadius: 8,
+                    maxBarThickness: 28,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title(items) {
+                                const i = items[0]?.dataIndex;
+                                return (ranked[i] && ranked[i].full_name) || items[0]?.label || '';
+                            },
+                            label(ctx) {
+                                const i = ctx.dataIndex;
+                                const row = ranked[i];
+                                if (!row) return ctx.formattedValue + '%';
+                                return ` Réussite : ${row.success_rate}%  (${row.passed}/${row.total})`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { callback: v => v + '%' },
+                        grid: { color: '#e3eaf2' },
+                        title: {
+                            display: true,
+                            text: 'Taux de réussite (%)',
+                            font: { weight: '600', size: 11 }
+                        }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { font: { size: 12, weight: '600' } }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,223 @@
+{% extends 'teacher/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .live-broadcast-surface {
+        background: #0f172a;
+        border-radius: var(--radius-2xl);
+        overflow: hidden;
+        height: calc(100vh - 180px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .video-viewport {
+        flex: 1;
+        background: #000;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #localVideo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .broadcast-overlay {
+        position: absolute;
+        top: 2rem;
+        left: 2rem;
+        z-index: 10;
+    }
+
+    .live-badge-premium {
+        background: var(--accent);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 0.75rem;
+        letter-spacing: 0.1em;
+        box-shadow: 0 0 20px rgba(244, 63, 94, 0.4);
+    }
+
+    .stream-controls-premium {
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(20px);
+        padding: 1.5rem 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .control-btn-circle {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        transition: all 0.3s;
+    }
+
+    .control-btn-circle:hover {
+        background: white;
+        color: var(--secondary);
+        transform: scale(1.1);
+    }
+
+    .control-btn-circle.btn-stop {
+        background: var(--accent);
+        border: none;
+        box-shadow: 0 5px 15px rgba(244, 63, 94, 0.3);
+    }
+
+    .control-btn-circle.btn-stop:hover {
+        background: #be123c;
+        color: white;
+    }
+
+    .sidebar-chat-live {
+        width: 380px;
+        background: white;
+        border-left: 1px solid var(--border-light);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-msg-live {
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: #f8fafc;
+        margin-bottom: 10px;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Diffusion en Direct{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0 animate-fade-in">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'teacher_live_management' %}" class="btn btn-light me-3" style="border-radius: 10px;">
+            <i class="fas fa-chevron-left"></i>
+        </a>
+        <h4 class="fw-bold mb-0 text-dark">{{ live.course.title }}</h4>
+    </div>
+
+    <div class="row g-0">
+        <div class="col-12 col-xl-8 pe-xl-4">
+            <div class="live-broadcast-surface">
+                <div class="video-viewport">
+                    <div class="broadcast-overlay">
+                        <div class="live-badge-premium"><i class="fas fa-circle me-2" style="font-size: 0.6rem;"></i> EN
+                            DIRECT</div>
+                        <div class="text-white small mt-3 fw-bold bg-dark bg-opacity-50 px-3 py-1 rounded-pill"
+                            id="viewer-count">
+                            <i class="fas fa-eye me-2"></i> 0 spectateurs
+                        </div>
+                    </div>
+
+                    <video id="localVideo" autoplay muted playsinline></video>
+
+                    <div id="standby-screen" class="position-absolute text-center text-white" style="z-index: 5;">
+                        <i class="fas fa-camera-slash fs-1 opacity-50 mb-3"></i>
+                        <h4 class="fw-bold">Configuration de la caméra...</h4>
+                    </div>
+                </div>
+
+                <div class="stream-controls-premium">
+                    <button class="control-btn-circle" id="toggleMicrophone" title="Microphone">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button class="control-btn-circle" id="toggleCamera" title="Caméra">
+                        <i class="fas fa-video"></i>
+                    </button>
+                    <button class="control-btn-circle" id="toggleScreen" title="Partage d'écran">
+                        <i class="fas fa-desktop"></i>
+                    </button>
+                    <button class="control-btn-circle btn-stop ms-4" onclick="stopLive()" title="Mettre fin au direct">
+                        <i class="fas fa-phone-slash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-4 d-none d-xl-flex">
+            <div class="glass-card w-100 sidebar-chat-live shadow-xl" style="border-radius: var(--radius-2xl);">
+                <div class="p-4 border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="fw-bold mb-0">Chat en direct</h6>
+                    <span class="badge bg-light text-muted">TEMPS RÉEL</span>
+                </div>
+                <div class="p-4 flex-grow-1 overflow-y-auto" id="live-chat-container">
+                    <div class="chat-msg-live">
+                        <span class="fw-bold text-primary">Système:</span> La salle est prête. Les étudiants peuvent
+                        rejoindre.
+                    </div>
+                </div>
+                <div class="p-4 border-top">
+                    <div class="input-group">
+                        <input type="text" class="form-control border-0 bg-light p-3 small"
+                            placeholder="Message au groupe..." style="border-radius: 12px 0 0 12px;">
+                        <button class="btn btn-primary px-4" style="border-radius: 0 12px 12px 0;"><i
+                                class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden config for JS -->
+<div id="live-config" data-live-id="{{ live.id }}" data-csrf="{{ csrf_token }}"
+    data-stop-url="{% url 'teacher_live_management' %}" style="display: none;"></div>
+
+<script>
+    let localStream;
+    const localVideo = document.getElementById('localVideo');
+    const standby = document.getElementById('standby-screen');
+    const config = document.getElementById('live-config');
+
+    async function initCamera() {
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localVideo.srcObject = localStream;
+            standby.classList.add('d-none');
+        } catch (e) {
+            console.error("Camera error:", e);
+            alert("Erreur d'accès à la caméra. Veuillez vérifier vos autorisations.");
+        }
+    }
+
+    async function stopLive() {
+        if (!confirm("Voulez-vous vraiment clore cette session de direct ?")) return;
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+        }
+
+        const liveId = config.getAttribute('data-live-id');
+        const csrfToken = config.getAttribute('data-csrf');
+        const redirectUrl = config.getAttribute('data-stop-url');
+
+        const res = await fetch(`/api/lives/${liveId}/stop/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        });
+        if (res.ok) window.location.href = redirectUrl;
+    }
+
+    initCamera();
+</script>
+{% endblock %}
