@@ -1,0 +1,2 @@
+# Fallback pour Railpack si le builder Docker n'est pas sélectionné dans l'UI.
+-r backend/requirements.txt
