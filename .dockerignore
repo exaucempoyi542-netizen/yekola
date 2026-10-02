@@ -1,0 +1,13 @@
+# Ignore local Python env when building Docker context (optional)
+.git
+.venv
+backend/venv
+backend/venv_new
+backend/media
+backend/staticfiles
+mobile_app
+docs
+uml_chapitre4
+**/__pycache__
+*.pyc
+.env
