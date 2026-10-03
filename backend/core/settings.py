@@ -86,21 +86,73 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'custom_db_backend',  # Backend custom pour bypasser le check MariaDB 10.4
-        # Railway MySQL plugin expose MYSQL* ; fallback sur DB_* / local
-        'NAME': os.getenv('MYSQLDATABASE') or os.getenv('DB_NAME', 'edurdc_db'),
-        'USER': os.getenv('MYSQLUSER') or os.getenv('DB_USER', 'root'),
-        'PASSWORD': os.getenv('MYSQLPASSWORD') or os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('MYSQLHOST') or os.getenv('DB_HOST', '127.0.0.1'),
-        'PORT': os.getenv('MYSQLPORT') or os.getenv('DB_PORT', '3306'),
+from urllib.parse import urlparse, unquote
+
+
+def _mysql_config_from_url(url: str) -> dict:
+    parsed = urlparse(url)
+    return {
+        'ENGINE': 'custom_db_backend',
+        'NAME': (parsed.path or '/').lstrip('/') or 'railway',
+        'USER': unquote(parsed.username or ''),
+        'PASSWORD': unquote(parsed.password or ''),
+        'HOST': parsed.hostname or '127.0.0.1',
+        'PORT': str(parsed.port or 3306),
         'CONN_MAX_AGE': 60,
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        },
+        'OPTIONS': {'charset': 'utf8mb4'},
     }
-}
+
+
+_database_url = (
+    os.getenv('MYSQL_URL')
+    or os.getenv('DATABASE_URL')
+    or os.getenv('MYSQL_PRIVATE_URL')
+    or ''
+).strip()
+
+if _database_url.startswith('mysql'):
+    DATABASES = {'default': _mysql_config_from_url(_database_url)}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'custom_db_backend',
+            # Railway MySQL plugin : MYSQL* / DB_*
+            'NAME': (
+                os.getenv('MYSQLDATABASE')
+                or os.getenv('MYSQL_DATABASE')
+                or os.getenv('DB_NAME')
+                or 'edurdc_db'
+            ),
+            'USER': (
+                os.getenv('MYSQLUSER')
+                or os.getenv('MYSQL_USER')
+                or os.getenv('DB_USER')
+                or 'root'
+            ),
+            'PASSWORD': (
+                os.getenv('MYSQLPASSWORD')
+                or os.getenv('MYSQL_PASSWORD')
+                or os.getenv('DB_PASSWORD')
+                or ''
+            ),
+            'HOST': (
+                os.getenv('MYSQLHOST')
+                or os.getenv('MYSQL_HOST')
+                or os.getenv('DB_HOST')
+                or '127.0.0.1'
+            ),
+            'PORT': (
+                os.getenv('MYSQLPORT')
+                or os.getenv('MYSQL_PORT')
+                or os.getenv('DB_PORT')
+                or '3306'
+            ),
+            'CONN_MAX_AGE': 60,
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+            },
+        }
+    }
 
 # Django 6 utilise 1_200_000 itérations PBKDF2 (~2–3 s / login sur cette machine).
 # Hasher plus léger en premier ; l'ancien reste pour vérifier les hash existants.
