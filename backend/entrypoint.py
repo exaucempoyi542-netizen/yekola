@@ -98,6 +98,12 @@ def main():
     subprocess.check_call([sys.executable, "manage.py", "migrate", "--noinput"])
     subprocess.check_call([sys.executable, "manage.py", "collectstatic", "--noinput"])
 
+    # Remplit la DB vide (Railway) — désactiver avec BOOTSTRAP_SEED=0
+    bootstrap = os.getenv("BOOTSTRAP_SEED", "1").strip().lower()
+    if bootstrap in ("1", "true", "yes", "on"):
+        print("[yekola] Bootstrap seed si base vide…", flush=True)
+        subprocess.check_call([sys.executable, "manage.py", "bootstrap_railway"])
+
     port = os.getenv("PORT", "8080")
     os.execvp(
         "gunicorn",
