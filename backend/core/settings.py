@@ -32,6 +32,13 @@ DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
 _raw_hosts = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,*')
 ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.split(',') if h.strip()]
 
+# Domaine public Railway (injecté automatiquement)
+_railway_domain = (os.getenv('RAILWAY_PUBLIC_DOMAIN') or '').strip()
+if _railway_domain and _railway_domain not in ALLOWED_HOSTS and '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_railway_domain)
+if '.up.railway.app' not in ALLOWED_HOSTS and '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('.up.railway.app')
+
 
 # Application definition 
 
@@ -280,14 +287,25 @@ _csrf_origins = os.getenv(
     'http://127.0.0.1:8000,http://localhost:8000',
 )
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(',') if o.strip()]
+
+# Accepter automatiquement le domaine Railway HTTPS
+_railway_domain = _railway_domain or (os.getenv('RAILWAY_PUBLIC_DOMAIN') or '').strip()
+if _railway_domain:
+    _railway_origin = f'https://{_railway_domain}'
+    if _railway_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_railway_origin)
+# Domaine connu du déploiement (fallback si la var Railway manque)
+_fallback_origin = 'https://yekola-production-753a.up.railway.app'
+if _fallback_origin not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(_fallback_origin)
+
 CSRF_FAILURE_VIEW = 'core.csrf.csrf_failure'
-# Évite les conflits de cookies si on alterne localhost / 127.0.0.1
 CSRF_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SAMESITE = 'Lax'
-if not DEBUG:
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SECURE = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Derriere le proxy HTTPS Railway
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
 
 # File Upload Configuration
 MAX_UPLOAD_SIZE = 1024 * 1024 * 1024  # 1 GB
