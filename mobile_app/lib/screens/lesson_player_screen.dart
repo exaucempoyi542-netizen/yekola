@@ -438,8 +438,9 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
   Widget build(BuildContext context) {
     final lesson = widget.lessons[_currentIndex];
     final type = lesson['content_type'] ?? 'TEXT';
-    final isVideoOrPdf = type == 'VIDEO' || type == 'PDF' || type == 'EXTERNAL';
-    final isDark = isVideoOrPdf;
+    final isMediaLesson =
+        type == 'VIDEO' || type == 'PDF' || type == 'PPT' || type == 'EXTERNAL';
+    final isDark = isMediaLesson;
 
     return Scaffold(
       backgroundColor: isDark ? _dark : const Color(0xFFF8FAFD),
