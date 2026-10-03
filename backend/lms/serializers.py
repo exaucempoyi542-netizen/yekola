@@ -107,10 +107,29 @@ class LessonSerializer(serializers.ModelSerializer):
         return False
     
     def get_file_size(self, obj):
-        """Retourne la taille du fichier en MB"""
-        if obj.content_file:
+        """Retourne la taille du fichier en MB (None si fichier absent sur le disque)."""
+        if not obj.content_file:
+            return None
+        try:
             return round(obj.content_file.size / (1024 * 1024), 2)
-        return None
+        except (FileNotFoundError, OSError, ValueError):
+            return None
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Ne jamais faire planter le détail cours si le média n'est pas sur le serveur
+        content_file = data.get('content_file')
+        if content_file and instance.content_file:
+            try:
+                # Vérifie l'existence sans lever une 500 côté client
+                if hasattr(instance.content_file, 'storage') and hasattr(instance.content_file, 'name'):
+                    if not instance.content_file.storage.exists(instance.content_file.name):
+                        data['content_file'] = None
+                        data['file_missing'] = True
+            except (FileNotFoundError, OSError, ValueError):
+                data['content_file'] = None
+                data['file_missing'] = True
+        return data
 
 class LiveSessionSerializer(serializers.ModelSerializer):
     teacher_name = serializers.ReadOnlyField(source='teacher.username')
