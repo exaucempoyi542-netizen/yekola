@@ -5,4 +5,4 @@ nixPkgs = ["python312", "gcc"]
 cmds = ["pip install -r backend/requirements.txt"]
 
 [start]
-cmd = "cd backend && python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+cmd = "cd backend && python entrypoint.py"
