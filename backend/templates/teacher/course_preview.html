@@ -232,6 +232,19 @@
                         style="background: #1e293b;">
                         <canvas id="pdf-viewer-canvas"></canvas>
                     </div>
+                    {% elif selected_lesson.content_type  ==  'PPT' and selected_lesson.content_file %}
+                    <div class="media-stage" style="min-height:70vh;background:#0f172a;">
+                        <iframe
+                            title="PowerPoint"
+                            src="https://view.officeapps.live.com/op/embed.aspx?src={{ request.scheme }}://{{ request.get_host }}{{ selected_lesson.content_file.url|urlencode }}"
+                            style="width:100%;height:75vh;border:0;background:#fff;"
+                            allowfullscreen></iframe>
+                        <div class="p-3 text-center">
+                            <a class="btn btn-sm btn-outline-light"
+                               href="{{ selected_lesson.content_file.url }}"
+                               target="_blank" rel="noopener">Télécharger le PowerPoint</a>
+                        </div>
+                    </div>
                     {% elif selected_lesson.content_type  ==  'TEXT' %}
                     <article class="reading-surface">
                         <h1 class="text-navy">{{ selected_lesson.title }}</h1>

@@ -33,14 +33,10 @@ urlpatterns = [
     path('', include('lms.urls')),
 ]
 
-# Médias uploadés (PDF/vidéos) — volume Railway recommandé sur /app/media
+# Médias uploadés (PDF / vidéo / PowerPoint) — volume Railway sur /app/media
 from django.urls import re_path
-from django.views.static import serve as media_serve
+from core.media_views import media_serve
 
 urlpatterns += [
-    re_path(
-        r'^media/(?P<path>.*)$',
-        media_serve,
-        {'document_root': str(settings.MEDIA_ROOT)},
-    ),
+    re_path(r'^media/(?P<path>.*)$', media_serve),
 ]

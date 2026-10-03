@@ -386,10 +386,11 @@
 
                 <div id="file-input-wrapper" class="mb-3 d-none">
                     <label class="atelier-drop w-100" id="drop-zone" for="content_file">
-                        <input type="file" name="content_file" id="content_file" class="d-none">
+                        <input type="file" name="content_file" id="content_file" class="d-none"
+                               accept=".mp4,.webm,.mov,.mkv,.m4v,.avi,.pdf,.ppt,.pptx,.odp,.ppsx">
                         <div class="drop-ico"><i class="fa-solid fa-cloud-arrow-up"></i></div>
                         <h3>Téléverser la ressource</h3>
-                        <p id="file-name">Formats acceptés : MP4, PDF, PPT · Max 1 Go</p>
+                        <p id="file-name">Formats acceptés : MP4 / WebM, PDF, PPT / PPTX · Max 1 Go</p>
                     </label>
                 </div>
 
@@ -439,13 +440,26 @@ $(document).ready(function () {
 
 function toggleFields(val) {
     const infoMap = {
-        'VIDEO': 'Support vidéo haute définition (MP4).',
+        'VIDEO': 'Support vidéo (MP4, WebM, MOV…). Lecture directe dans l’app mobile.',
         'PDF': 'Document académique structuré (PDF).',
-        'PPT': 'Support de présentation visuelle (PPT).'
+        'PPT': 'Présentation PowerPoint (PPT, PPTX, ODP). Affichée dans l’app mobile.'
+    };
+    const acceptMap = {
+        'VIDEO': '.mp4,.webm,.mov,.mkv,.m4v,.avi,.mpeg,.mpg,.3gp',
+        'PDF': '.pdf',
+        'PPT': '.ppt,.pptx,.odp,.ppsx,.pps'
     };
     if (val) {
         $('#file-input-wrapper').removeClass('d-none');
         $('#format-info span').text(infoMap[val] || 'Format sélectionné.');
+        if (acceptMap[val]) {
+            $('#content_file').attr('accept', acceptMap[val]);
+        }
+        $('#file-name').text(
+            val === 'VIDEO' ? 'Formats acceptés : MP4, WebM, MOV · Max 1 Go' :
+            val === 'PPT' ? 'Formats acceptés : PPT, PPTX, ODP · Max 1 Go' :
+            'Formats acceptés : PDF · Max 1 Go'
+        );
     } else {
         $('#file-input-wrapper').addClass('d-none');
         $('#format-info span').text('Sélectionnez le format de la ressource à transmettre.');

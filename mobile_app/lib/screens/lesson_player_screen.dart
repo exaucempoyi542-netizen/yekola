@@ -82,7 +82,7 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
     } else if (type == 'PDF') {
       _initPdf(sourcePath);
     } else if (type == 'PPT') {
-      _initPdf(sourcePath);
+      _initPpt(sourcePath);
     } else if (type == 'EXTERNAL') {
       _initWebView(lesson['url']?.toString() ?? sourcePath ?? '');
     }
@@ -234,15 +234,78 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
     setState(() => _isDownloading = true);
     try {
       final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) {
+        throw Exception('HTTP ${response.statusCode}');
+      }
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/lesson_$_currentIndex.pdf');
       await file.writeAsBytes(response.bodyBytes);
       setState(() {
         _localPdfPath = file.path;
         _isDownloading = false;
+        _mediaError = null;
       });
     } catch (e) {
-      setState(() => _isDownloading = false);
+      if (mounted) {
+        setState(() {
+          _isDownloading = false;
+          _mediaError = 'Impossible de charger le PDF.\n$e';
+        });
+      }
+    }
+  }
+
+  /// PowerPoint : visionneuse Office Online (nécessite une URL HTTPS publique).
+  Future<void> _initPpt(String? filePath) async {
+    if (filePath == null || filePath.trim().isEmpty) {
+      if (mounted) {
+        setState(() {
+          _mediaError = 'Aucun fichier PowerPoint pour ce module.';
+          _isDownloading = false;
+        });
+      }
+      return;
+    }
+
+    final url = _resolveMediaUrl(filePath);
+    if (kIsWeb) {
+      if (mounted) setState(() => _isDownloading = false);
+      return;
+    }
+
+    setState(() {
+      _isDownloading = true;
+      _mediaError = null;
+    });
+
+    final viewerUrl =
+        'https://view.officeapps.live.com/op/embed.aspx?src=${Uri.encodeComponent(url)}';
+    try {
+      _webViewController = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onNavigationRequest: (_) => NavigationDecision.navigate,
+            onWebResourceError: (error) {
+              debugPrint('PPT WebView error: ${error.description}');
+            },
+          ),
+        )
+        ..loadRequest(Uri.parse(viewerUrl));
+      if (mounted) {
+        setState(() {
+          _isDownloading = false;
+          _mediaError = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isDownloading = false;
+          _mediaError =
+              'Impossible d\'afficher le PowerPoint. Ouvrez-le via le bouton externe.\n$e';
+        });
+      }
     }
   }
 
@@ -615,13 +678,51 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
     }
 
     if (type == 'PPT') {
-      // Afficher PowerPoint via Office Online ou PDF viewer
-      if (_isDownloading) {
+      final fileUrl = lesson['content_file']?.startsWith('http') == true
+          ? lesson['content_file'].toString()
+          : _resolveMediaUrl(lesson['content_file']?.toString() ?? '');
+
+      if (_mediaError != null) {
         return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.slideshow_outlined, color: Colors.white54, size: 48),
+                const SizedBox(height: 12),
+                Text(
+                  _mediaError!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70, height: 1.4),
+                ),
+                if (fileUrl.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  TextButton.icon(
+                    onPressed: () => launchUrl(
+                      Uri.parse(fileUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                    icon: const Icon(Icons.open_in_new),
+                    label: const Text('Ouvrir le PowerPoint'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: _primary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      }
+
+      if (_isDownloading) {
+        return const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 60,
                 height: 60,
                 child: CircularProgressIndicator(
@@ -629,7 +730,7 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Text(
                 'Chargement de la présentation...',
                 style: TextStyle(color: Colors.white70),
@@ -638,9 +739,6 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
           ),
         );
       }
-      final fileUrl = lesson['content_file']?.startsWith('http') == true
-          ? lesson['content_file']
-          : '$_baseUrl${lesson['content_file']}';
 
       if (kIsWeb) {
         return HtmlWidget(
@@ -649,15 +747,39 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
         );
       }
 
-      // Sur mobile, afficher via WebView
-      return WebViewWidget(
-        controller: WebViewController()
-          ..setJavaScriptMode(JavaScriptMode.unrestricted)
-          ..loadRequest(
-            Uri.parse(
-              'https://view.officeapps.live.com/op/embed.aspx?src=${Uri.encodeComponent(fileUrl)}',
+      if (_webViewController != null) {
+        return Column(
+          children: [
+            Expanded(child: WebViewWidget(controller: _webViewController!)),
+            SafeArea(
+              top: false,
+              child: TextButton.icon(
+                onPressed: () => launchUrl(
+                  Uri.parse(fileUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
+                icon: const Icon(Icons.open_in_new, size: 18),
+                label: const Text('Ouvrir dans une autre app'),
+                style: TextButton.styleFrom(foregroundColor: Colors.white70),
+              ),
             ),
+          ],
+        );
+      }
+
+      return Center(
+        child: TextButton.icon(
+          onPressed: () => launchUrl(
+            Uri.parse(fileUrl),
+            mode: LaunchMode.externalApplication,
           ),
+          icon: const Icon(Icons.slideshow),
+          label: const Text('Ouvrir le PowerPoint'),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white,
+            backgroundColor: _primary,
+          ),
+        ),
       );
     }
 
