@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api_config.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/firebase_notification_service.dart';
 import '../services/firebase_profile_service.dart';
@@ -200,7 +201,7 @@ class AuthProvider with ChangeNotifier {
       }
 
       final response = await http.get(
-        Uri.parse('${kIsWeb ? 'http://127.0.0.1:8000/api' : 'http://10.197.25.244:8000/api'}/users/me/'),
+        Uri.parse('${ApiConfig.apiBaseUrl}/users/me/'),
         headers: headers,
       ).timeout(const Duration(seconds: 15));
 
@@ -274,9 +275,10 @@ class AuthProvider with ChangeNotifier {
         _pendingPassword = null;
       }
 
-      if (_userEmail.isNotEmpty) {
-        await _loginFirebaseIfPossible(_userEmail, password);
-      }
+      // Session Firebase obligatoire pour chat + notifications push.
+      // 1) custom token Django (fiable après login matricule)
+      // 2) fallback e-mail/mot de passe si custom token indisponible
+      await _ensureFirebaseSession(password);
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('is_authenticated', true);
@@ -295,7 +297,7 @@ class AuthProvider with ChangeNotifier {
       }
 
       if (!_requiresProfileCompletion) {
-        FirebaseNotificationService().initialize();
+        await FirebaseNotificationService().initialize();
         try {
           await _publishPublicProfile();
         } catch (e) {
@@ -309,6 +311,31 @@ class AuthProvider with ChangeNotifier {
       debugPrint('Exception dans AuthProvider.login: $e');
       _lastError = 'Échec de la connexion. Réessayez.';
       return false;
+    }
+  }
+
+  Future<void> _ensureFirebaseSession(String password) async {
+    try {
+      final custom = await AuthService().signInFirebaseWithCustomToken();
+      if (custom != null) {
+        final email = (custom.user?.email ?? _userEmail).trim().toLowerCase();
+        if (email.isNotEmpty) {
+          _userEmail = email;
+          await _loadProfileForEmail(email);
+        }
+        if (_userName.isEmpty) {
+          _userName = custom.user?.displayName ??
+              (_userEmail.isNotEmpty ? _userEmail.split('@').first : _userMatricule);
+        }
+        await _syncFirebaseUidToDjango(custom.user?.uid, password: password);
+        return;
+      }
+    } catch (e) {
+      debugPrint('Firebase custom token: $e');
+    }
+
+    if (_userEmail.isNotEmpty) {
+      await _loginFirebaseIfPossible(_userEmail, password);
     }
   }
 
@@ -342,7 +369,7 @@ class AuthProvider with ChangeNotifier {
     if (firebaseUid == null || firebaseUid.isEmpty || _userEmail.isEmpty) return;
     try {
       await http.post(
-        Uri.parse('${kIsWeb ? 'http://127.0.0.1:8000/api' : 'http://10.197.25.244:8000/api'}/token/firebase-sync/'),
+        Uri.parse('${ApiConfig.apiBaseUrl}/token/firebase-sync/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': _userEmail,

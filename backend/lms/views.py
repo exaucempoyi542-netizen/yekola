@@ -117,6 +117,60 @@ class FirebaseSyncTokenView(APIView):
         })
 
 
+class FirebaseCustomTokenView(APIView):
+    """
+    Pont Django JWT → Firebase Auth (custom token).
+    Permet chat + notifications même si l'utilisateur s'est connecté
+    uniquement avec matricule / mot de passe Django.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from firebase_admin import auth as firebase_auth
+        from .firebase_admin_config import ensure_firebase_app
+
+        user = request.user
+        email = (user.email or '').strip().lower()
+        if not email or '@' not in email:
+            return Response(
+                {'detail': 'Un e-mail valide est requis pour le chat et les notifications.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            ensure_firebase_app()
+        except Exception as exc:
+            return Response(
+                {'detail': f'Firebase Admin non configuré: {exc}'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        display = (user.get_full_name() or user.username or email.split('@')[0]).strip()
+        try:
+            fb_user = firebase_auth.get_user_by_email(email)
+        except firebase_auth.UserNotFoundError:
+            fb_user = firebase_auth.create_user(
+                email=email,
+                display_name=display[:120] or None,
+                email_verified=False,
+            )
+
+        if user.firebase_uid != fb_user.uid:
+            user.firebase_uid = fb_user.uid
+            user.save(update_fields=['firebase_uid'])
+
+        raw_token = firebase_auth.create_custom_token(
+            fb_user.uid,
+            developer_claims={'django_user_id': user.id, 'role': user.role},
+        )
+        token_str = raw_token.decode('utf-8') if isinstance(raw_token, (bytes, bytearray)) else str(raw_token)
+        return Response({
+            'firebase_token': token_str,
+            'firebase_uid': fb_user.uid,
+            'email': email,
+        })
+
+
 class AdminStatsView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsAdminUser]
 

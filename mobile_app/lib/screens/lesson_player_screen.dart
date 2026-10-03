@@ -8,6 +8,7 @@ import 'quiz_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../config/api_config.dart';
 import '../services/sync_service.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
@@ -39,7 +40,7 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
   bool _showLessonList = false;
 
   final SyncService _syncService = SyncService();
-  final String _baseUrl = 'http://127.0.0.1:8000';
+  final String _baseUrl = ApiConfig.host;
 
   static const Color _primary = Color(0xFF152A45);
   static const Color _dark = Color(0xFF0A0F1E);
@@ -54,18 +55,7 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
     _initializeLesson();
   }
 
-  String _resolveMediaUrl(String path) {
-    final cleaned = path.trim();
-    if (cleaned.isEmpty) return cleaned;
-    if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
-      // Unifier localhost → 127.0.0.1 (évite blocage CORS/cookies entre les deux)
-      return cleaned
-          .replaceFirst('http://localhost:', 'http://127.0.0.1:')
-          .replaceFirst('https://localhost:', 'https://127.0.0.1:');
-    }
-    if (cleaned.startsWith('/')) return '$_baseUrl$cleaned';
-    return '$_baseUrl/$cleaned';
-  }
+  String _resolveMediaUrl(String path) => ApiConfig.resolveMediaUrl(path);
 
   String? _mediaSourceForLesson(Map<String, dynamic> lesson) {
     // Sur le web, jamais de chemin fichier local (dart:io non supporté)

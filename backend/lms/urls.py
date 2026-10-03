@@ -5,7 +5,7 @@ from .views import (
     CourseViewSet, LessonViewSet, NotificationViewSet, RegisterView, UserViewSet, 
     ChatRoomViewSet, ChatMessageViewSet, QuizViewSet, quiz_share_view, AdminStatsView, 
     ExternalResourceViewSet, StudentGradesView, AssignmentViewSet, CustomTokenObtainPairView,
-    FirebaseSyncTokenView,
+    FirebaseSyncTokenView, FirebaseCustomTokenView,
 )
 
 router = DefaultRouter()
@@ -28,5 +28,6 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/firebase-sync/', FirebaseSyncTokenView.as_view(), name='token_firebase_sync'),
+    path('token/firebase-custom/', FirebaseCustomTokenView.as_view(), name='token_firebase_custom'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

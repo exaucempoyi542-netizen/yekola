@@ -93,13 +93,19 @@ class FirebaseNotificationService {
   /// Sauvegarder le token FCM dans Firestore
   Future<void> _saveTokenToFirestore(String token) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      debugPrint('[FCM] Pas de session Firebase — token non enregistré');
+      return;
+    }
 
+    final email = (user.email ?? '').trim().toLowerCase();
     await _db.collection('user_tokens').doc(user.uid).set({
       'token': token,
       'updated_at': FieldValue.serverTimestamp(),
-      'email': user.email,
-    });
+      'email': email,
+      'uid': user.uid,
+    }, SetOptions(merge: true));
+    debugPrint('[FCM] Token enregistré pour $email / ${user.uid}');
   }
 
   /// Sauvegarder une notification dans l'historique Firestore

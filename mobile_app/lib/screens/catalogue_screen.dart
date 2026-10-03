@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/api_config.dart';
 import '../services/database_helper.dart';
 import '../services/sync_service.dart';
 import 'course_details_screen.dart';
@@ -19,7 +20,7 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
   final FocusNode _searchFocusNode = FocusNode();
   List<Map<String, dynamic>> _allCourses = [];
   List<Map<String, dynamic>> _filteredCourses = [];
-  final String apiBaseUrl = 'http://localhost:8000/api';
+  final String apiBaseUrl = ApiConfig.apiBaseUrl;
 
   String _selectedCategory = 'Tous';
   bool _isLoading = false;
@@ -241,10 +242,9 @@ class _CatalogueScreenState extends State<CatalogueScreen> {
   Widget _buildCourseCard(Map<String, dynamic> course) {
     final bool isLive = course['active_live'] != null;
     
-    final String baseUrl = 'http://localhost:8000';
     String? thumbnailUrl = course['thumbnail'];
     if (thumbnailUrl != null && !thumbnailUrl.startsWith('http')) {
-      thumbnailUrl = '$baseUrl$thumbnailUrl';
+      thumbnailUrl = ApiConfig.resolveMediaUrl(thumbnailUrl);
     }
 
     final theme = Theme.of(context);

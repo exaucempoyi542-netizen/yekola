@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../config/api_config.dart';
 import '../providers/auth_provider.dart';
 import '../services/sync_service.dart';
 import 'course_details_screen.dart';
@@ -268,10 +269,9 @@ class YouTubeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String baseUrl = 'http://localhost:8000';
     String? thumbnailUrl = item['thumbnail'] ?? item['course_thumbnail'];
     if (thumbnailUrl != null && !thumbnailUrl.startsWith('http')) {
-      thumbnailUrl = '$baseUrl$thumbnailUrl';
+      thumbnailUrl = ApiConfig.resolveMediaUrl(thumbnailUrl);
     }
 
     final description = item['course_description'];

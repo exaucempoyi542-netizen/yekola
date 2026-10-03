@@ -3,11 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile_app/config/api_config.dart';
 
 class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final String _djangoBaseUrl =
-      kIsWeb ? 'http://127.0.0.1:8000/api' : 'http://10.197.25.244:8000/api';
+  final String _djangoBaseUrl = ApiConfig.apiBaseUrl;
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 

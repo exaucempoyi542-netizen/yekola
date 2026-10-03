@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile_app/config/api_config.dart';
 
 class LoginResult {
   final bool success;
@@ -17,7 +18,7 @@ class LoginResult {
 }
 
 class AuthService {
-  final String _baseUrl = kIsWeb ? 'http://127.0.0.1:8000/api' : 'http://10.197.25.244:8000/api';
+  final String _baseUrl = ApiConfig.apiBaseUrl;
 
   /// Connexion JWT Django — matricule, e-mail ou nom d'utilisateur.
   Future<LoginResult> login(String usernameOrEmail, String password) async {
@@ -111,6 +112,39 @@ class AuthService {
     } catch (e) {
       debugPrint("Django JWT login exception for '$username': $e");
       return const LoginResult(success: false);
+    }
+  }
+
+  /// Échange le JWT Django contre une session Firebase Auth (chat + notifications).
+  Future<UserCredential?> signInFirebaseWithCustomToken() async {
+    try {
+      final access = await getToken();
+      if (access == null || access.isEmpty) return null;
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl/token/firebase-custom/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $access',
+        },
+      ).timeout(const Duration(seconds: 25));
+
+      if (response.statusCode != 200) {
+        debugPrint('firebase-custom failed: ${response.statusCode} ${response.body}');
+        return null;
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final firebaseToken = (data['firebase_token'] ?? '').toString();
+      if (firebaseToken.isEmpty) return null;
+
+      final credential =
+          await FirebaseAuth.instance.signInWithCustomToken(firebaseToken);
+      debugPrint('Firebase custom token OK uid=${credential.user?.uid}');
+      return credential;
+    } catch (e) {
+      debugPrint('signInFirebaseWithCustomToken error: $e');
+      return null;
     }
   }
 

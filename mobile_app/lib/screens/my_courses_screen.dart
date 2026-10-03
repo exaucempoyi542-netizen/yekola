@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../config/api_config.dart';
 import '../providers/auth_provider.dart';
 import '../services/sync_service.dart';
 import 'course_details_screen.dart';
@@ -206,10 +207,9 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
     final progressDouble = progress.toDouble();
     final resumeIndex = _getResumeIndex(course);
 
-    final String baseUrl = 'http://localhost:8000';
     String? thumbnailUrl = course['thumbnail'];
     if (thumbnailUrl != null && !thumbnailUrl.startsWith('http')) {
-      thumbnailUrl = '$baseUrl$thumbnailUrl';
+      thumbnailUrl = ApiConfig.resolveMediaUrl(thumbnailUrl);
     }
 
     // Statut progression

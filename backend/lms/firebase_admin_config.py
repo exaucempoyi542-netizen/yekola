@@ -1,26 +1,56 @@
 """
 Configuration Firebase Admin SDK pour Yekola Backend.
-Ce module initialise la connexion à Firebase Firestore.
 
-Le fichier de clé de service (serviceAccountKey.json) doit être placé à :
-    e:/MEMOIRE/backend/serviceAccountKey.json
-
-Pour obtenir ce fichier :
-1. Aller sur https://console.firebase.google.com/
-2. Projet → Paramètres du projet → Comptes de service
-3. Cliquer sur "Générer une nouvelle clé privée"
-4. Sauvegarder le JSON sous le nom serviceAccountKey.json dans e:/MEMOIRE/backend/
+Sources de credentials (dans l'ordre) :
+1. FIREBASE_SERVICE_ACCOUNT_JSON  — JSON brut (Railway / secrets)
+2. FIREBASE_SERVICE_ACCOUNT_KEY   — chemin fichier
+3. backend/serviceAccountKey.json — fichier local
 """
+
+import json
+import os
+from pathlib import Path
 
 import firebase_admin
 from firebase_admin import credentials, firestore
-from pathlib import Path
-import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Singleton: évite d'initialiser Firebase plusieurs fois
 _db = None
+_app_ready = False
+
+
+def ensure_firebase_app():
+    """Initialise firebase_admin une seule fois. Retourne True si OK."""
+    global _app_ready
+    if firebase_admin._apps:
+        _app_ready = True
+        return True
+
+    raw_json = (os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON") or "").strip()
+    if raw_json:
+        info = json.loads(raw_json)
+        cred = credentials.Certificate(info)
+        firebase_admin.initialize_app(cred)
+        _app_ready = True
+        return True
+
+    key_path = os.environ.get(
+        "FIREBASE_SERVICE_ACCOUNT_KEY",
+        str(BASE_DIR / "serviceAccountKey.json"),
+    )
+    if not Path(key_path).exists():
+        raise FileNotFoundError(
+            f"Fichier de clé Firebase introuvable : {key_path}\n"
+            "Définissez FIREBASE_SERVICE_ACCOUNT_JSON ou placez serviceAccountKey.json."
+        )
+
+    cred = credentials.Certificate(key_path)
+    firebase_admin.initialize_app(cred)
+    _app_ready = True
+    return True
+
 
 def get_firestore_client():
     """Retourne un client Firestore initialisé (singleton)."""
@@ -29,21 +59,7 @@ def get_firestore_client():
     if _db is not None:
         return _db
 
-    if not firebase_admin._apps:
-        key_path = os.environ.get(
-            'FIREBASE_SERVICE_ACCOUNT_KEY',
-            str(BASE_DIR / 'serviceAccountKey.json')
-        )
-
-        if not Path(key_path).exists():
-            raise FileNotFoundError(
-                f"Fichier de clé Firebase introuvable : {key_path}\n"
-                "Téléchargez-le depuis Firebase Console → Paramètres → Comptes de service."
-            )
-
-        cred = credentials.Certificate(key_path)
-        firebase_admin.initialize_app(cred)
-
+    ensure_firebase_app()
     _db = firestore.client()
     return _db
 

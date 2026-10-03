@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile_app/config/api_config.dart';
 import 'auth_service.dart';
 
 class AdminService {
-  final String apiBaseUrl = kIsWeb ? 'http://localhost:8000/api' : 'http://10.197.25.244:8000/api';
+  final String apiBaseUrl = ApiConfig.apiBaseUrl;
 
   Future<Map<String, String>> _getHeaders() async {
     final token = await AuthService().getToken();

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import '../config/api_config.dart';
 import '../services/auth_service.dart';
 
 class AdminStatsScreen extends StatefulWidget {
@@ -38,7 +39,7 @@ class _AdminStatsScreenState extends State<AdminStatsScreen>
     try {
       final token = await AuthService().getToken();
       final response = await http.get(
-        Uri.parse('http://localhost:8000/api/admin/stats/'),
+        Uri.parse('${ApiConfig.apiBaseUrl}/admin/stats/'),
         headers: {'Authorization': 'Bearer $token'},
       );
 

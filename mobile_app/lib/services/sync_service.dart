@@ -5,13 +5,14 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:mobile_app/config/api_config.dart';
 import 'database_helper.dart';
 import 'auth_service.dart';
 import 'firebase_service.dart';
 
 class SyncService {
-  final String apiBaseUrl = kIsWeb ? 'http://127.0.0.1:8000/api' : 'http://10.197.25.244:8000/api';
-  String get mediaBaseUrl => apiBaseUrl.replaceAll(RegExp(r'/api/?$'), '');
+  final String apiBaseUrl = ApiConfig.apiBaseUrl;
+  String get mediaBaseUrl => ApiConfig.host;
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
   static const Duration _httpTimeout = Duration(seconds: 8);

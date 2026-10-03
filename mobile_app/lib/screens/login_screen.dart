@@ -146,6 +146,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _identifierController,
                         textInputAction: TextInputAction.next,
                         textCapitalization: TextCapitalization.characters,
+                        style: _fieldTextStyle,
+                        cursorColor: Colors.black,
                         decoration: _inputDecoration(
                           hint: 'Matricule',
                         ),
@@ -173,6 +175,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _passwordController,
                         obscureText: _obscurePassword,
                         textInputAction: TextInputAction.done,
+                        style: _fieldTextStyle,
+                        cursorColor: Colors.black,
                         onFieldSubmitted: (_) => _isLoading ? null : _login(),
                         decoration: _inputDecoration(
                           hint: 'Mot de passe',
@@ -248,13 +252,23 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  static const TextStyle _fieldTextStyle = TextStyle(
+    color: Colors.black,
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+  );
+
   InputDecoration _inputDecoration({
     required String hint,
     Widget? suffix,
   }) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Color(0xFFA3ADBE)),
+      hintStyle: const TextStyle(
+        color: Color(0xFF6B7280),
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+      ),
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
