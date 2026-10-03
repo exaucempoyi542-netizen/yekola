@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 from django.conf import settings
-from django.http import FileResponse, Http404, HttpResponse, HttpResponseNotModified
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseNotModified, StreamingHttpResponse
 from django.utils.http import http_date
 from django.views.static import was_modified_since
 
@@ -14,7 +14,7 @@ _RANGE_RE = re.compile(r"bytes\s*=\s*(\d*)\s*-\s*(\d*)", re.I)
 
 
 class RangeFileWrapper:
-    def __init__(self, fileobj, offset: int, length: int, chunk_size: int = 8192):
+    def __init__(self, fileobj, offset: int, length: int, chunk_size: int = 64 * 1024):
         self.fileobj = fileobj
         self.remaining = length
         self.chunk_size = chunk_size
@@ -41,6 +41,14 @@ class RangeFileWrapper:
             pass
 
 
+def _not_modified(header, mtime: float) -> bool:
+    """Compatible with Django 4.x (header, mtime, size) and 5.x (header, mtime)."""
+    try:
+        return not was_modified_since(header, mtime)
+    except TypeError:
+        return not was_modified_since(header, mtime, 0)
+
+
 def media_serve(request, path: str):
     root = Path(settings.MEDIA_ROOT).resolve()
     full = (root / path).resolve()
@@ -57,11 +65,7 @@ def media_serve(request, path: str):
     content_type = content_type or "application/octet-stream"
     size = stat.st_size
 
-    if not was_modified_since(
-        request.META.get("HTTP_IF_MODIFIED_SINCE"),
-        stat.st_mtime,
-        size,
-    ):
+    if _not_modified(request.META.get("HTTP_IF_MODIFIED_SINCE"), stat.st_mtime):
         return HttpResponseNotModified()
 
     range_header = (request.META.get("HTTP_RANGE") or "").strip()
@@ -80,7 +84,7 @@ def media_serve(request, path: str):
         length = end - start + 1
         fh = open(full, "rb")
         wrapper = RangeFileWrapper(fh, start, length)
-        resp = FileResponse(wrapper, status=206, content_type=content_type)
+        resp = StreamingHttpResponse(wrapper, status=206, content_type=content_type)
         resp["Content-Length"] = str(length)
         resp["Content-Range"] = f"bytes {start}-{end}/{size}"
         resp["Accept-Ranges"] = "bytes"
