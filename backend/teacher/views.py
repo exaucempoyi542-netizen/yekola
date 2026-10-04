@@ -1520,8 +1520,18 @@ def lesson_management(request, course_id):
                 lesson.content_type = content_type
                 if content_file:
                     lesson.content_file = content_file
+                    # Nouveau fichier PPT → régénérer l'aperçu PDF natif
+                    if content_type == 'PPT' and lesson.preview_file:
+                        lesson.preview_file.delete(save=False)
+                        lesson.preview_file = None
                 lesson.content_text = content_text
                 lesson.save()
+                if content_type == 'PPT' and lesson.content_file:
+                    try:
+                        from lms.media_convert import ensure_lesson_preview
+                        ensure_lesson_preview(lesson)
+                    except Exception:
+                        pass
                 return JsonResponse({'status': 'success', 'message': 'Leçon mise à jour'})
             else:
                 order = lessons.count() + 1
@@ -1533,6 +1543,12 @@ def lesson_management(request, course_id):
                     content_text=content_text,
                     order=order
                 )
+                if content_type == 'PPT' and lesson.content_file:
+                    try:
+                        from lms.media_convert import ensure_lesson_preview
+                        ensure_lesson_preview(lesson)
+                    except Exception:
+                        pass
 
                 if course.is_published:
                     try:

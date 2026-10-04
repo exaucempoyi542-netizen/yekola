@@ -937,47 +937,103 @@ class SyncService {
       for (var i = 0; i < lessons.length; i++) {
         final lesson = lessons[i];
         final type = '${lesson['content_type'] ?? ''}';
-        final fileUrlRaw = lesson['content_file']?.toString() ?? '';
         final isMedia = type == 'VIDEO' || type == 'PDF' || type == 'PPT';
-        if (!isMedia || fileUrlRaw.isEmpty) continue;
+        if (!isMedia) continue;
 
-        mediaExpected++;
-        final fileUrl = fileUrlRaw.startsWith('http')
-            ? fileUrlRaw
-            : '$mediaBaseUrl$fileUrlRaw';
-        final ext = _extensionForLesson(type, fileUrl);
-        final safeTitle = _safeFileName('${lesson['title'] ?? 'lecon'}');
-        final filename =
-            'yekola_c${courseData['id']}_l${lesson['id']}_$safeTitle.$ext';
-
-        try {
-          final bytes = await _downloadBytes(fileUrl);
-          if (bytes == null || bytes.isEmpty) {
-            filesFailed++;
-            continue;
+        // Pour PPT : télécharger le PDF de lecture native (view_file) + original
+        final sources = <Map<String, String>>[];
+        if (type == 'PPT') {
+          final view = lesson['view_file']?.toString() ??
+              lesson['preview_file']?.toString() ??
+              '';
+          if (view.isNotEmpty) {
+            sources.add({'kind': 'preview', 'url': view, 'ext': 'pdf'});
           }
+          final original = lesson['content_file']?.toString() ?? '';
+          if (original.isNotEmpty) {
+            sources.add({
+              'kind': 'original',
+              'url': original,
+              'ext': _extensionForLesson(type, original),
+            });
+          }
+        } else {
+          final fileUrlRaw = lesson['content_file']?.toString() ??
+              lesson['view_file']?.toString() ??
+              '';
+          if (fileUrlRaw.isNotEmpty) {
+            sources.add({
+              'kind': 'original',
+              'url': fileUrlRaw,
+              'ext': _extensionForLesson(type, fileUrlRaw),
+            });
+          }
+        }
 
-          if (kIsWeb) {
-            // Vrai fichier dans le dossier Téléchargements du navigateur
-            await file_saver.triggerBrowserDownload(bytes, filename);
-            lesson['local_path'] = 'browser:$filename';
-            lesson['downloaded_bytes'] = bytes.length;
-            filesOk++;
-          } else {
-            final savedPath = await file_saver.saveBytes(bytes, filename);
-            if (savedPath != null && savedPath.isNotEmpty) {
-              lesson['local_path'] = savedPath;
-              lesson['downloaded_bytes'] = bytes.length;
+        if (sources.isEmpty) continue;
+
+        for (final src in sources) {
+          mediaExpected++;
+          final rawUrl = src['url']!;
+          final fileUrl =
+              rawUrl.startsWith('http') ? rawUrl : '$mediaBaseUrl$rawUrl';
+          final ext = src['ext']!;
+          final safeTitle = _safeFileName('${lesson['title'] ?? 'lecon'}');
+          final kind = src['kind'] == 'preview' ? 'preview_' : '';
+          final filename =
+              'yekola_c${courseData['id']}_l${lesson['id']}_$kind$safeTitle.$ext';
+
+          try {
+            final bytes = await _downloadBytes(fileUrl);
+            if (bytes == null || bytes.isEmpty) {
+              filesFailed++;
+              continue;
+            }
+
+            if (kIsWeb) {
+              await file_saver.triggerBrowserDownload(bytes, filename);
+              if (src['kind'] == 'preview') {
+                lesson['local_preview'] = 'browser:$filename';
+              } else {
+                lesson['local_path'] = 'browser:$filename';
+              }
+              lesson['downloaded_bytes'] =
+                  (lesson['downloaded_bytes'] as int? ?? 0) + bytes.length;
               filesOk++;
             } else {
-              filesFailed++;
+              final savedPath = await file_saver.saveBytes(bytes, filename);
+              if (savedPath != null && savedPath.isNotEmpty) {
+                if (src['kind'] == 'preview') {
+                  lesson['local_preview'] = savedPath;
+                  // Lecture hors-ligne PPT = PDF converti
+                  lesson['local_path'] ??= savedPath;
+                } else {
+                  lesson['local_path'] = savedPath;
+                  if (type != 'PPT') {
+                    // PDF/VIDEO : le fichier principal sert à la lecture
+                  } else if (lesson['local_preview'] == null) {
+                    // Pas de preview : on garde l'original (non lisible natif)
+                  }
+                }
+                lesson['downloaded_bytes'] =
+                    (lesson['downloaded_bytes'] as int? ?? 0) + bytes.length;
+                filesOk++;
+              } else {
+                filesFailed++;
+              }
             }
+          } catch (dlErr) {
+            filesFailed++;
+            debugPrint('Failed to download lesson ${lesson['id']}: $dlErr');
           }
-          lessons[i] = lesson;
-        } catch (dlErr) {
-          filesFailed++;
-          debugPrint('Failed to download lesson ${lesson['id']}: $dlErr');
         }
+        // Pour PPT hors-ligne, pointer local_path vers le PDF de preview
+        if (type == 'PPT' &&
+            lesson['local_preview'] != null &&
+            '${lesson['local_preview']}'.isNotEmpty) {
+          lesson['local_path'] = lesson['local_preview'];
+        }
+        lessons[i] = lesson;
       }
 
       courseData['lessons'] = lessons;

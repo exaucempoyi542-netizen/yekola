@@ -1,15 +1,14 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:pdfrx/pdfrx.dart';
 import 'quiz_screen.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/api_config.dart';
 import '../services/sync_service.dart';
+import '../utils/local_file.dart';
+import '../utils/video_source.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 
@@ -35,12 +34,13 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
   VideoPlayerController? _videoPlayerController;
   ChewieController? _chewieController;
   WebViewController? _webViewController;
-  String? _localPdfPath;
+  /// Document natif (PDF ou PPT converti) — chemin local ou URL https
+  String? _documentSource;
+  bool _documentIsLocal = false;
   bool _isDownloading = false;
   bool _showLessonList = false;
 
   final SyncService _syncService = SyncService();
-  final String _baseUrl = ApiConfig.host;
 
   static const Color _primary = Color(0xFF152A45);
   static const Color _dark = Color(0xFF0A0F1E);
@@ -57,19 +57,51 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
 
   String _resolveMediaUrl(String path) => ApiConfig.resolveMediaUrl(path);
 
+  /// Source lecture native : view_file (PDF converti pour PPT) > local > content_file
   String? _mediaSourceForLesson(Map<String, dynamic> lesson) {
-    // Sur le web, toujours l'URL serveur (les téléchargements vont dans le navigateur)
-    if (kIsWeb) {
-      final remote = lesson['content_file'] ?? lesson['url'];
-      return remote?.toString();
-    }
-    final local = lesson['local_path']?.toString();
-    if (local != null &&
-        local.isNotEmpty &&
+    final type = '${lesson['content_type'] ?? ''}';
+    final isDoc = type == 'PDF' || type == 'PPT';
+
+    if (!kIsWeb) {
+      final local = lesson['local_path']?.toString();
+      if (local != null &&
+          local.isNotEmpty &&
         !local.startsWith('browser:') &&
-        File(local).existsSync()) {
-      return local;
+        localFileExists(local)) {
+        // Hors-ligne : pour PPT on préfère le PDF local (local_preview / .pdf)
+        if (isDoc && type == 'PPT' && !local.toLowerCase().endsWith('.pdf')) {
+          final previewLocal = lesson['local_preview']?.toString();
+          if (previewLocal != null &&
+              previewLocal.isNotEmpty &&
+              localFileExists(previewLocal)) {
+            return previewLocal;
+          }
+        } else {
+          return local;
+        }
+      }
+      final previewLocal = lesson['local_preview']?.toString();
+      if (isDoc &&
+          previewLocal != null &&
+          previewLocal.isNotEmpty &&
+          localFileExists(previewLocal)) {
+        return previewLocal;
+      }
     }
+
+    if (isDoc) {
+      final view = lesson['view_file']?.toString();
+      if (view != null && view.isNotEmpty) return view;
+      final preview = lesson['preview_file']?.toString();
+      if (preview != null && preview.isNotEmpty) return preview;
+      // PDF brut si pas de preview
+      if (type == 'PDF') {
+        return lesson['content_file']?.toString() ?? lesson['url']?.toString();
+      }
+      // PPT sans conversion : pas de source affichable nativement
+      return null;
+    }
+
     return lesson['content_file']?.toString() ?? lesson['url']?.toString();
   }
 
@@ -84,10 +116,8 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
 
     if (type == 'VIDEO') {
       _initVideo(sourcePath);
-    } else if (type == 'PDF') {
-      _initPdf(sourcePath);
-    } else if (type == 'PPT') {
-      _initPpt(sourcePath);
+    } else if (type == 'PDF' || type == 'PPT') {
+      _initNativeDocument(sourcePath, type == 'PPT');
     } else if (type == 'EXTERNAL') {
       _initWebView(lesson['url']?.toString() ?? sourcePath ?? '');
     }
@@ -126,7 +156,8 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
     _videoPlayerController = null;
     _chewieController = null;
     _webViewController = null;
-    _localPdfPath = null;
+    _documentSource = null;
+    _documentIsLocal = false;
     _isDownloading = false;
   }
 
@@ -149,9 +180,9 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
     }
 
     try {
-      final isLocalFile = !kIsWeb && File(filePath).existsSync();
+      final isLocalFile = !kIsWeb && localFileExists(filePath);
       if (isLocalFile) {
-        _videoPlayerController = VideoPlayerController.file(File(filePath));
+        _videoPlayerController = createFileVideoController(filePath);
       } else {
         final url = _resolveMediaUrl(filePath);
         _videoPlayerController = VideoPlayerController.networkUrl(
@@ -210,130 +241,107 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
     }
   }
 
-  Future<void> _initPdf(String? filePath) async {
+  /// PDF / PPT (converti en PDF) — lecteur natif pdfrx, sans navigateur.
+  Future<void> _initNativeDocument(String? filePath, bool isPpt) async {
     if (filePath == null || filePath.trim().isEmpty) {
       if (mounted) {
         setState(() {
-          _mediaError = 'Aucun document pour ce module.';
+          _mediaError = isPpt
+              ? 'Présentation non prête : le serveur convertit le PowerPoint en PDF.\nRéessayez dans un instant, ou demandez à l\'enseignant de ré-enregistrer la leçon.'
+              : 'Aucun document pour ce module.';
+          _isDownloading = false;
         });
       }
       return;
     }
 
-    // Check if offline (mobile/desktop only)
-    if (!kIsWeb && File(filePath).existsSync()) {
-      setState(() {
-        _localPdfPath = filePath;
-        _isDownloading = false;
-      });
+    // Fichier local hors-ligne
+    if (!kIsWeb && !filePath.startsWith('http') && localFileExists(filePath)) {
+      if (mounted) {
+        setState(() {
+          _documentSource = filePath;
+          _documentIsLocal = true;
+          _isDownloading = false;
+          _mediaError = null;
+        });
+      }
       return;
     }
 
     final url = _resolveMediaUrl(filePath);
 
-    if (kIsWeb) {
-      // Sur le web, ouvrir le PDF dans un nouvel onglet (iframe plus fiable)
-      try {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.platformDefault);
-      } catch (e) {
-        if (mounted) {
-          setState(() {
-            _mediaError = 'Impossible d\'ouvrir le document : $e';
-          });
-        }
-      }
-      return;
-    }
-
-    setState(() => _isDownloading = true);
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode != 200) {
-        throw Exception('HTTP ${response.statusCode}');
-      }
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/lesson_$_currentIndex.pdf');
-      await file.writeAsBytes(response.bodyBytes);
+    // Sur toutes les plateformes pdfrx lit l'URL directement (rendu natif)
+    if (mounted) {
       setState(() {
-        _localPdfPath = file.path;
+        _documentSource = url;
+        _documentIsLocal = false;
         _isDownloading = false;
         _mediaError = null;
       });
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isDownloading = false;
-          _mediaError = 'Impossible de charger le PDF.\n$e';
-        });
-      }
     }
   }
 
-  /// PowerPoint : visionneuse Office Online (URL HTTPS publique requise).
-  Future<void> _initPpt(String? filePath) async {
-    final lesson = widget.lessons[_currentIndex];
-    // Toujours préférer l'URL serveur pour Office Online (pas un chemin local)
-    final remote = lesson['content_file']?.toString();
-    final resolved = (remote != null && remote.isNotEmpty)
-        ? _resolveMediaUrl(remote)
-        : (filePath != null &&
-                filePath.isNotEmpty &&
-                !filePath.startsWith('/') &&
-                !filePath.contains(':\\')
-            ? _resolveMediaUrl(filePath)
-            : '');
-
-    if (resolved.isEmpty) {
-      if (mounted) {
-        setState(() {
-          _mediaError = 'Aucun fichier PowerPoint pour ce module.';
-          _isDownloading = false;
-        });
-      }
-      return;
+  Widget _buildNativeDocumentViewer() {
+    if (_isDownloading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 60,
+              height: 60,
+              child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white),
+            ),
+            SizedBox(height: 20),
+            Text('Chargement du document...', style: TextStyle(color: Colors.white70)),
+          ],
+        ),
+      );
     }
 
-    if (kIsWeb) {
-      if (mounted) setState(() => _isDownloading = false);
-      return;
-    }
-
-    setState(() {
-      _isDownloading = true;
-      _mediaError = null;
-    });
-
-    // view.aspx = rendu plus net que l'embed miniature
-    final viewerUrl =
-        'https://view.officeapps.live.com/op/view.aspx?src=${Uri.encodeComponent(resolved)}';
-    try {
-      _webViewController = WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..enableZoom(true)
-        ..setBackgroundColor(Colors.white)
-        ..setNavigationDelegate(
-          NavigationDelegate(
-            onNavigationRequest: (_) => NavigationDecision.navigate,
-            onWebResourceError: (error) {
-              debugPrint('PPT WebView error: ${error.description}');
-            },
+    if (_mediaError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            _mediaError!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white70, height: 1.4),
           ),
-        )
-        ..loadRequest(Uri.parse(viewerUrl));
-      if (mounted) {
-        setState(() {
-          _isDownloading = false;
-          _mediaError = null;
-        });
+        ),
+      );
+    }
+
+    final source = _documentSource;
+    if (source == null || source.isEmpty) {
+      return const Center(
+        child: Text('Document indisponible', style: TextStyle(color: Colors.white60)),
+      );
+    }
+
+    final params = const PdfViewerParams(
+      backgroundColor: Color(0xFF0A0F1E),
+    );
+
+    try {
+      if (_documentIsLocal && !kIsWeb) {
+        return ColoredBox(
+          color: _dark,
+          child: PdfViewer.file(source, params: params),
+        );
       }
+      return ColoredBox(
+        color: _dark,
+        child: PdfViewer.uri(Uri.parse(source), params: params),
+      );
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isDownloading = false;
-          _mediaError =
-              'Impossible d\'afficher le PowerPoint. Ouvrez-le via le bouton externe.\n$e';
-        });
-      }
+      return Center(
+        child: Text(
+          'Impossible d\'afficher le document.\n$e',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white70),
+        ),
+      );
     }
   }
 
@@ -668,187 +676,8 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
       );
     }
 
-    if (type == 'PDF') {
-      if (_isDownloading) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(
-                width: 60,
-                height: 60,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Chargement du document...',
-                style: TextStyle(color: Colors.white70),
-              ),
-            ],
-          ),
-        );
-      }
-      if (kIsWeb) {
-        final url = lesson['content_file']?.startsWith('http') == true
-            ? lesson['content_file']
-            : '$_baseUrl${lesson['content_file']}';
-        return HtmlWidget(
-          '<iframe src="$url" style="width:100%; height:100%; border:none;"></iframe>',
-        );
-      }
-      if (_localPdfPath != null) {
-        // Lecteur natif haute résolution (évite le rendu WebView flou)
-        return ColoredBox(
-          color: Colors.black,
-          child: PDFView(
-            filePath: _localPdfPath!,
-            enableSwipe: true,
-            swipeHorizontal: false,
-            autoSpacing: true,
-            pageFling: true,
-            pageSnap: true,
-            fitPolicy: FitPolicy.WIDTH,
-            fitEachPage: false,
-            backgroundColor: Colors.black,
-          ),
-        );
-      }
-      if (_webViewController != null) {
-        return WebViewWidget(controller: _webViewController!);
-      }
-      return const Center(
-        child: Text(
-          'Impossible de charger le PDF',
-          style: TextStyle(color: Colors.white60),
-        ),
-      );
-    }
-
-    if (type == 'PPT') {
-      final fileUrl = lesson['content_file']?.startsWith('http') == true
-          ? lesson['content_file'].toString()
-          : _resolveMediaUrl(lesson['content_file']?.toString() ?? '');
-
-      if (_mediaError != null) {
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.slideshow_outlined, color: Colors.white54, size: 48),
-                const SizedBox(height: 12),
-                Text(
-                  _mediaError!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70, height: 1.4),
-                ),
-                if (fileUrl.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  TextButton.icon(
-                    onPressed: () => launchUrl(
-                      Uri.parse(fileUrl),
-                      mode: LaunchMode.externalApplication,
-                    ),
-                    icon: const Icon(Icons.open_in_new),
-                    label: const Text('Ouvrir le PowerPoint'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      backgroundColor: _primary,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      }
-
-      if (_isDownloading) {
-        return const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Chargement de la présentation...',
-                style: TextStyle(color: Colors.white70),
-              ),
-            ],
-          ),
-        );
-      }
-
-      if (kIsWeb) {
-        final viewer =
-            'https://view.officeapps.live.com/op/view.aspx?src=${Uri.encodeComponent(fileUrl)}';
-        return Column(
-          children: [
-            Expanded(
-              child: HtmlWidget(
-                '<iframe src="$viewer" '
-                'style="width:100%;height:100%;border:0;background:#fff;" '
-                'allowfullscreen></iframe>',
-              ),
-            ),
-            TextButton.icon(
-              onPressed: () => launchUrl(
-                Uri.parse(viewer),
-                mode: LaunchMode.externalApplication,
-              ),
-              icon: const Icon(Icons.open_in_new, size: 18),
-              label: const Text('Ouvrir en plein écran (plus net)'),
-              style: TextButton.styleFrom(foregroundColor: Colors.white70),
-            ),
-          ],
-        );
-      }
-
-      if (_webViewController != null) {
-        return Column(
-          children: [
-            Expanded(child: WebViewWidget(controller: _webViewController!)),
-            SafeArea(
-              top: false,
-              child: TextButton.icon(
-                onPressed: () => launchUrl(
-                  Uri.parse(fileUrl),
-                  mode: LaunchMode.externalApplication,
-                ),
-                icon: const Icon(Icons.open_in_new, size: 18),
-                label: const Text('Ouvrir dans une autre app'),
-                style: TextButton.styleFrom(foregroundColor: Colors.white70),
-              ),
-            ),
-          ],
-        );
-      }
-
-      return Center(
-        child: TextButton.icon(
-          onPressed: () => launchUrl(
-            Uri.parse(fileUrl),
-            mode: LaunchMode.externalApplication,
-          ),
-          icon: const Icon(Icons.slideshow),
-          label: const Text('Ouvrir le PowerPoint'),
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: _primary,
-          ),
-        ),
-      );
+    if (type == 'PDF' || type == 'PPT') {
+      return _buildNativeDocumentViewer();
     }
 
     if (type == 'EXTERNAL') {

@@ -10,6 +10,22 @@ logger = logging.getLogger(__name__)
 # afin de cibler uniquement les étudiants affiliés à la promotion.
 
 
+@receiver(post_save, sender='lms.Lesson')
+def generate_ppt_preview_on_save(sender, instance, **kwargs):
+    """Convertit automatiquement un PPT uploadé en PDF de lecture native."""
+    update_fields = kwargs.get('update_fields')
+    # Évite la boucle quand on ne met à jour que preview_file
+    if update_fields is not None and set(update_fields) <= {'preview_file'}:
+        return
+    if instance.content_type != 'PPT' or not instance.content_file:
+        return
+    try:
+        from lms.media_convert import ensure_lesson_preview
+        ensure_lesson_preview(instance)
+    except Exception as exc:
+        logger.error("Conversion PPT→PDF leçon #%s: %s", instance.pk, exc)
+
+
 # ─── Synchronisation ExternalResource → Firebase Firestore ──────────────────
 
 def _sync_resource_to_firestore(instance):

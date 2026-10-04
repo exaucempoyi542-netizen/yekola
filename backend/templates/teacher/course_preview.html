@@ -232,18 +232,24 @@
                         style="background: #1e293b;">
                         <canvas id="pdf-viewer-canvas"></canvas>
                     </div>
-                    {% elif selected_lesson.content_type  ==  'PPT' and selected_lesson.content_file %}
-                    <div class="media-stage" style="min-height:70vh;background:#0f172a;">
-                        <iframe
-                            title="PowerPoint"
-                            src="https://view.officeapps.live.com/op/embed.aspx?src={{ request.scheme }}://{{ request.get_host }}{{ selected_lesson.content_file.url|urlencode }}"
-                            style="width:100%;height:75vh;border:0;background:#fff;"
-                            allowfullscreen></iframe>
+                    {% elif selected_lesson.content_type  ==  'PPT' %}
+                    <div class="media-stage overflow-auto p-5 d-flex flex-column align-items-center" id="pdf-view-stage"
+                        style="background: #1e293b; min-height:70vh;">
+                        {% if selected_lesson.preview_file %}
+                        <canvas id="pdf-viewer-canvas"></canvas>
                         <div class="p-3 text-center">
                             <a class="btn btn-sm btn-outline-light"
                                href="{{ selected_lesson.content_file.url }}"
-                               target="_blank" rel="noopener">Télécharger le PowerPoint</a>
+                               target="_blank" rel="noopener">Télécharger le PowerPoint original</a>
                         </div>
+                        {% else %}
+                        <p class="text-white-50 mt-5">Aperçu en cours de génération… Ré-enregistrez la leçon ou attendez la conversion PDF.</p>
+                        {% if selected_lesson.content_file %}
+                        <a class="btn btn-sm btn-outline-light mt-3"
+                           href="{{ selected_lesson.content_file.url }}"
+                           target="_blank" rel="noopener">Télécharger le PowerPoint</a>
+                        {% endif %}
+                        {% endif %}
                     </div>
                     {% elif selected_lesson.content_type  ==  'TEXT' %}
                     <article class="reading-surface">
@@ -275,8 +281,8 @@
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-<div id="preview-config" data-is-pdf="{% if selected_lesson.content_type  ==  'PDF' %}true{% else %}false{% endif %}"
-    data-pdf-url="{% if selected_lesson.content_file %}{{ selected_lesson.content_file.url }}{% endif %}"
+<div id="preview-config" data-is-pdf="{% if selected_lesson.content_type  ==  'PDF' or selected_lesson.content_type  ==  'PPT' and selected_lesson.preview_file %}true{% else %}false{% endif %}"
+    data-pdf-url="{% if selected_lesson.content_type  ==  'PPT' and selected_lesson.preview_file %}{{ selected_lesson.preview_file.url }}{% elif selected_lesson.content_file %}{{ selected_lesson.content_file.url }}{% endif %}"
     style="display: none;"></div>
 
 <script>

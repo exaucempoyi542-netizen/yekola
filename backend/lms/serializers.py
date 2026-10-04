@@ -62,10 +62,17 @@ class LessonSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     file_size = serializers.SerializerMethodField()
     is_locked = serializers.SerializerMethodField()
+    # URL du fichier à AFFICHER nativement (PDF pour PDF/PPT, vidéo pour VIDEO)
+    view_file = serializers.SerializerMethodField()
+    preview_file = serializers.FileField(read_only=True)
 
     class Meta:
         model = Lesson
-        fields = ['id', 'course', 'title', 'content_type', 'content_file', 'content_text', 'order', 'likes_count', 'comments_count', 'is_liked', 'is_favorited', 'file_size', 'is_locked']
+        fields = [
+            'id', 'course', 'title', 'content_type', 'content_file', 'preview_file',
+            'view_file', 'content_text', 'order', 'likes_count', 'comments_count',
+            'is_liked', 'is_favorited', 'file_size', 'is_locked',
+        ]
 
     def get_is_locked(self, obj):
         user = self.context.get('request').user
@@ -115,13 +122,41 @@ class LessonSerializer(serializers.ModelSerializer):
         except (FileNotFoundError, OSError, ValueError):
             return None
 
+    def get_view_file(self, obj):
+        """
+        Fichier destiné au lecteur natif :
+        - VIDEO → content_file
+        - PDF → content_file
+        - PPT → preview_file (PDF converti), sinon None
+        """
+        request = self.context.get('request')
+
+        def _url(field):
+            if not field:
+                return None
+            try:
+                if hasattr(field, 'storage') and hasattr(field, 'name'):
+                    if not field.storage.exists(field.name):
+                        return None
+                url = field.url
+                if request is not None:
+                    return request.build_absolute_uri(url)
+                return url
+            except (FileNotFoundError, OSError, ValueError):
+                return None
+
+        if obj.content_type == 'PPT':
+            # Aperçu généré à l'upload (LibreOffice) — pas de conversion synchrone ici
+            return _url(obj.preview_file)
+
+        return _url(obj.content_file)
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         # Ne jamais faire planter le détail cours si le média n'est pas sur le serveur
         content_file = data.get('content_file')
         if content_file and instance.content_file:
             try:
-                # Vérifie l'existence sans lever une 500 côté client
                 if hasattr(instance.content_file, 'storage') and hasattr(instance.content_file, 'name'):
                     if not instance.content_file.storage.exists(instance.content_file.name):
                         data['content_file'] = None
@@ -129,6 +164,15 @@ class LessonSerializer(serializers.ModelSerializer):
             except (FileNotFoundError, OSError, ValueError):
                 data['content_file'] = None
                 data['file_missing'] = True
+
+        preview = data.get('preview_file')
+        if preview and instance.preview_file:
+            try:
+                if hasattr(instance.preview_file, 'storage') and hasattr(instance.preview_file, 'name'):
+                    if not instance.preview_file.storage.exists(instance.preview_file.name):
+                        data['preview_file'] = None
+            except (FileNotFoundError, OSError, ValueError):
+                data['preview_file'] = None
         return data
 
 class LiveSessionSerializer(serializers.ModelSerializer):

@@ -104,7 +104,18 @@ def main():
         print("[yekola] Bootstrap seed si base vide…", flush=True)
         subprocess.check_call([sys.executable, "manage.py", "bootstrap_railway"])
 
+    # Convertit les PPT existants en PDF de lecture native (best-effort)
+    try:
+        print("[yekola] Génération aperçus PPT→PDF…", flush=True)
+        subprocess.call(
+            [sys.executable, "manage.py", "generate_lesson_previews"],
+            timeout=300,
+        )
+    except Exception as exc:
+        print(f"[yekola] Aperçus PPT ignorés: {exc}", flush=True)
+
     port = os.getenv("PORT", "8080")
+    # timeout élevé : conversion LibreOffice + gros uploads vidéo
     os.execvp(
         "gunicorn",
         [
@@ -115,7 +126,7 @@ def main():
             "--workers",
             "2",
             "--timeout",
-            "120",
+            "180",
         ],
     )
 

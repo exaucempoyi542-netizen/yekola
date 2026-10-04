@@ -402,6 +402,8 @@ class Lesson(models.Model):
     title = models.CharField(max_length=255)
     content_type = models.CharField(max_length=10, choices=CONTENT_TYPES)
     content_file = models.FileField(upload_to='lessons/', blank=True, null=True, validators=[validate_lesson_file])
+    # PDF de prévisualisation (PPT converti) — lecture native dans l'app, sans navigateur
+    preview_file = models.FileField(upload_to='lessons/previews/', blank=True, null=True)
     content_text = models.TextField(blank=True, null=True)
     order = models.PositiveIntegerField()
 
