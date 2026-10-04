@@ -58,13 +58,18 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
   String _resolveMediaUrl(String path) => ApiConfig.resolveMediaUrl(path);
 
   String? _mediaSourceForLesson(Map<String, dynamic> lesson) {
-    // Sur le web, jamais de chemin fichier local (dart:io non supporté)
+    // Sur le web, toujours l'URL serveur (les téléchargements vont dans le navigateur)
     if (kIsWeb) {
       final remote = lesson['content_file'] ?? lesson['url'];
       return remote?.toString();
     }
     final local = lesson['local_path']?.toString();
-    if (local != null && local.isNotEmpty) return local;
+    if (local != null &&
+        local.isNotEmpty &&
+        !local.startsWith('browser:') &&
+        File(local).existsSync()) {
+      return local;
+    }
     return lesson['content_file']?.toString() ?? lesson['url']?.toString();
   }
 
@@ -158,14 +163,23 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
       }
 
       await _videoPlayerController!.initialize();
-      final ratio = _videoPlayerController!.value.aspectRatio;
+      // Utilise le ratio natif pour éviter un upscale flou
+      final size = _videoPlayerController!.value.size;
+      final ratio = (size.width > 0 && size.height > 0)
+          ? size.width / size.height
+          : (_videoPlayerController!.value.aspectRatio > 0
+              ? _videoPlayerController!.value.aspectRatio
+              : 16 / 9);
       _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController!,
         autoPlay: true,
         looping: false,
         allowFullScreen: true,
         allowMuting: true,
-        aspectRatio: ratio > 0 ? ratio : (16 / 9),
+        showControls: true,
+        zoomAndPan: true,
+        maxScale: 4,
+        aspectRatio: ratio,
         placeholder: const Center(child: CircularProgressIndicator()),
         errorBuilder: (context, errorMessage) => Center(
           child: Padding(
@@ -255,9 +269,21 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
     }
   }
 
-  /// PowerPoint : visionneuse Office Online (nécessite une URL HTTPS publique).
+  /// PowerPoint : visionneuse Office Online (URL HTTPS publique requise).
   Future<void> _initPpt(String? filePath) async {
-    if (filePath == null || filePath.trim().isEmpty) {
+    final lesson = widget.lessons[_currentIndex];
+    // Toujours préférer l'URL serveur pour Office Online (pas un chemin local)
+    final remote = lesson['content_file']?.toString();
+    final resolved = (remote != null && remote.isNotEmpty)
+        ? _resolveMediaUrl(remote)
+        : (filePath != null &&
+                filePath.isNotEmpty &&
+                !filePath.startsWith('/') &&
+                !filePath.contains(':\\')
+            ? _resolveMediaUrl(filePath)
+            : '');
+
+    if (resolved.isEmpty) {
       if (mounted) {
         setState(() {
           _mediaError = 'Aucun fichier PowerPoint pour ce module.';
@@ -267,7 +293,6 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
       return;
     }
 
-    final url = _resolveMediaUrl(filePath);
     if (kIsWeb) {
       if (mounted) setState(() => _isDownloading = false);
       return;
@@ -278,11 +303,14 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
       _mediaError = null;
     });
 
+    // view.aspx = rendu plus net que l'embed miniature
     final viewerUrl =
-        'https://view.officeapps.live.com/op/embed.aspx?src=${Uri.encodeComponent(url)}';
+        'https://view.officeapps.live.com/op/view.aspx?src=${Uri.encodeComponent(resolved)}';
     try {
       _webViewController = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..enableZoom(true)
+        ..setBackgroundColor(Colors.white)
         ..setNavigationDelegate(
           NavigationDelegate(
             onNavigationRequest: (_) => NavigationDecision.navigate,
@@ -616,9 +644,16 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
       }
       if (_chewieController != null &&
           _chewieController!.videoPlayerController.value.isInitialized) {
-        return Container(
+        final vp = _chewieController!.videoPlayerController;
+        final ratio = vp.value.aspectRatio > 0 ? vp.value.aspectRatio : 16 / 9;
+        return ColoredBox(
           color: Colors.black,
-          child: Center(child: Chewie(controller: _chewieController!)),
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: ratio,
+              child: Chewie(controller: _chewieController!),
+            ),
+          ),
         );
       }
       return const Center(
@@ -664,11 +699,25 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
           '<iframe src="$url" style="width:100%; height:100%; border:none;"></iframe>',
         );
       }
+      if (_localPdfPath != null) {
+        // Lecteur natif haute résolution (évite le rendu WebView flou)
+        return ColoredBox(
+          color: Colors.black,
+          child: PDFView(
+            filePath: _localPdfPath!,
+            enableSwipe: true,
+            swipeHorizontal: false,
+            autoSpacing: true,
+            pageFling: true,
+            pageSnap: true,
+            fitPolicy: FitPolicy.WIDTH,
+            fitEachPage: false,
+            backgroundColor: Colors.black,
+          ),
+        );
+      }
       if (_webViewController != null) {
         return WebViewWidget(controller: _webViewController!);
-      }
-      if (_localPdfPath != null) {
-        return PDFView(filePath: _localPdfPath);
       }
       return const Center(
         child: Text(
@@ -742,9 +791,27 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
       }
 
       if (kIsWeb) {
-        return HtmlWidget(
-          '<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${Uri.encodeComponent(fileUrl)}" '
-          'style="width:100%; height:100%; border:none;"></iframe>',
+        final viewer =
+            'https://view.officeapps.live.com/op/view.aspx?src=${Uri.encodeComponent(fileUrl)}';
+        return Column(
+          children: [
+            Expanded(
+              child: HtmlWidget(
+                '<iframe src="$viewer" '
+                'style="width:100%;height:100%;border:0;background:#fff;" '
+                'allowfullscreen></iframe>',
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => launchUrl(
+                Uri.parse(viewer),
+                mode: LaunchMode.externalApplication,
+              ),
+              icon: const Icon(Icons.open_in_new, size: 18),
+              label: const Text('Ouvrir en plein écran (plus net)'),
+              style: TextButton.styleFrom(foregroundColor: Colors.white70),
+            ),
+          ],
         );
       }
 

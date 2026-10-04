@@ -64,6 +64,8 @@ def media_serve(request, path: str):
     content_type, encoding = mimetypes.guess_type(str(full))
     content_type = content_type or "application/octet-stream"
     size = stat.st_size
+    # Force le navigateur à proposer un vrai téléchargement si ?download=1
+    as_attachment = request.GET.get("download") in ("1", "true", "yes")
 
     if _not_modified(request.META.get("HTTP_IF_MODIFIED_SINCE"), stat.st_mtime):
         return HttpResponseNotModified()
@@ -91,10 +93,17 @@ def media_serve(request, path: str):
         resp["Last-Modified"] = http_date(stat.st_mtime)
         if encoding:
             resp["Content-Encoding"] = encoding
+        if as_attachment:
+            resp["Content-Disposition"] = f'attachment; filename="{full.name}"'
         return resp
 
     fh = open(full, "rb")
-    resp = FileResponse(fh, content_type=content_type)
+    resp = FileResponse(
+        fh,
+        content_type=content_type,
+        as_attachment=as_attachment,
+        filename=full.name if as_attachment else None,
+    )
     resp["Content-Length"] = str(size)
     resp["Accept-Ranges"] = "bytes"
     resp["Last-Modified"] = http_date(stat.st_mtime)

@@ -85,33 +85,37 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
 
   Future<void> _checkDownloadStatus() async {
     try {
-      final db = _dbHelper;
-      final downloaded = await db.isCourseDownloaded(widget.course['id']);
-      if (mounted) setState(() => _isDownloaded = downloaded);
+      final downloaded = await _syncService.getDownloadedCourses();
+      final id = widget.course['id'];
+      final ok = downloaded.any((c) => '${c['id']}' == '$id');
+      if (mounted) setState(() => _isDownloaded = ok);
     } catch (_) {}
   }
 
   Future<void> _downloadCourse() async {
     if (_isDownloading) return;
     setState(() => _isDownloading = true);
-    
-    // Fusionner les données du cours avec le contenu unifié mis à jour (Leçons + Quiz)
-    final courseDataForOffline = Map<String, dynamic>.from(widget.course);
-    courseDataForOffline['lessons'] = _unifiedContent;
 
-    final ok = await _syncService.downloadCourse(courseDataForOffline);
+    // Toujours partir du détail frais (leçons + URLs médias)
+    final courseDataForOffline = Map<String, dynamic>.from(widget.course);
+    if (_unifiedContent.isNotEmpty) {
+      courseDataForOffline['lessons'] = _unifiedContent;
+    }
+
+    final result = await _syncService.downloadCourse(courseDataForOffline);
     if (!mounted) return;
+    final ok = result['success'] == true;
+    final message = result['message']?.toString() ??
+        (ok ? 'Téléchargement terminé.' : 'Échec du téléchargement.');
     setState(() {
       _isDownloading = false;
       _isDownloaded = ok;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok
-            ? 'Cours téléchargé ! Accessible dans "Mes Notes".'
-            : 'Échec du téléchargement. Vérifiez votre connexion.'),
-        backgroundColor: ok ? Colors.green : Colors.red,
-        duration: const Duration(seconds: 3),
+        content: Text(message),
+        backgroundColor: ok ? Colors.green[700] : Colors.red[700],
+        duration: const Duration(seconds: 5),
       ),
     );
   }

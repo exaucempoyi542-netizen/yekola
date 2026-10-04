@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:sqflite/sqflite.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:mobile_app/config/api_config.dart';
+import 'package:mobile_app/utils/file_saver.dart' as file_saver;
 import 'database_helper.dart';
 import 'auth_service.dart';
 import 'firebase_service.dart';
@@ -894,24 +894,24 @@ class SyncService {
 
   // ─── TÉLÉCHARGEMENT DE COURS HORS-LIGNE ─────────────────────────────────
 
-  /// Télécharge les métadonnées d'un cours (leçons, description) pour accès hors-ligne.
-  Future<bool> downloadCourse(Map<String, dynamic> course) async {
+  /// Résultat d'un téléchargement réel (fichiers + métadonnées).
+  /// Clés : success, filesOk, filesFailed, mediaExpected, message, course
+  Future<Map<String, dynamic>> downloadCourse(Map<String, dynamic> course) async {
     try {
-      // Le cours passé en paramètre contient déjà _unifiedContent grâce à course_details_screen
-      // On l'enrichit quand même avec les données fraîches de l'API
       Map<String, dynamic> courseData = Map<String, dynamic>.from(course);
 
       try {
         final token = await AuthService().getToken();
         final headers = <String, String>{'Content-Type': 'application/json'};
         if (token != null) headers['Authorization'] = 'Bearer $token';
-        final response = await http.get(
-          Uri.parse('$apiBaseUrl/courses/${course['id']}/'),
-          headers: headers,
-        ).timeout(const Duration(seconds: 10));
+        final response = await http
+            .get(
+              Uri.parse('$apiBaseUrl/courses/${course['id']}/'),
+              headers: headers,
+            )
+            .timeout(const Duration(seconds: 20));
         if (response.statusCode == 200) {
           final fromApi = jsonDecode(response.body) as Map<String, dynamic>;
-          // On garde les leçons passées en paramètre si l'API n'en retourne pas
           if ((fromApi['lessons'] as List?)?.isNotEmpty == true) {
             courseData = fromApi;
           } else {
@@ -919,69 +919,167 @@ class SyncService {
           }
         }
       } catch (netErr) {
-        debugPrint('downloadCourse: API non disponible, utilisation des données locales ($netErr)');
+        debugPrint(
+          'downloadCourse: API non disponible, données locales ($netErr)',
+        );
       }
 
+      final lessons = List<Map<String, dynamic>>.from(
+        (courseData['lessons'] as List? ?? []).map(
+          (e) => Map<String, dynamic>.from(e as Map),
+        ),
+      );
+
+      int mediaExpected = 0;
+      int filesOk = 0;
+      int filesFailed = 0;
+
+      for (var i = 0; i < lessons.length; i++) {
+        final lesson = lessons[i];
+        final type = '${lesson['content_type'] ?? ''}';
+        final fileUrlRaw = lesson['content_file']?.toString() ?? '';
+        final isMedia = type == 'VIDEO' || type == 'PDF' || type == 'PPT';
+        if (!isMedia || fileUrlRaw.isEmpty) continue;
+
+        mediaExpected++;
+        final fileUrl = fileUrlRaw.startsWith('http')
+            ? fileUrlRaw
+            : '$mediaBaseUrl$fileUrlRaw';
+        final ext = _extensionForLesson(type, fileUrl);
+        final safeTitle = _safeFileName('${lesson['title'] ?? 'lecon'}');
+        final filename =
+            'yekola_c${courseData['id']}_l${lesson['id']}_$safeTitle.$ext';
+
+        try {
+          final bytes = await _downloadBytes(fileUrl);
+          if (bytes == null || bytes.isEmpty) {
+            filesFailed++;
+            continue;
+          }
+
+          if (kIsWeb) {
+            // Vrai fichier dans le dossier Téléchargements du navigateur
+            await file_saver.triggerBrowserDownload(bytes, filename);
+            lesson['local_path'] = 'browser:$filename';
+            lesson['downloaded_bytes'] = bytes.length;
+            filesOk++;
+          } else {
+            final savedPath = await file_saver.saveBytes(bytes, filename);
+            if (savedPath != null && savedPath.isNotEmpty) {
+              lesson['local_path'] = savedPath;
+              lesson['downloaded_bytes'] = bytes.length;
+              filesOk++;
+            } else {
+              filesFailed++;
+            }
+          }
+          lessons[i] = lesson;
+        } catch (dlErr) {
+          filesFailed++;
+          debugPrint('Failed to download lesson ${lesson['id']}: $dlErr');
+        }
+      }
+
+      courseData['lessons'] = lessons;
+
       if (kIsWeb) {
-        // Sur Web : stockage en cache mémoire (sans téléchargement local de fichiers)
         final courseId = courseData['id'];
         _webDownloadedCourses.removeWhere((c) => c['id'] == courseId);
         _webDownloadedCourses.add(courseData);
       } else {
-        // --- REAL FILE DOWNLOAD LOGIC FOR MOBILE ---
-        if (courseData['lessons'] != null) {
-          final dir = await getApplicationDocumentsDirectory();
-          final List<dynamic> lessons = courseData['lessons'];
-          
-          for (var i = 0; i < lessons.length; i++) {
-            final lesson = lessons[i] as Map<String, dynamic>;
-            final type = lesson['content_type'];
-            final fileUrlRaw = lesson['content_file'];
-            
-            if (fileUrlRaw != null && fileUrlRaw.toString().isNotEmpty) {
-              if (type == 'VIDEO' || type == 'PDF' || type == 'PPT') {
-                final fileUrl = fileUrlRaw.toString().startsWith('http') 
-                                ? fileUrlRaw.toString() 
-                                : '$mediaBaseUrl$fileUrlRaw';
-                                
-                try {
-                  // Crée une extension basée sur le type
-                  String ext = 'bin';
-                  if (type == 'VIDEO') ext = 'mp4';
-                  if (type == 'PDF') ext = 'pdf';
-                  if (type == 'PPT') ext = 'pptx';
-                  
-                  final localFile = File('${dir.path}/course_${courseData['id']}_lesson_${lesson['id']}.$ext');
-                  
-                  // Télécharger uniquement si le fichier n'existe pas déjà
-                  if (!(await localFile.exists())) {
-                    final bytesResponse = await http.get(Uri.parse(fileUrl));
-                    if (bytesResponse.statusCode == 200) {
-                      await localFile.writeAsBytes(bytesResponse.bodyBytes);
-                    }
-                  }
-                  
-                  // Ajouter le chemin local à l'objet leçon pour l'enregistrement SQLite
-                  if (await localFile.exists()) {
-                    lesson['local_path'] = localFile.path;
-                    lessons[i] = lesson;
-                  }
-                } catch (dlErr) {
-                  debugPrint('Failed to download file for lesson ${lesson['id']}: $dlErr');
-                }
-              }
-            }
-          }
-          courseData['lessons'] = lessons;
-        }
-        
         await _dbHelper.downloadCourse(courseData);
       }
-      return true;
+
+      final success = mediaExpected == 0
+          ? lessons.isNotEmpty
+          : filesOk > 0;
+
+      String message;
+      if (mediaExpected == 0 && lessons.isEmpty) {
+        message =
+            'Aucune leçon à télécharger. Publiez le cours avec des fichiers (vidéo / PDF / PPT).';
+      } else if (mediaExpected == 0) {
+        message =
+            'Cours enregistré (${lessons.length} leçons texte). Aucun fichier média.';
+      } else if (filesOk == 0) {
+        message =
+            'Échec : aucun fichier média récupéré ($filesFailed échec). Vérifiez que les fichiers sont bien uploadés sur le serveur.';
+      } else if (filesFailed > 0) {
+        message =
+            '$filesOk fichier(s) téléchargé(s), $filesFailed échec(s) sur $mediaExpected.';
+      } else {
+        message = kIsWeb
+            ? '$filesOk fichier(s) téléchargé(s) dans votre dossier Téléchargements.'
+            : '$filesOk fichier(s) enregistré(s) pour lecture hors-ligne.';
+      }
+
+      return {
+        'success': success,
+        'filesOk': filesOk,
+        'filesFailed': filesFailed,
+        'mediaExpected': mediaExpected,
+        'message': message,
+        'course': courseData,
+      };
     } catch (e) {
       debugPrint('SyncService.downloadCourse Error: $e');
-      return false;
+      return {
+        'success': false,
+        'filesOk': 0,
+        'filesFailed': 0,
+        'mediaExpected': 0,
+        'message': 'Erreur de téléchargement : $e',
+      };
     }
+  }
+
+  Future<Uint8List?> _downloadBytes(String url) async {
+    final client = http.Client();
+    try {
+      final request = http.Request('GET', Uri.parse(url));
+      request.headers['Accept'] = '*/*';
+      final streamed = await client.send(request).timeout(
+            const Duration(minutes: 10),
+          );
+      if (streamed.statusCode != 200) {
+        debugPrint('_downloadBytes HTTP ${streamed.statusCode} for $url');
+        return null;
+      }
+      final bytes = await streamed.stream.toBytes();
+      return bytes;
+    } finally {
+      client.close();
+    }
+  }
+
+  String _extensionForLesson(String type, String url) {
+    final path = Uri.tryParse(url)?.path ?? url;
+    final dot = path.lastIndexOf('.');
+    if (dot >= 0 && dot < path.length - 1) {
+      final ext = path.substring(dot + 1).toLowerCase();
+      if (ext.length <= 5 && RegExp(r'^[a-z0-9]+$').hasMatch(ext)) {
+        return ext;
+      }
+    }
+    switch (type) {
+      case 'VIDEO':
+        return 'mp4';
+      case 'PDF':
+        return 'pdf';
+      case 'PPT':
+        return 'pptx';
+      default:
+        return 'bin';
+    }
+  }
+
+  String _safeFileName(String name) {
+    final cleaned = name
+        .replaceAll(RegExp(r'[^\w\s\-]'), '')
+        .replaceAll(RegExp(r'\s+'), '_')
+        .trim();
+    if (cleaned.isEmpty) return 'fichier';
+    return cleaned.length > 40 ? cleaned.substring(0, 40) : cleaned;
   }
 
   /// Récupère la liste des cours téléchargés localement
@@ -1004,6 +1102,18 @@ class SyncService {
       return;
     }
     try {
+      final courses = await _dbHelper.getDownloadedCourses();
+      for (final course in courses) {
+        if ('${course['id']}' != '$courseId') continue;
+        final lessons = course['lessons'] as List? ?? [];
+        for (final lesson in lessons) {
+          if (lesson is! Map) continue;
+          final path = lesson['local_path']?.toString();
+          if (path != null && path.isNotEmpty && !path.startsWith('browser:')) {
+            await file_saver.deleteLocalFile(path);
+          }
+        }
+      }
       await _dbHelper.deleteCourseDownload(courseId);
     } catch (e) {
       debugPrint('SyncService.deleteCourseDownload Error: $e');
