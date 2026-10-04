@@ -94,7 +94,7 @@ class _StudentGradesScreenState extends State<StudentGradesScreen> {
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 40, vertical: 8),
               child: Text(
-                "Vous pouvez télécharger vos cours inscrits pour les lire hors-ligne en touchant le bouton de téléchargement de l'écran détail.",
+                "Téléchargez un cours depuis sa fiche, puis consultez-le dans Mes Cours → onglet Hors ligne (lecture dans l’application).",
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey, height: 1.4),
               ),

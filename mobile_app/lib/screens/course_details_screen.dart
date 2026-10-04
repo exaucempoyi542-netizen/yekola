@@ -113,7 +113,11 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(
+          ok
+              ? '$message\nDisponible dans Mes Cours → Hors ligne.'
+              : message,
+        ),
         backgroundColor: ok ? Colors.green[700] : Colors.red[700],
         duration: const Duration(seconds: 5),
       ),

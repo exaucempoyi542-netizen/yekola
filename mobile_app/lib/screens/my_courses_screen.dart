@@ -14,34 +14,50 @@ class MyCoursesScreen extends StatefulWidget {
   State<MyCoursesScreen> createState() => _MyCoursesScreenState();
 }
 
-class _MyCoursesScreenState extends State<MyCoursesScreen> {
+class _MyCoursesScreenState extends State<MyCoursesScreen>
+    with SingleTickerProviderStateMixin {
   final SyncService _syncService = SyncService();
   List<Map<String, dynamic>> _enrolledCourses = [];
+  List<Map<String, dynamic>> _downloadedCourses = [];
   bool _isLoading = true;
+  late TabController _tabs;
 
   static const Color _primary = Color(0xFF152A45);
 
   @override
   void initState() {
     super.initState();
-    _loadEnrolledCourses();
+    _tabs = TabController(length: 2, vsync: this);
+    _loadAll();
   }
 
-  Future<void> _loadEnrolledCourses() async {
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadAll() async {
     setState(() => _isLoading = true);
     try {
-      final courses = await _syncService.getCourses(forceRefresh: true);
+      final results = await Future.wait([
+        _syncService.getCourses(forceRefresh: true),
+        _syncService.getDownloadedCourses(),
+      ]);
+      final courses = results[0];
+      final downloaded = results[1];
+      if (!mounted) return;
       setState(() {
         _enrolledCourses =
             courses.where((c) => c['is_enrolled'] == true).toList();
+        _downloadedCourses = downloaded;
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() => _isLoading = false);
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  /// Calcule l'index de la dernière leçon vue basé sur la progression
   int _getResumeIndex(Map<String, dynamic> course) {
     final lessons = course['lessons'] as List? ?? [];
     if (lessons.isEmpty) return 0;
@@ -51,12 +67,103 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
     return doneCount.clamp(0, total - 1);
   }
 
+  /// Charge le détail (leçons) puis ouvre le lecteur NATIF dans l'app.
+  Future<void> _openInAppPlayer(
+    Map<String, dynamic> course, {
+    bool offline = false,
+  }) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      ),
+    );
+
+    try {
+      Map<String, dynamic> full = Map<String, dynamic>.from(course);
+      List lessons = full['lessons'] as List? ?? [];
+
+      if (!offline) {
+        final detail =
+            await _syncService.getCourseById('${course['id']}');
+        if (detail != null) {
+          full = detail;
+          lessons = full['lessons'] as List? ?? [];
+        }
+      }
+
+      if (!mounted) return;
+      Navigator.pop(context); // ferme le loader
+
+      if (lessons.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Aucune leçon disponible pour ce cours. Vérifiez qu’il est publié avec du contenu.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final lessonMaps = List<Map<String, dynamic>>.from(
+        lessons.map((e) => Map<String, dynamic>.from(e as Map)),
+      );
+      final quizzes = List<Map<String, dynamic>>.from(
+        (full['quizzes'] as List? ?? [])
+            .map((e) => Map<String, dynamic>.from(e as Map)),
+      );
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LessonPlayerScreen(
+            lessons: lessonMaps,
+            quizzes: quizzes,
+            initialIndex: _getResumeIndex(full),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Impossible d’ouvrir le cours : $e')),
+      );
+    }
+  }
+
+  Future<void> _openDetails(Map<String, dynamic> course) async {
+    // Toujours le détail complet pour consulter dans l'app
+    final detail = await _syncService.getCourseById('${course['id']}');
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CourseDetailsScreen(course: detail ?? course),
+      ),
+    );
+  }
+
+  Future<void> _deleteDownload(dynamic courseId) async {
+    final id = courseId is int
+        ? courseId
+        : int.tryParse('$courseId') ?? 0;
+    await _syncService.deleteCourseDownload(id);
+    await _loadAll();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Téléchargement supprimé.')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isAuthenticated =
         Provider.of<AuthProvider>(context).isAuthenticated;
-
     final theme = Theme.of(context);
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -70,7 +177,8 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
         title: Text(
           'Mes Cours',
           style: TextStyle(
-            color: theme.textTheme.titleLarge?.color ?? const Color(0xFF0F172A),
+            color:
+                theme.textTheme.titleLarge?.color ?? const Color(0xFF0F172A),
             fontWeight: FontWeight.w900,
             fontSize: 20,
           ),
@@ -78,24 +186,55 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Color(0xFF64748B)),
-            onPressed: _loadEnrolledCourses,
+            onPressed: _loadAll,
           ),
           const SizedBox(width: 8),
         ],
+        bottom: isAuthenticated
+            ? TabBar(
+                controller: _tabs,
+                labelColor: _primary,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: _primary,
+                tabs: [
+                  Tab(
+                    text:
+                        'En ligne (${_enrolledCourses.length})',
+                  ),
+                  Tab(
+                    text:
+                        'Hors ligne (${_downloadedCourses.length})',
+                  ),
+                ],
+              )
+            : null,
       ),
       body: !isAuthenticated
           ? _buildNotLoggedIn(context)
           : _isLoading
               ? const Center(
                   child: CircularProgressIndicator(color: _primary))
-              : _enrolledCourses.isEmpty
-                  ? _buildEmpty()
-                  : _buildCourseList(),
+              : TabBarView(
+                  controller: _tabs,
+                  children: [
+                    _enrolledCourses.isEmpty
+                        ? _buildEmpty(
+                            'Aucun cours inscrit',
+                            'Inscrivez-vous à un cours publié, puis ouvrez-le ici pour consulter le contenu dans l’application.',
+                          )
+                        : _buildOnlineList(),
+                    _downloadedCourses.isEmpty
+                        ? _buildEmpty(
+                            'Aucun cours hors ligne',
+                            'Sur la fiche d’un cours, appuyez sur Télécharger. Ensuite consultez les leçons ici, dans l’app.',
+                          )
+                        : _buildOfflineList(),
+                  ],
+                ),
     );
   }
 
   Widget _buildNotLoggedIn(BuildContext context) {
-    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -113,38 +252,22 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                   color: _primary, size: 42),
             ),
             const SizedBox(height: 24),
-            Text(
+            const Text(
               'Connectez-vous pour voir vos cours',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: theme.textTheme.titleMedium?.color ?? const Color(0xFF0F172A)),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Accédez à tous vos cours inscrits et continuez votre apprentissage.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.5),
-            ),
-            const SizedBox(height: 28),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen())),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  elevation: 0,
-                ),
-                child: const Text('SE CONNECTER',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15)),
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
               ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              ),
+              style: ElevatedButton.styleFrom(backgroundColor: _primary),
+              child: const Text('Se connecter'),
             ),
           ],
         ),
@@ -152,78 +275,84 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
     );
   }
 
-  Widget _buildEmpty() {
-    return RefreshIndicator(
-      onRefresh: _loadEnrolledCourses,
-      color: _primary,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-          Center(
-            child: Column(
-              children: [
-                Icon(Icons.school_outlined, size: 80, color: Colors.grey[300]),
-                const SizedBox(height: 20),
-                const Text(
-                  'Vous n\'êtes inscrit à aucun cours',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Explorez le catalogue et inscrivez-vous à un cours.',
-                  style: TextStyle(color: Colors.grey, fontSize: 14),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+  Widget _buildEmpty(String title, String subtitle) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.menu_book_rounded, size: 72, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text(title,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w800, fontSize: 16)),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey, height: 1.4),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildCourseList() {
+  Widget _buildOnlineList() {
     return RefreshIndicator(
-      onRefresh: _loadEnrolledCourses,
+      onRefresh: _loadAll,
       color: _primary,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _enrolledCourses.length,
-        itemBuilder: (context, index) {
-          return _buildCourseCard(_enrolledCourses[index]);
-        },
+        itemBuilder: (context, index) =>
+            _buildCourseCard(_enrolledCourses[index], offline: false),
       ),
     );
   }
 
-  Widget _buildCourseCard(Map<String, dynamic> course) {
+  Widget _buildOfflineList() {
+    return RefreshIndicator(
+      onRefresh: _loadAll,
+      color: _primary,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _downloadedCourses.length,
+        itemBuilder: (context, index) =>
+            _buildCourseCard(_downloadedCourses[index], offline: true),
+      ),
+    );
+  }
+
+  Widget _buildCourseCard(Map<String, dynamic> course, {required bool offline}) {
     final lessons = course['lessons'] as List? ?? [];
+    final lessonsCount = lessons.isNotEmpty
+        ? lessons.length
+        : (course['lessons_count'] as num?)?.toInt() ?? 0;
     final progress = (course['progress'] ?? 0.0) as num;
     final progressDouble = progress.toDouble();
-    final resumeIndex = _getResumeIndex(course);
 
-    String? thumbnailUrl = course['thumbnail'];
-    if (thumbnailUrl != null && !thumbnailUrl.startsWith('http')) {
+    String? thumbnailUrl = course['thumbnail']?.toString();
+    if (thumbnailUrl != null &&
+        thumbnailUrl.isNotEmpty &&
+        !thumbnailUrl.startsWith('http')) {
       thumbnailUrl = ApiConfig.resolveMediaUrl(thumbnailUrl);
     }
 
-    // Statut progression
     String progressLabel;
     Color progressColor;
-    if (progressDouble == 0) {
+    if (offline) {
+      progressLabel = 'Disponible hors ligne';
+      progressColor = Colors.green[700]!;
+    } else if (progressDouble == 0) {
       progressLabel = 'Pas encore commencé';
       progressColor = Colors.grey;
     } else if (progressDouble >= 100) {
       progressLabel = 'Terminé ✓';
       progressColor = Colors.green;
     } else {
-      progressLabel =
-          '${progressDouble.toStringAsFixed(0)}% complété';
+      progressLabel = '${progressDouble.toStringAsFixed(0)}% complété';
       progressColor = _primary;
     }
 
@@ -246,20 +375,19 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Thumbnail
             Stack(
               children: [
                 SizedBox(
-                  height: 150,
+                  height: 140,
                   width: double.infinity,
-                  child: thumbnailUrl != null
-                      ? Image.network(thumbnailUrl,
+                  child: thumbnailUrl != null && thumbnailUrl.isNotEmpty
+                      ? Image.network(
+                          thumbnailUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _buildPlaceholder())
+                          errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                        )
                       : _buildPlaceholder(),
                 ),
-                // Overlay gradient
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
@@ -268,37 +396,33 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.5),
+                          Colors.black.withOpacity(0.55),
                         ],
                       ),
                     ),
                   ),
                 ),
-                // Badge progression
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: progressDouble >= 100
-                          ? Colors.green
-                          : _primary,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      progressDouble >= 100
-                          ? '✓ Terminé'
-                          : '${progressDouble.toStringAsFixed(0)}%',
-                      style: const TextStyle(
+                if (offline)
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.green[700],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Hors ligne',
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 11,
-                          fontWeight: FontWeight.bold),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                // Leçons count
                 Positioned(
                   bottom: 12,
                   left: 12,
@@ -308,27 +432,27 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                           color: Colors.white, size: 14),
                       const SizedBox(width: 4),
                       Text(
-                        '${lessons.length} leçon${lessons.length > 1 ? 's' : ''}',
+                        '$lessonsCount leçon${lessonsCount > 1 ? 's' : ''}',
                         style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600),
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-
-            // Barre de progression
-            LinearProgressIndicator(
-              value: (progressDouble / 100).clamp(0.0, 1.0),
-              backgroundColor: theme.brightness == Brightness.dark ? Colors.grey[800] : Colors.grey[200],
-              color: progressDouble >= 100 ? Colors.green : _primary,
-              minHeight: 4,
-            ),
-
-            // Infos cours
+            if (!offline)
+              LinearProgressIndicator(
+                value: (progressDouble / 100).clamp(0.0, 1.0),
+                backgroundColor: theme.brightness == Brightness.dark
+                    ? Colors.grey[800]
+                    : Colors.grey[200],
+                color: progressDouble >= 100 ? Colors.green : _primary,
+                minHeight: 4,
+              ),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -339,123 +463,76 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
-                      color: theme.textTheme.titleMedium?.color ?? const Color(0xFF0F172A),
-                      height: 1.3,
+                      color: theme.textTheme.titleMedium?.color ??
+                          const Color(0xFF0F172A),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(Icons.person_outline_rounded,
-                          size: 14, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          course['teacher_name'] ?? 'Enseignant Yekola',
-                          style: const TextStyle(
-                              color: Colors.grey, fontSize: 13),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    progressLabel,
+                    style: TextStyle(
+                      color: progressColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 14),
                   Row(
                     children: [
-                      Icon(
-                        progressDouble >= 100
-                            ? Icons.check_circle_rounded
-                            : Icons.radio_button_checked_rounded,
-                        size: 14,
-                        color: progressColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        progressLabel,
-                        style: TextStyle(
-                            color: progressColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Boutons d'action
-                  Row(
-                    children: [
-                      // Bouton Continuer / Démarrer
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: lessons.isNotEmpty
-                              ? () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => LessonPlayerScreen(
-                                      lessons: List<Map<String, dynamic>>
-                                          .from(lessons),
-                                      quizzes: List<Map<String, dynamic>>
-                                          .from(course['quizzes'] ?? []),
-                                      initialIndex: resumeIndex,
-                                    ),
-                                  ))
-                              : null,
-                          icon: Icon(
-                            progressDouble == 0
-                                ? Icons.play_arrow_rounded
-                                : progressDouble >= 100
-                                    ? Icons.replay_rounded
-                                    : Icons.play_circle_outline_rounded,
-                            size: 18,
+                          onPressed: () => _openInAppPlayer(
+                            course,
+                            offline: offline,
                           ),
+                          icon: const Icon(Icons.play_arrow_rounded, size: 18),
                           label: Text(
-                            progressDouble == 0
-                                ? 'Démarrer'
-                                : progressDouble >= 100
-                                    ? 'Revoir'
-                                    : 'Continuer',
+                            offline ? 'Consulter' : 'Lire dans l’app',
                             style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _primary,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(12)),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             elevation: 0,
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
-                      // Bouton Détails
-                      OutlinedButton(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                CourseDetailsScreen(course: course),
+                      if (offline)
+                        IconButton(
+                          onPressed: () => _deleteDownload(course['id']),
+                          icon: const Icon(Icons.delete_outline,
+                              color: Colors.red),
+                        )
+                      else
+                        OutlinedButton(
+                          onPressed: () => _openDetails(course),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: _primary,
+                            side: const BorderSide(color: _primary),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Détails',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: _primary,
-                          side: const BorderSide(color: _primary),
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 16),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('Détails',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13)),
-                      ),
                     ],
                   ),
                 ],
