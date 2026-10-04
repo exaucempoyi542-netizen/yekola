@@ -9,7 +9,6 @@ import '../config/api_config.dart';
 import '../services/sync_service.dart';
 import '../utils/local_file.dart';
 import '../utils/video_source.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 
 class LessonPlayerScreen extends StatefulWidget {
@@ -33,7 +32,6 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
   late int _currentIndex;
   VideoPlayerController? _videoPlayerController;
   ChewieController? _chewieController;
-  WebViewController? _webViewController;
   /// Document natif (PDF ou PPT converti) — chemin local ou URL https
   String? _documentSource;
   bool _documentIsLocal = false;
@@ -118,9 +116,8 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
       _initVideo(sourcePath);
     } else if (type == 'PDF' || type == 'PPT') {
       _initNativeDocument(sourcePath, type == 'PPT');
-    } else if (type == 'EXTERNAL') {
-      _initWebView(lesson['url']?.toString() ?? sourcePath ?? '');
     }
+    // EXTERNAL : pas de navigateur intégré — carte + ouverture externe
 
     // Synchroniser la progression avec le backend en arrière-plan
     if (widget.lessons.isNotEmpty) {
@@ -137,25 +134,11 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
     }
   }
 
-  void _initWebView(String url) {
-    if (kIsWeb) return;
-    if (url.isEmpty) return;
-    _webViewController = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onNavigationRequest: (_) => NavigationDecision.navigate,
-        ),
-      )
-      ..loadRequest(Uri.parse(_resolveMediaUrl(url)));
-  }
-
   void _disposeContent() {
     _videoPlayerController?.dispose();
     _chewieController?.dispose();
     _videoPlayerController = null;
     _chewieController = null;
-    _webViewController = null;
     _documentSource = null;
     _documentIsLocal = false;
     _isDownloading = false;
@@ -681,17 +664,52 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
     }
 
     if (type == 'EXTERNAL') {
-      if (kIsWeb) {
-        final url = lesson['url'] ?? lesson['content_file'] ?? '';
-        return HtmlWidget(
-          '<iframe src="$url" style="width:100%; height:100%; border:none;"></iframe>',
-        );
-      }
-      if (_webViewController != null) {
-        return WebViewWidget(controller: _webViewController!);
-      }
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+      final raw = lesson['url']?.toString() ??
+          lesson['content_file']?.toString() ??
+          '';
+      final url = raw.isEmpty ? '' : _resolveMediaUrl(raw);
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.link_rounded, size: 56, color: Colors.white.withOpacity(0.7)),
+              const SizedBox(height: 16),
+              Text(
+                lesson['title']?.toString() ?? 'Ressource externe',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Cette ressource s’ouvre dans une application externe.\nAucun navigateur n’est intégré à Yekola.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white60, height: 1.4),
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: url.isEmpty
+                    ? null
+                    : () => launchUrl(
+                          Uri.parse(url),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                icon: const Icon(Icons.open_in_new_rounded),
+                label: const Text('Ouvrir la ressource'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
