@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
-import 'package:pdfrx/pdfrx.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:http/http.dart' as http;
 import 'quiz_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,6 +10,7 @@ import '../config/api_config.dart';
 import '../services/sync_service.dart';
 import '../utils/local_file.dart';
 import '../utils/video_source.dart';
+import '../utils/file_saver.dart' as file_saver;
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 
 class LessonPlayerScreen extends StatefulWidget {
@@ -224,7 +226,7 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
     }
   }
 
-  /// PDF / PPT (converti en PDF) — lecteur natif pdfrx, sans navigateur.
+  /// PDF / PPT (converti en PDF) — lecteur natif Android/iOS, sans navigateur.
   Future<void> _initNativeDocument(String? filePath, bool isPpt) async {
     if (filePath == null || filePath.trim().isEmpty) {
       if (mounted) {
@@ -253,14 +255,73 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
 
     final url = _resolveMediaUrl(filePath);
 
-    // Sur toutes les plateformes pdfrx lit l'URL directement (rendu natif)
+    // Web : pas de PDFView natif — on télécharge le vrai fichier (pas de navigateur intégré)
+    if (kIsWeb) {
+      if (mounted) {
+        setState(() {
+          _isDownloading = true;
+          _mediaError = null;
+        });
+      }
+      try {
+        final resp = await http.get(Uri.parse(url));
+        if (resp.statusCode != 200) {
+          throw Exception('HTTP ${resp.statusCode}');
+        }
+        final name = isPpt ? 'presentation.pdf' : 'document.pdf';
+        await file_saver.triggerBrowserDownload(resp.bodyBytes, name);
+        if (mounted) {
+          setState(() {
+            _isDownloading = false;
+            _mediaError =
+                'Document téléchargé.\nSur téléphone (APK), la lecture se fait directement dans Yekola.';
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isDownloading = false;
+            _mediaError = 'Impossible de charger le document.\n$e';
+          });
+        }
+      }
+      return;
+    }
+
+    // Mobile : télécharge en local puis ouvre le lecteur PDF natif
     if (mounted) {
       setState(() {
-        _documentSource = url;
-        _documentIsLocal = false;
-        _isDownloading = false;
+        _isDownloading = true;
         _mediaError = null;
       });
+    }
+    try {
+      final resp = await http.get(Uri.parse(url));
+      if (resp.statusCode != 200) {
+        throw Exception('HTTP ${resp.statusCode}');
+      }
+      final saved = await file_saver.saveBytes(
+        resp.bodyBytes,
+        'yekola_lesson_$_currentIndex.pdf',
+      );
+      if (saved == null || saved.isEmpty) {
+        throw Exception('Écriture du fichier local échouée');
+      }
+      if (mounted) {
+        setState(() {
+          _documentSource = saved;
+          _documentIsLocal = true;
+          _isDownloading = false;
+          _mediaError = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isDownloading = false;
+          _mediaError = 'Impossible de charger le document.\n$e';
+        });
+      }
     }
   }
 
@@ -296,36 +357,26 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen>
     }
 
     final source = _documentSource;
-    if (source == null || source.isEmpty) {
+    if (source == null || source.isEmpty || kIsWeb) {
       return const Center(
         child: Text('Document indisponible', style: TextStyle(color: Colors.white60)),
       );
     }
 
-    final params = const PdfViewerParams(
-      backgroundColor: Color(0xFF0A0F1E),
+    return ColoredBox(
+      color: _dark,
+      child: PDFView(
+        filePath: source,
+        enableSwipe: true,
+        swipeHorizontal: false,
+        autoSpacing: true,
+        pageFling: true,
+        pageSnap: true,
+        fitPolicy: FitPolicy.WIDTH,
+        fitEachPage: false,
+        backgroundColor: Colors.black,
+      ),
     );
-
-    try {
-      if (_documentIsLocal && !kIsWeb) {
-        return ColoredBox(
-          color: _dark,
-          child: PdfViewer.file(source, params: params),
-        );
-      }
-      return ColoredBox(
-        color: _dark,
-        child: PdfViewer.uri(Uri.parse(source), params: params),
-      );
-    } catch (e) {
-      return Center(
-        child: Text(
-          'Impossible d\'afficher le document.\n$e',
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white70),
-        ),
-      );
-    }
   }
 
   @override
