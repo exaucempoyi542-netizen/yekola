@@ -152,13 +152,20 @@ class SyncService {
     }
   }
 
-  /// Récupère un cours par id (cache, sinon API détail).
-  Future<Map<String, dynamic>?> getCourseById(String courseId) async {
-    final cached = _cachedCourses;
-    if (cached != null) {
-      for (final c in cached) {
-        if ('${c['id']}' == courseId) {
-          return Map<String, dynamic>.from(c);
+  /// Récupère le détail complet d'un cours (leçons + quiz inclus).
+  /// La liste catalogue est légère et ne contient PAS les leçons —
+  /// il faut donc toujours appeler l'endpoint détail.
+  Future<Map<String, dynamic>?> getCourseById(
+    String courseId, {
+    bool preferCache = false,
+  }) async {
+    if (preferCache) {
+      final cached = _cachedCourses;
+      if (cached != null) {
+        for (final c in cached) {
+          if ('${c['id']}' == courseId && c['lessons'] is List) {
+            return Map<String, dynamic>.from(c);
+          }
         }
       }
     }
@@ -174,14 +181,82 @@ class SyncService {
               'Authorization': 'Bearer $token',
             },
           )
-          .timeout(_httpTimeout);
+          .timeout(const Duration(seconds: 20));
       if (response.statusCode == 200) {
-        return Map<String, dynamic>.from(jsonDecode(response.body));
+        final detail = Map<String, dynamic>.from(jsonDecode(response.body));
+        // Enrichir le cache catalogue avec le détail (leçons/quiz)
+        final cached = _cachedCourses;
+        if (cached != null) {
+          final idx = cached.indexWhere((c) => '${c['id']}' == courseId);
+          if (idx >= 0) {
+            cached[idx] = {...cached[idx], ...detail};
+          }
+        }
+        // Persister les leçons en local pour l'offline
+        await _persistCourseDetail(detail);
+        return detail;
       }
     } catch (e) {
       debugPrint("SyncService.getCourseById Error: $e");
     }
+
+    // Fallback cache (même sans leçons) si le réseau échoue
+    final cached = _cachedCourses;
+    if (cached != null) {
+      for (final c in cached) {
+        if ('${c['id']}' == courseId) {
+          return Map<String, dynamic>.from(c);
+        }
+      }
+    }
     return null;
+  }
+
+  Future<void> _persistCourseDetail(Map<String, dynamic> course) async {
+    if (kIsWeb) return;
+    try {
+      final db = await _dbHelper.database;
+      final courseId = course['id'];
+      if (courseId == null) return;
+
+      await db.insert(
+        'courses',
+        {
+          'id': courseId,
+          'title': course['title'],
+          'description': course['description'],
+          'teacher_name': course['teacher_name'] ?? 'Inconnu',
+          'is_published': course['is_published'] == true ? 1 : 0,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      await db.delete('lessons', where: 'course_id = ?', whereArgs: [courseId]);
+      final lessons = course['lessons'];
+      if (lessons is List) {
+        final batch = db.batch();
+        for (final lesson in lessons) {
+          if (lesson is! Map) continue;
+          batch.insert(
+            'lessons',
+            {
+              'id': lesson['id'],
+              'course_id': courseId,
+              'title': lesson['title'],
+              'content_type': lesson['content_type'],
+              'content_file': lesson['content_file'],
+              'content_text': lesson['content_text'],
+              'order': lesson['order'],
+              'is_locked': lesson['is_locked'] == true ? 1 : 0,
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+        await batch.commit(noResult: true);
+      }
+    } catch (e) {
+      debugPrint('SyncService._persistCourseDetail: $e');
+    }
   }
 
   Future<List<Map<String, dynamic>>> fetchNotifications() async {

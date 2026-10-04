@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/database_helper.dart';
 import '../services/sync_service.dart';
@@ -59,18 +60,26 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
   }
 
   Future<void> _refreshCourseData() async {
-    final courses = await _syncService.getCourses(forceRefresh: true);
-    final updated = courses.firstWhere(
-        (c) => c['id'] == widget.course['id'],
-        orElse: () => {});
-    if (updated.isNotEmpty && mounted) {
+    // Toujours charger le DÉTAIL cours (leçons + quiz).
+    // La liste catalogue ne contient plus les leçons (payload léger).
+    final updated = await _syncService.getCourseById('${widget.course['id']}');
+    if (updated != null && mounted) {
       setState(() {
-        if (updated['lessons'] != null)
+        _isEnrolled = updated['is_enrolled'] ?? _isEnrolled;
+        _activeLive = updated['active_live'] is Map
+            ? Map<String, dynamic>.from(updated['active_live'])
+            : _activeLive;
+        if (updated['lessons'] != null) {
           _lessons = List<Map<String, dynamic>>.from(updated['lessons']);
-        if (updated['quizzes'] != null)
+        }
+        if (updated['quizzes'] != null) {
           _quizzes = List<Map<String, dynamic>>.from(updated['quizzes']);
+        }
         _buildUnifiedContent();
+        _isLoading = false;
       });
+    } else if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -167,9 +176,11 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
 
   Future<void> _loadLessons() async {
     try {
-      if (widget.course['lessons'] != null) {
+      // 1) Données déjà présentes (ex. navigation depuis notification avec détail)
+      final incomingLessons = widget.course['lessons'];
+      if (incomingLessons is List && incomingLessons.isNotEmpty) {
         setState(() {
-          _lessons = List<Map<String, dynamic>>.from(widget.course['lessons']);
+          _lessons = List<Map<String, dynamic>>.from(incomingLessons);
           _quizzes = List<Map<String, dynamic>>.from(widget.course['quizzes'] ?? []);
           _buildUnifiedContent();
           _isLoading = false;
@@ -177,19 +188,30 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
         _openInitialLessonIfNeeded();
         return;
       }
-      final db = await _dbHelper.database;
-      final results = await db.query('lessons',
-          where: 'course_id = ?',
-          whereArgs: [widget.course['id']],
-          orderBy: '"order" ASC');
-      setState(() {
-        _lessons = results;
-        _isLoading = false;
-        _buildUnifiedContent();
-      });
-      _openInitialLessonIfNeeded();
+
+      // 2) Cache SQLite local
+      if (!kIsWeb) {
+        final db = await _dbHelper.database;
+        final results = await db.query('lessons',
+            where: 'course_id = ?',
+            whereArgs: [widget.course['id']],
+            orderBy: '"order" ASC');
+        if (results.isNotEmpty && mounted) {
+          setState(() {
+            _lessons = results;
+            _isLoading = false;
+            _buildUnifiedContent();
+          });
+          _openInitialLessonIfNeeded();
+          // Le refresh réseau (_refreshCourseData) mettra à jour ensuite
+          return;
+        }
+      }
+
+      // 3) Sinon attendre le fetch détail (lancé en parallèle dans initState)
+      // _refreshCourseData gère le setState final.
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

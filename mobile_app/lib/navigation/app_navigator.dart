@@ -15,11 +15,11 @@ Future<void> openCourseFromNotification({
   if (nav == null) return;
 
   final sync = SyncService();
+  // Toujours le détail (leçons incluses) — pas le cache catalogue léger
   Map<String, dynamic>? course = await sync.getCourseById(courseId);
 
-  if (course == null) {
-    // Forcer un refresh catalogue (affiliation) puis réessayer
-    await sync.pullCourses();
+  if (course == null || course['lessons'] == null) {
+    await sync.pullCourses(forceRefresh: true);
     course = await sync.getCourseById(courseId);
   }
 
