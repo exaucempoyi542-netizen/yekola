@@ -55,8 +55,6 @@ urlpatterns = [
 
     path('territorial/benchmark/', territorial.territorial_benchmark, name='territorial_benchmark'),
 
-    path('territorial/lmd-compliance/', territorial.territorial_lmd, name='territorial_lmd'),
-
     path('territorial/alerts/', territorial.territorial_alerts, name='territorial_alerts'),
 
     path('territorial/alerts/<int:pk>/resolve/', territorial.territorial_resolve_alert, name='territorial_resolve_alert'),

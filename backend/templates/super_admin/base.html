@@ -53,9 +53,6 @@
                 <a href="{% url 'super_admin:territorial_benchmark' %}" class="able-nav-link {% if request.resolver_match.url_name == 'territorial_benchmark' %}active{% endif %}">
                     <i class="fa-solid fa-chart-column"></i><span>Benchmarking</span>
                 </a>
-                <a href="{% url 'super_admin:territorial_lmd' %}" class="able-nav-link {% if request.resolver_match.url_name == 'territorial_lmd' %}active{% endif %}">
-                    <i class="fa-solid fa-book"></i><span>Conformité LMD</span>
-                </a>
                 <a href="{% url 'super_admin:territorial_alerts' %}" class="able-nav-link {% if 'territorial_alert' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="fa-solid fa-bell"></i><span>Alertes</span>
                 </a>

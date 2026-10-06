@@ -809,40 +809,6 @@ def territorial_benchmark(request):
 
 @login_required(login_url=LOGIN_URL)
 @provincial_required
-def territorial_lmd(request):
-    province = _province_or_redirect(request)
-    if not province:
-        return redirect('super_admin:logout')
-
-    course_count = Course.objects.filter(university__province=province).count()
-    assigned_count = Course.objects.filter(
-        university__province=province, teacher__isnull=False
-    ).count()
-    rows = []
-    for uni in University.objects.filter(province=province).order_by('name'):
-        total = Course.objects.filter(university=uni).count()
-        assigned = Course.objects.filter(university=uni, teacher__isnull=False).count()
-        with_credits = Course.objects.filter(university=uni, credits__gte=1).count()
-        coverage = round((assigned / total) * 100, 1) if total else 0
-        rows.append({
-            'university': uni,
-            'linked_courses': assigned,
-            'national_count': total,
-            'coverage': coverage,
-            'compliant': total > 0 and coverage >= 50 and with_credits == total,
-        })
-
-    return render(request, 'super_admin/territorial/lmd_compliance.html', {
-        'province': province,
-        'rows': rows,
-        'national_count': course_count,
-        'assigned_count': assigned_count,
-        'to_reinforce': sum(1 for r in rows if not r['compliant']),
-    })
-
-
-@login_required(login_url=LOGIN_URL)
-@provincial_required
 def territorial_alerts(request):
     province = _province_or_redirect(request)
     if not province:
